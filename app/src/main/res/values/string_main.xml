@@ -1,0 +1,4 @@
+<resources>
+	<string name="confirm_label">確認</string>
+	<string name="dismiss_label">取消</string>
+</resources>

@@ -1,0 +1,56 @@
+<resources>
+	<string name="settings_label">設定</string>
+	<string name="value_is_label">値：%s</string>
+	<string name="unset_label">未設置</string>
+	<string name="unavailable_label">未可用</string>
+	<string name="unknown_error_label">未知錯誤</string>
+
+	<string name="account_label">賬戶</string>
+	<string name="email_label">郵箱</string>
+	<string name="email_input_description">請輸入您的復旦學生郵箱、以「@fudan.edu.cn」或「@m.fudan.edu.cn」結尾。本應用並不提供註冊界面、您需要先在官方發佈的客戶端上進行註冊。</string>
+	<string name="email_format_description">請輸入以「@fudan.edu.cn」或「@m.fudan.edu.cn」結尾的郵箱。</string>
+	<string name="password_label">密碼</string>
+	<string name="view_edit_password_label">點選以査看或更改您的密碼</string>
+	<string name="access_jwt_label">訪問凭證</string>
+	<string name="access_jwt_description">如果您不瞭解存取凭證（Access JWT）是什麼、請不要手動更改此欄位。使用錯誤凭證可能導致登入失敗・資料存取錯誤・或安全風險。請勿與他人分享該凭證、因爲該凭證授予了對該旦夕賬戶的存取權限。</string>
+	<string name="refresh_jwt_label">刷新凭證</string>
+	<string name="refresh_jwt_description">如果您不瞭解刷新凭證（Refresh JWT）是什麼、請不要手動更改此欄位。使用錯誤凭證可能導致登入失敗・資料存取錯誤・或安全風險。請勿與他人分享該凭證、因爲該凭證可以間接換得存取凭證。</string>
+	<string name="token_expires_label">本凭證有效至%s</string>
+	<string name="token_expires_description">本凭證有效至%s。</string>
+	<string name="token_cannot_parse_label">無法解析凭證</string>
+	<string name="message_password">您的密碼將在本機上安全加密存儲、即使在有root權限上設備亦不能輕易从外部解密。</string>
+	<string name="account_buttons_have_question_description">對此幾個按鈕選項有疑惑嗎？</string>
+	<string name="account_buttons_description">存取凭證（Access JWT）用于存取論壇數據、默認有效期30分鐘。刷新凭證（Refresh JWT）用于換得新的存取凭證、默認有效期30日。\n「登入」指使用您的郵箱和密碼向旦夕的認證伺服器發送登入請求、以獲得存取凭證和刷新凭證。\n「刷新」指使用您的刷新凭證向旦夕的認證伺服器發送刷新請求、以獲得新的存取凭證和刷新凭證。\n每次獲得此二凭證、都會將其更新在上方欄位中。</string>
+	<string name="log_in_label">登入</string>
+	<string name="refresh_label">刷新</string>
+	<string name="load_user_label">加載用戶</string>
+	<string name="load_user_after_jwt_label">自動加載用戶數據</string>
+	<string name="load_user_after_jwt_desc_label">啓動該項時、獲取凭證後會自動加載用戶數據</string>
+
+	<string name="user_profile_label">個人資料</string>
+	<string name="no_user_profile_label">尚無個人資料</string>
+	<string name="erase_user_profile_label">清除個人資料</string>
+
+	<string name="network_label">网路</string>
+	<string name="auth_base_url_label">認證伺服器基址</string>
+	<string name="forum_base_url_label">論壇伺服器基址</string>
+	<string name="image_base_url_label">圖牀伺服器基址</string>
+	<string name="servers_alternatives_label">可選伺服器組</string>
+	<string name="proxy_label">代理</string>
+	<string name="use_proxy_to_access_internet_label">使用HTTP代理訪問网路</string>
+	<string name="host_label">主機</string>
+	<string name="proxy_server_host_label">代理伺服器主機</string>
+	<string name="port_label">埠號</string>
+	<string name="proxy_server_port_label">代理伺服器埠號</string>
+
+	<string name="general_label">通用</string>
+	<string name="clean_mode_label">清淨模式</string>
+	<string name="clean_mode_description">過濾論壇中不友善的繪文字</string>
+	<string name="background_image_label">背景圖像</string>
+	<string name="background_image_pick_one_label">選擇一張圖像作爲論壇背景</string>
+	<string name="background_image_confirm_delete_label">確認刪除已有的背景圖像？</string>
+	<string name="background_image_error_reading_label">讀取圖像出錯</string>
+	<string name="background_image_error_decoding_label">解碼圖像出錯</string>
+	<string name="content_sources_label">內容源</string>
+	<string name="sort_order_label">排序依據</string>
+</resources>

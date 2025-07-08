@@ -1,0 +1,12 @@
+<resources>
+	<string name="forum_label">論壇</string>
+	<string name="posted_on_label">%s于%s發佈</string>
+	<string name="replied_on_label">%s于%s回覆</string>
+	<string name="human_duration_moments_label">剛々</string>
+	<string name="human_duration_seconds_label">%d秒前</string>
+	<string name="human_duration_minutes_label">%d分鐘前</string>
+	<string name="human_duration_hours_label">%d小時前</string>
+	<string name="human_duration_days_label">%d天前</string>
+	<string name="modified_label">已修改</string>
+	<string name="modified_times_label">已修改%d次</string>
+</resources>
