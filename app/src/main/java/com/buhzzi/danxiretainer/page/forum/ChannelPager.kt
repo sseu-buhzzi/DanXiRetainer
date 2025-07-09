@@ -1,9 +1,11 @@
 package com.buhzzi.danxiretainer.page.forum
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -14,12 +16,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,16 +39,26 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.ProducerScope
+import kotlinx.coroutines.channels.getOrElse
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.launch
+import java.util.Collections
 
 private class ChannelPagerViewModel<T>(
 	itemsProducer: suspend ProducerScope<T>.() -> Unit,
 	private val pageSize: Int,
 ) : ViewModel() {
 	init {
-		println("ChannelPagerViewModel($itemsProducer, $pageSize)")
+		// TODO delete this
+		Log.d("ChannelPagerViewModel", "ChannelPagerViewModel($itemsProducer, $pageSize)")
 	}
+
+	private val cachedPages = mutableStateListOf<List<T>>()
+
+	var loading by mutableStateOf(false)
+		private set
+	var ended by mutableStateOf(false)
+		private set
 
 	@OptIn(ExperimentalCoroutinesApi::class)
 	private val itemsChannel = viewModelScope.produce(capacity = 0) {
@@ -53,33 +69,41 @@ private class ChannelPagerViewModel<T>(
 		}
 	}
 
-	private val cachedPages = mutableStateListOf<List<T>>()
-	val pages get() = cachedPages.toList()
+	val readonlyPages: List<List<T>> = Collections.unmodifiableList(cachedPages)
+	val readonlyItems = object : AbstractList<T>() {
+		override val size
+			// Equivalent to `pages.sumOf { it.size }`
+			get() = (cachedPages.size - 1) * pageSize + (cachedPages.lastOrNull()?.size ?: pageSize)
 
-	var loading by mutableStateOf(false)
-		private set
-	var ended by mutableStateOf(false)
-		private set
+		override fun get(index: Int) =
+			cachedPages[index / pageSize][index % pageSize]
+	}
 
-	fun reachedEnd(pageIndex: Int) = ended && pageIndex >= pages.lastIndex
+	fun reachedEnd(pageIndex: Int) = ended && pageIndex >= cachedPages.lastIndex
 
 	suspend fun loadPage() {
+		Log.d("ChannelPagerViewModel", "loadPage: ${cachedPages.size} pages, ${readonlyItems.size} items")
 		ended && return
 
 		loading && return
 		try {
 			loading = true
 
+			var buildingException: Throwable? = null
 			val items = buildList {
 				repeat(pageSize) {
-					println("$it/$pageSize")
-					val hole = itemsChannel.receiveCatching().getOrNull() ?: return@buildList
+					val hole = itemsChannel.receiveCatching().getOrElse { exception ->
+						buildingException = exception
+						return@buildList
+					}
 					add(hole)
 				}
 			}
+			Log.d("ChannelPagerViewModel", "received ${items.size}: ${cachedPages.size} pages, ${readonlyItems.size} items")
 			if (items.isNotEmpty()) {
 				cachedPages.add(items)
 			}
+			buildingException?.let { throw it }
 		} finally {
 			loading = false
 		}
@@ -91,6 +115,9 @@ fun <T> ChannelPager(
 	itemsProducer: suspend ProducerScope<T>.() -> Unit,
 	key: String?,
 	pageSize: Int,
+	initialItemIndex: Int,
+	initialItemScrollOffset: Int,
+	saveItemPosition: (Int, Int) -> Unit,
 	refresh: suspend CoroutineScope.() -> Unit,
 	modifier: Modifier = Modifier,
 	itemContent: @Composable (T) -> Unit,
@@ -101,6 +128,9 @@ fun <T> ChannelPager(
 			itemsProducer,
 			key,
 			pageSize,
+			initialItemIndex,
+			initialItemScrollOffset,
+			saveItemPosition,
 			refresh,
 			modifier,
 			itemContent,
@@ -110,6 +140,9 @@ fun <T> ChannelPager(
 			itemsProducer,
 			key,
 			pageSize,
+			initialItemIndex,
+			initialItemScrollOffset,
+			saveItemPosition,
 			refresh,
 			modifier,
 			itemContent,
@@ -125,6 +158,9 @@ fun <T> HorizontalScrollChannelPager(
 	itemsProducer: suspend ProducerScope<T>.() -> Unit,
 	key: String?,
 	pageSize: Int,
+	initialItemIndex: Int,
+	initialItemScrollOffset: Int,
+	saveItemPosition: (Int, Int) -> Unit,
 	refresh: suspend CoroutineScope.() -> Unit,
 	modifier: Modifier = Modifier,
 	itemContent: @Composable (T) -> Unit,
@@ -134,6 +170,54 @@ fun <T> HorizontalScrollChannelPager(
 	) {
 		ChannelPagerViewModel(itemsProducer, pageSize)
 	}
+	val initialPageIndex = initialItemIndex / pageSize
+	val initialItemIndexInPage = initialItemIndex % pageSize
+	val pagerState = rememberPagerState(initialPageIndex) {
+		pagerViewModel.readonlyPages.size + if (pagerViewModel.ended) 0 else 1
+	}
+	val lazyListStates by remember {
+		derivedStateOf {
+			List(pagerState.pageCount) { pageIndex ->
+				if (pageIndex == initialItemIndex) LazyListState(
+					initialItemIndexInPage,
+					initialItemScrollOffset,
+				) else LazyListState()
+			}
+		}
+	}
+
+	var targetPageIndex by rememberSaveable { mutableIntStateOf(0) }
+	LaunchedEffect(pagerViewModel) {
+		pagerViewModel.viewModelScope.launch {
+			// untested TODO load until `initialItemIndex`
+			while (!pagerViewModel.ended && initialItemIndex >= pagerViewModel.readonlyItems.size) {
+				pagerViewModel.loadPage()
+			}
+			// must TODO scroll to item with its index and scroll offset
+			targetPageIndex = initialPageIndex
+			Log.d("HorizontalScrollChannelPager", "scrollToItem($initialItemIndexInPage, $initialItemScrollOffset) at LaunchedEffect(pagerViewModel) end")
+			lazyListStates[initialPageIndex].scrollToItem(initialItemIndexInPage, initialItemScrollOffset)
+		}
+	}
+	LaunchedEffect(targetPageIndex) {
+		Log.d("HorizontalScrollChannelPager", "animateScrollToPage($targetPageIndex) at loadPage()")
+		pagerState.animateScrollToPage(targetPageIndex)
+	}
+	DisposableEffect(Unit) {
+		onDispose {
+			val pageIndex = pagerState.currentPage
+			val lazyListState = lazyListStates[pageIndex]
+			val itemIndex = pageIndex * pageSize + lazyListState.firstVisibleItemIndex
+			val itemScrollOffset = lazyListState.firstVisibleItemScrollOffset
+			Log.d(
+				"HorizontalScrollChannelPager",
+				"save $itemIndex $itemScrollOffset (${
+					pagerViewModel.readonlyItems[lazyListState.firstVisibleItemIndex].toString().substringBefore(',')
+				})})",
+			)
+			saveItemPosition(itemIndex, itemScrollOffset)
+		}
+	}
 
 	var refreshing by remember { mutableStateOf(false) }
 	PullToRefreshBox(
@@ -142,10 +226,7 @@ fun <T> HorizontalScrollChannelPager(
 			refreshing = true
 			pagerViewModel.viewModelScope.launch(Dispatchers.IO) {
 				try {
-					// TODO sometimes first load are interrupted and unable to restart automatically
-					print("refresh begin")
 					refresh()
-					println(" end")
 				} finally {
 					refreshing = false
 				}
@@ -153,26 +234,33 @@ fun <T> HorizontalScrollChannelPager(
 		},
 		modifier = modifier,
 	) {
-		val pagerState = rememberPagerState { pagerViewModel.pages.size + 1 }
 		HorizontalPager(
 			pagerState,
 			modifier = modifier,
 		) { pageIndex ->
-			pagerViewModel.pages.getOrNull(pageIndex)?.let {
+			pagerViewModel.readonlyPages.getOrNull(pageIndex)?.let {
 				LazyColumn(
 					modifier = Modifier
 						.fillMaxSize(),
+					state = lazyListStates[pageIndex],
 				) {
-					items(pagerViewModel.pages[pageIndex]) { item ->
+					items(pagerViewModel.readonlyPages[pageIndex]) { item ->
 						itemContent(item)
 					}
 				}
+				// TODO it should be impossible to get null here
+				// lazyListStates.getOrNull(pageIndex)?.let { lazyListState ->
+				// } ?: Box(
+				// 	modifier = Modifier
+				// 		.fillMaxSize()
+				// 		.verticalScroll(rememberScrollState()),
+				// )
 			} ?: run {
 				LaunchedEffect(
 					pagerViewModel,
 					refreshing,
-					pagerState,
 				) {
+					refreshing && return@LaunchedEffect
 					pagerViewModel.loadPage()
 				}
 				Box(
@@ -196,6 +284,9 @@ fun <T> VerticalScrollChannelPager(
 	itemsProducer: suspend ProducerScope<T>.() -> Unit,
 	key: String?,
 	pageSize: Int,
+	initialItemIndex: Int,
+	initialItemScrollOffset: Int,
+	saveItemPosition: (Int, Int) -> Unit,
 	refresh: suspend CoroutineScope.() -> Unit,
 	modifier: Modifier = Modifier,
 	itemContent: @Composable (T) -> Unit,
@@ -204,6 +295,53 @@ fun <T> VerticalScrollChannelPager(
 		key = key,
 	) {
 		ChannelPagerViewModel(itemsProducer, pageSize)
+	}
+	Log.d("VerticalScrollChannelPager", "rememberLazyListState($initialItemIndex, $initialItemScrollOffset)")
+	val lazyListState = rememberLazyListState(
+		initialItemIndex,
+		initialItemScrollOffset,
+	)
+	LaunchedEffect(pagerViewModel) {
+		pagerViewModel.viewModelScope.launch {
+			// completed TODO load until `initialItemIndex`
+			var lastPageFirstItemIndex = 0
+			while (!pagerViewModel.ended && initialItemIndex >= pagerViewModel.readonlyItems.size.also { lastPageFirstItemIndex = it }) {
+				pagerViewModel.loadPage()
+				// use part jump to simulate animate scroll, or say to make it look like on the way jumping to the initial index
+				Log.d("VerticalScrollChannelPager", "scrollToItem($initialItemIndex, 0) at loadPage()")
+				lazyListState.scrollToItem(lastPageFirstItemIndex)
+			}
+			Log.d("VerticalScrollChannelPager", "scrollToItem($initialItemIndex, $initialItemScrollOffset) at LaunchedEffect(pagerViewModel) end")
+			lazyListState.scrollToItem(initialItemIndex, initialItemScrollOffset)
+		}
+	}
+	// optional TODO `animateScrollToItem` or speed costumed `scrollBy`. They are both laggy
+	/*
+	LaunchedEffect(targetItemIndex) {
+		delay(2048)
+		val costumedSpeed = false
+		if (costumedSpeed) {
+			var indexDiff: Int
+			while ((targetItemIndex - lazyListState.firstVisibleItemIndex).also { indexDiff = it } > 0) {
+				lazyListState.animateScrollBy(indexDiff * 64F)
+			}
+		} else {
+			lazyListState.animateScrollToItem(targetItemIndex)
+		}
+	}
+	 */
+	DisposableEffect(Unit) {
+		onDispose {
+			val itemIndex = lazyListState.firstVisibleItemIndex
+			val itemScrollOffset = lazyListState.firstVisibleItemScrollOffset
+			Log.d(
+				"VerticalScrollChannelPager",
+				"save $itemIndex $itemScrollOffset (${
+					pagerViewModel.readonlyItems[lazyListState.firstVisibleItemIndex].toString().substringBefore(',')
+				})})",
+			)
+			saveItemPosition(itemIndex, itemScrollOffset)
+		}
 	}
 
 	var refreshing by remember { mutableStateOf(false) }
@@ -221,13 +359,12 @@ fun <T> VerticalScrollChannelPager(
 		},
 		modifier = modifier,
 	) {
-		val lazyListState = rememberLazyListState()
 		LazyColumn(
 			modifier = Modifier
 				.fillMaxSize(),
 			state = lazyListState,
 		) {
-			items(pagerViewModel.pages.flatten()) { item ->
+			items(pagerViewModel.readonlyItems) { item ->
 				itemContent(item)
 			}
 			item {

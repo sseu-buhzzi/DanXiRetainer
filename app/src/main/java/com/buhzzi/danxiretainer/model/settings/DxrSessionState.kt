@@ -5,10 +5,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DxrSessionState(
 	val holeId: Long? = null,
+	val pagerHoleIndex: Int? = null,
+	val pagerHoleScrollOffset: Int? = null,
 	val forumApiTimeOfHoles: String? = null,
-	val forumApiTimeOfFloors: String? = null,
 ) {
 	val holeIdNotNull get() = checkNotNull(holeId) { this }
+	val pagerHoleIndexNotNull get() = checkNotNull(pagerHoleIndex) { this }
+	val pagerHoleScrollOffsetNotNull get() = checkNotNull(pagerHoleScrollOffset) { this }
 	val forumApiTimeOfHolesNotNull get() = checkNotNull(forumApiTimeOfHoles) { this }
-	val forumApiTimeOfFloorsNotNull get() = checkNotNull(forumApiTimeOfFloors) { this }
 }

@@ -2,6 +2,7 @@ package com.buhzzi.danxiretainer.repository.retention
 
 import android.app.Application
 import android.content.Context
+import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
@@ -13,6 +14,7 @@ import com.buhzzi.danxiretainer.util.floorIndicesPathOf
 import com.buhzzi.danxiretainer.util.floorPathOf
 import com.buhzzi.danxiretainer.util.holeIndicesPathOf
 import com.buhzzi.danxiretainer.util.holePathOf
+import com.buhzzi.danxiretainer.util.holeSessionStatePathOf
 import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
 import com.buhzzi.danxiretainer.util.tagPathOf
 import com.buhzzi.danxiretainer.util.tagsDirPathOf
@@ -313,6 +315,7 @@ object DxrRetention {
 		}
 	}
 
+	// TODO clear session states, in `RetentionPage`
 	fun storeSessionState(userId: Long, sessionState: DxrSessionState) {
 		writeRetainedJson(app.sessionStateCurrentPathOf(userId), dxrJson.encodeToJsonElement(sessionState))
 	}
@@ -329,6 +332,24 @@ object DxrRetention {
 	fun updateSessionState(userId: Long, update: DxrSessionState.() -> DxrSessionState) {
 		val sessionState = loadSessionState(userId) ?: DxrSessionState()
 		storeSessionState(userId, sessionState.update())
+	}
+
+	fun storeHoleSessionState(userId: Long, holeId: Long, holeSessionState: DxrHoleSessionState) {
+		writeRetainedJson(app.holeSessionStatePathOf(userId, holeId), dxrJson.encodeToJsonElement(holeSessionState))
+	}
+
+	fun loadHoleSessionState(userId: Long, holeId: Long): DxrHoleSessionState? {
+		val path = app.holeSessionStatePathOf(userId, holeId)
+		if (path.notExists()) {
+			path.createParentDirectories().createFile()
+		}
+		val json = readRetainedJson(path) as? JsonObject ?: return null
+		return dxrJson.decodeFromJsonElement(json)
+	}
+
+	fun updateHoleSessionState(userId: Long, holeId: Long, update: DxrHoleSessionState.() -> DxrHoleSessionState) {
+		val holeSessionState = loadHoleSessionState(userId, holeId) ?: DxrHoleSessionState()
+		storeHoleSessionState(userId, holeId, holeSessionState.update())
 	}
 
 	private fun writeRetainedTsv(path: Path, entries: Sequence<Pair<String, Any?>>) = path.bufferedWriter().use { writer ->

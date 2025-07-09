@@ -1,6 +1,7 @@
 package com.buhzzi.danxiretainer.page.forum
 
 import android.os.FileObserver
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -46,7 +47,7 @@ import com.buhzzi.danxiretainer.model.settings.DxrContentSource
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
 import com.buhzzi.danxiretainer.page.LocalSnackbarController
-import com.buhzzi.danxiretainer.page.runBlockingOrShowSnackbarMessage
+import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
@@ -148,7 +149,7 @@ fun ForumPageTopBar() {
 			if (sessionState?.holeId != null) {
 				fun goBackToForumHolesPage() {
 					scope.launch(Dispatchers.IO) {
-						runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+						runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 							val userId = checkNotNull(userProfile) { "No user profile" }.userIdNotNull
 							DxrRetention.updateSessionState(userId) {
 								copy(
@@ -257,29 +258,38 @@ private fun ForumApiHolesPager(userId: Long) {
 
 	ChannelPager(
 		{
-			launch(Dispatchers.IO) {
-				runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-					var startTime = forumApiTimeOfHoles
-					val loadLength = 10
-					val sortOrder = DxrSettings.Models.sortOrder ?: return@runBlockingOrShowSnackbarMessage
+			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+				var startTime = forumApiTimeOfHoles
+				val loadLength = 10
+				val sortOrder = DxrSettings.Models.sortOrder ?: return@runCatchingOnSnackbar
 
-					while (true) {
-						DxrForumApi.ensureAuth()
-						val holes = DxrForumApi.loadHoles(
-							startTime,
-							null,
-							length = loadLength.toLong(),
-							sortOrder = sortOrder,
-						)
-						holes.forEach { hole -> send(hole) }
-						holes.size < loadLength && break
-						startTime = holes.last().getSortingDateTime(sortOrder)
-					}
+				while (true) {
+					DxrForumApi.ensureAuth()
+					val holes = DxrForumApi.loadHoles(
+						startTime,
+						null,
+						length = loadLength.toLong(),
+						sortOrder = sortOrder,
+					)
+					holes.forEach { hole -> send(hole) }
+					holes.size < loadLength && break
+					startTime = holes.last().getSortingDateTime(sortOrder)
 				}
 			}
 		},
 		"forumApiHolesPager&userId=$userId&timeKey=$forumApiTimeOfHoles",
 		16,
+		sessionState.pagerHoleIndex ?: 0,
+		sessionState.pagerHoleScrollOffset ?: 0,
+		{ holeIndex, holeScrollOffset ->
+			// untested TODO save it to session state
+			DxrRetention.updateSessionState(userId) {
+				copy(
+					pagerHoleIndex = holeIndex,
+					pagerHoleScrollOffset = holeScrollOffset,
+				)
+			}
+		},
 		{
 			DxrRetention.updateSessionState(userId) {
 				copy(
@@ -298,6 +308,7 @@ private fun ForumApiHolesPager(userId: Long) {
 private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 	val snackbarController = LocalSnackbarController.current
 	val sessionState = LocalSessionState.current ?: return
+	val holeSessionState = DxrRetention.loadHoleSessionState(userId, holeId)
 
 	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
 
@@ -306,31 +317,41 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 	ChannelPager(
 		{
 			// TODO reversed floors, also for retention
-			launch(Dispatchers.IO) {
-				runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+				DxrForumApi.ensureAuth()
+				val hole = DxrForumApi.loadHoleById(holeId)
+				Log.d("ForumApiFloorsPager", "loadHoleById($holeId)")
+
+				var startFloorIndex = 0
+				val loadLength = 50
+
+				do {
 					DxrForumApi.ensureAuth()
-					val hole = DxrForumApi.loadHoleById(holeId)
-
-					var startFloorIndex = 0
-					val loadLength = 50
-
-					do {
-						DxrForumApi.ensureAuth()
-						val floors = DxrForumApi.loadFloors(
-							hole,
-							startFloor = startFloorIndex.toLong(),
-							length = loadLength.toLong(),
-						)
-						floors.forEachIndexed { index, floor ->
-							send(Triple(floor, hole, startFloorIndex + index))
-						}
-						startFloorIndex += floors.size
-					} while (floors.size >= loadLength)
-				}
+					val floors = DxrForumApi.loadFloors(
+						hole,
+						startFloor = startFloorIndex.toLong(),
+						length = loadLength.toLong(),
+					)
+					floors.forEachIndexed { index, floor ->
+						send(Triple(floor, hole, startFloorIndex + index))
+					}
+					startFloorIndex += floors.size
+				} while (floors.size >= loadLength)
 			}
 		},
 		"forumApiFloorsPager&userId=$userId&holeId=$holeId&timeKey=$timeKey",
 		16,
+		holeSessionState?.pagerFloorIndex ?: 0,
+		holeSessionState?.pagerFloorScrollOffset ?: 0,
+		{ floorIndex, floorScrollOffset ->
+			// untested TODO save it to session state of the hole
+			DxrRetention.updateHoleSessionState(userId, holeId) {
+				copy(
+					pagerFloorIndex = floorIndex,
+					pagerFloorScrollOffset = floorScrollOffset,
+				)
+			}
+		},
 		{
 			DxrRetention.updateSessionState(userId) {
 				copy(
@@ -374,13 +395,20 @@ private fun RetentionHolesPager(userId: Long) {
 
 	ChannelPager(
 		{
-			val holeSequence = DxrRetention.loadHoleSequenceByUpdate(userId)
-			holeSequence.forEach { hole -> send(hole) }
+			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+				val holeSequence = DxrRetention.loadHoleSequenceByUpdate(userId)
+				holeSequence.forEach { hole -> send(hole) }
+			}
 		},
 		"retentionHolesPager&usersId=$userId&timeKey=$timeKey",
 		16,
+		0, // TODO
+		0,
+		{ holeIndex, holeScrollOffset ->
+			// TODO
+		},
 		{
-			runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 				DxrRetention.storeForExample()
 			}
 		},
@@ -420,21 +448,24 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 
 	ChannelPager(
 		{
-			launch(Dispatchers.IO) {
-				runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-					val hole = requireNotNull(DxrRetention.loadHole(userId, holeId)) { "DxrRetention.loadHole($userId, $holeId) failed" }
+			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+				val hole = requireNotNull(DxrRetention.loadHole(userId, holeId)) { "DxrRetention.loadHole($userId, $holeId) failed" }
 
-					DxrRetention.loadFloorSequence(userId, holeId)
-						.forEachIndexed { index, floor ->
-							send(Triple(floor, hole, index))
-						}
-				}
+				DxrRetention.loadFloorSequence(userId, holeId)
+					.forEachIndexed { index, floor ->
+						send(Triple(floor, hole, index))
+					}
 			}
 		},
 		"retentionFloorsPager&userId=$userId&holeId=$holeId&timeKey=$timeKey",
 		16,
+		1820, // TODO
+		0,
+		{ floorIndex, floorScrollOffset ->
+			// TODO
+		},
 		{
-			runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 				DxrRetention.storeForExample()
 			}
 		},

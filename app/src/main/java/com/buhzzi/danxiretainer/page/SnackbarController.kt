@@ -8,9 +8,6 @@ import androidx.compose.runtime.compositionLocalOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 class SnackbarController(
 	private val snackbarHostState: SnackbarHostState,
@@ -25,7 +22,7 @@ class SnackbarController(
 			SnackbarDuration.Short
 		} else {
 			SnackbarDuration.Indefinite
-		}
+		},
 	) {
 		mainScope.launch {
 			snackbarHostState.showSnackbar(
@@ -48,16 +45,13 @@ val LocalSnackbarController = compositionLocalOf<SnackbarController> {
 	error("SnackbarController not provided")
 }
 
-fun CoroutineScope.runBlockingOrShowSnackbarMessage(
+suspend fun CoroutineScope.runCatchingOnSnackbar(
 	snackbarController: SnackbarController,
 	lazyMessage: (Throwable) -> String,
-	context: CoroutineContext = EmptyCoroutineContext,
 	block: suspend CoroutineScope.() -> Unit,
-) = runBlocking(context) {
-	runCatching {
-		block()
-	}.getOrElse { exception ->
-		Log.e("runBlockingOrShowSnackbarMessage", "exception: $exception\nstacktrace:\n${exception.stackTraceToString()}")
-		snackbarController.show(lazyMessage(exception))
-	}
+) = runCatching {
+	block()
+}.getOrElse { exception ->
+	Log.e("runBlockingOrShowSnackbarMessage", "exception: $exception\nstacktrace:\n${exception.stackTraceToString()}")
+	snackbarController.show(lazyMessage(exception))
 }

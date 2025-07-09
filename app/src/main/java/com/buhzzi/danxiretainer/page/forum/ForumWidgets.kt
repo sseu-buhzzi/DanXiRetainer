@@ -1,5 +1,6 @@
 package com.buhzzi.danxiretainer.page.forum
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -52,7 +53,7 @@ import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.LocalSnackbarController
 import com.buhzzi.danxiretainer.page.retension.RetentionPageContent
 import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
-import com.buhzzi.danxiretainer.page.runBlockingOrShowSnackbarMessage
+import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.page.settings.SettingsPageContent
 import com.buhzzi.danxiretainer.page.settings.SettingsPageTopBar
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
@@ -61,7 +62,6 @@ import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
 import com.buhzzi.danxiretainer.util.sessionStateDirPathOf
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
-import com.buhzzi.danxiretainer.util.toStringRfc3339
 import dart.dan_xi.model.forum.OtFloor
 import dart.dan_xi.model.forum.OtHole
 import dart.dan_xi.model.forum.OtTag
@@ -71,7 +71,6 @@ import dart.dan_xi.util.lightness
 import dart.dan_xi.util.withLightness
 import dart.flutter.src.material.Colors
 import kotlinx.coroutines.launch
-import java.time.OffsetDateTime
 import kotlin.io.path.createDirectories
 
 enum class ForumPages(
@@ -149,13 +148,12 @@ fun HoleCard(hole: OtHole) {
 			.padding(4.dp)
 			.clickable {
 				scope.launch {
-					runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+					runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 						val userId = checkNotNull(userProfile) { "No user profile" }.userIdNotNull
 						context.sessionStateDirPathOf(userId).createDirectories()
 						DxrRetention.updateSessionState(userId) {
 							copy(
 								holeId = hole.holeId,
-								forumApiTimeOfFloors = OffsetDateTime.now().toStringRfc3339(),
 							)
 						}
 					}
@@ -179,16 +177,22 @@ fun HoleCard(hole: OtHole) {
 						.padding(4.dp)
 						.clickable {
 							scope.launch {
-								runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+								runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 									val userId = checkNotNull(userProfile) { "No user profile" }.userIdNotNull
 									context.sessionStateDirPathOf(userId).createDirectories()
 									DxrRetention.updateSessionState(userId) {
 										copy(
 											holeId = hole.holeId,
-											forumApiTimeOfFloors = OffsetDateTime.now().toStringRfc3339(),
 										)
 									}
-									// TODO revert floors
+									Log.d("System.out", "updateHoleSessionState($userId, ${hole.holeIdNotNull})")
+									DxrRetention.updateHoleSessionState(userId, hole.holeIdNotNull) {
+										copy(
+											pagerFloorIndex = hole.floorsCount.toInt() - 1,
+											pagerFloorScrollOffset = 0,
+										)
+									}
+									// optional TODO revert floors or load until the end
 								}
 							}
 						},
@@ -275,7 +279,6 @@ fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
 			modifier = Modifier
 				.padding(8.dp),
 		) {
-			// TODO optional
 			if (floorIndex == 0) {
 				TagChipsRow(hole.tagsNotNull)
 			}
@@ -291,6 +294,7 @@ fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
 				)
 				ActionsRow(floor)
 			}
+			// TODO Markdown and mentions
 			Text(
 				floor.filteredContentNotNull,
 			)
@@ -469,7 +473,7 @@ fun ActionsRow(
 			liked,
 			{
 				scope.launch {
-					runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+					runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 						val updatedFloor = DxrForumApi.likeFloor(
 							floor.floorIdNotNull,
 							if (liked) 0 else 1,
@@ -508,7 +512,7 @@ fun ActionsRow(
 			disliked,
 			{
 				scope.launch {
-					runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+					runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 						val updatedFloor = DxrForumApi.likeFloor(
 							floor.floorIdNotNull,
 							if (disliked) 0 else -1,

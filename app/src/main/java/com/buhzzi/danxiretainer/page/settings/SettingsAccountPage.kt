@@ -49,7 +49,7 @@ import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.DxrDestination
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
 import com.buhzzi.danxiretainer.page.LocalSnackbarController
-import com.buhzzi.danxiretainer.page.runBlockingOrShowSnackbarMessage
+import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.accessJwt
@@ -190,7 +190,7 @@ fun SettingsAccountPage() {
 				Button(
 					{
 						scope.launch(Dispatchers.IO) {
-							runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+							runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 								val jwToken = DxrForumApi.authLogIn(
 									checkNotNull(email) { "No email" },
 									androidKeyStoreDecrypt(checkNotNull(passwordCt) { "No password" }.toBytesBase64()).toStringUtf8(),
@@ -207,7 +207,7 @@ fun SettingsAccountPage() {
 				Button(
 					{
 						scope.launch(Dispatchers.IO) {
-							runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+							runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 								val jwToken = DxrForumApi.authRefresh(checkNotNull(refreshJwt) { "No refresh JWT" })
 								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt == true)
 							}

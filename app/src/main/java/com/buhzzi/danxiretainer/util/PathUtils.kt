@@ -53,3 +53,9 @@ fun Context.sessionStateDirPathOf(userId: Long) =
 
 fun Context.sessionStateCurrentPathOf(userId: Long) =
 	sessionStateDirPathOf(userId) / "current.json"
+
+fun Context.holeSessionStatesDirPathOf(userId: Long) =
+	sessionStateDirPathOf(userId) / "holes"
+
+fun Context.holeSessionStatePathOf(userId: Long, holeId: Long) =
+	holeSessionStatesDirPathOf(userId) / "$holeId.json"
