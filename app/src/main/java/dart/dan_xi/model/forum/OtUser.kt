@@ -37,6 +37,16 @@ data class OtUser(
 	val isAdmin: Boolean? = null,
 	val hasAnsweredQuestions: Boolean? = null,
 ) {
+	val userIdNotNull get() = checkNotNull(userId) { this }
+	val nicknameNotNull get() = checkNotNull(nickname) { this }
+	val favoritesNotNull get() = checkNotNull(favorites) { this }
+	val subscriptionsNotNull get() = checkNotNull(subscriptions) { this }
+	val permissionNotNull get() = checkNotNull(permission) { this }
+	val configNotNull get() = checkNotNull(config) { this }
+	val joinedTimeNotNull get() = checkNotNull(joinedTime) { this }
+	val isAdminNotNull get() = checkNotNull(isAdmin) { this }
+	val hasAnsweredQuestionsNotNull get() = checkNotNull(hasAnsweredQuestions) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	override fun equals(other: Any?) = other is OtUser && userId == other.userId

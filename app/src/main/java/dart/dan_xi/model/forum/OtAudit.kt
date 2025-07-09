@@ -36,6 +36,12 @@ data class OtAudit(
 	val timeUpdated: String? = null,
 	val sensitiveDetail: String? = null,
 ) {
+	val isActualSensitiveNotNull get() = checkNotNull(isActualSensitive) { this }
+	val modifiedNotNull get() = checkNotNull(modified) { this }
+	val timeCreatedNotNull get() = checkNotNull(timeCreated) { this }
+	val timeUpdatedNotNull get() = checkNotNull(timeUpdated) { this }
+	val sensitiveDetailNotNull get() = checkNotNull(sensitiveDetail) { this }
+
 	val processed get() = OtAudit(
 		content = "已處理",
 		holeId = holeId,

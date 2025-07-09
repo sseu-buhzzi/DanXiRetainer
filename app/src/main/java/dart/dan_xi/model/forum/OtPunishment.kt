@@ -40,6 +40,19 @@ data class OtPunishment(
 	val startTime: String? = null,
 	val userId: Long? = null,
 ) {
+	val createdAtNotNull get() = checkNotNull(createdAt) { this }
+	val deletedAtNotNull get() = checkNotNull(deletedAt) { this }
+	val divisionIdNotNull get() = checkNotNull(divisionId) { this }
+	val durationNotNull get() = checkNotNull(duration) { this }
+	val endTimeNotNull get() = checkNotNull(endTime) { this }
+	val floorNotNull get() = checkNotNull(floor) { this }
+	val floorIdNotNull get() = checkNotNull(floorId) { this }
+	val idNotNull get() = checkNotNull(id) { this }
+	val madeByNotNull get() = checkNotNull(madeBy) { this }
+	val reasonNotNull get() = checkNotNull(reason) { this }
+	val startTimeNotNull get() = checkNotNull(startTime) { this }
+	val userIdNotNull get() = checkNotNull(userId) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	companion object {

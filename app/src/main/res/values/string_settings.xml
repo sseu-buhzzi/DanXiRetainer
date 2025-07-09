@@ -53,4 +53,5 @@
 	<string name="background_image_error_decoding_label">解碼圖像出錯</string>
 	<string name="content_sources_label">內容源</string>
 	<string name="sort_order_label">排序依據</string>
+	<string name="pager_scroll_orientation_label">分頁滾動方向</string>
 </resources>

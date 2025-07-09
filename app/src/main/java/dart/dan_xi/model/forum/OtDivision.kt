@@ -32,6 +32,11 @@ data class OtDivision(
 	val description: String? = null,
 	val pinned: List<OtHole>? = null,
 ) {
+	val divisionIdNotNull get() = checkNotNull(divisionId) { this }
+	val nameNotNull get() = checkNotNull(name) { this }
+	val descriptionNotNull get() = checkNotNull(description) { this }
+	val pinnedNotNull get() = checkNotNull(pinned) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	override operator fun equals(other: Any?) =

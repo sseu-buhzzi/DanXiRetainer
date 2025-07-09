@@ -1,10 +1,11 @@
 package com.buhzzi.danxiretainer.util
 
 import android.content.Context
+import java.nio.file.Path
 import kotlin.io.path.div
 
-val Context.filesDirPath get() =
-	checkNotNull(filesDir.toPath())
+val Context.filesDirPath: Path get() =
+	filesDir.toPath()
 
 val Context.usersDirPath get() =
 	filesDirPath / "users"

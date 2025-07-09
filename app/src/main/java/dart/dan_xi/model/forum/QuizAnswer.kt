@@ -21,7 +21,6 @@ package dart.dan_xi.model.forum
 
 import com.buhzzi.danxiretainer.util.dxrJson
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -32,6 +31,9 @@ data class QuizAnswer(
 	val answer: List<String>? = null,
 	val id: Long? = null,
 ) {
+	val answerNotNull get() = checkNotNull(answer) { this }
+	val idNotNull get() = checkNotNull(id) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	companion object {

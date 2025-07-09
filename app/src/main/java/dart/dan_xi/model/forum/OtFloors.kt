@@ -30,6 +30,9 @@ data class OtFloors(
 	val firstFloor: OtFloor? = null,
 	val lastFloor: OtFloor? = null,
 ) {
+	val firstFloorNotNull get() = checkNotNull(firstFloor) { this }
+	val lastFloorNotNull get() = checkNotNull(lastFloor) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	companion object {

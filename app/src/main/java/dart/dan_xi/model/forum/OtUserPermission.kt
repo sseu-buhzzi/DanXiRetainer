@@ -30,6 +30,9 @@ data class OtUserPermission(
 	val silent: Map<Int, String>? = null,
 	val admin: String? = null,
 ) {
+	val silentNotNull get() = checkNotNull(silent) { this }
+	val adminNotNull get() = checkNotNull(admin) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	companion object {

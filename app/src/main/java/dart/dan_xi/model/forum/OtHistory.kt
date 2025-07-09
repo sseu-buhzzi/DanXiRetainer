@@ -31,6 +31,10 @@ data class OtHistory(
 	val userId: Long? = null,
 	val timeUpdated: String? = null,
 ) {
+	val contentNotNull get() = checkNotNull(content) { this }
+	val userIdNotNull get() = checkNotNull(userId) { this }
+	val timeUpdatedNotNull get() = checkNotNull(timeUpdated) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	companion object {

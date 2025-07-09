@@ -98,9 +98,7 @@ object DxrRetention {
 			}
 		}
 
-		val userId = requireNotNull(
-			DxrSettings.Models.userProfile?.userId,
-		)
+		val userId = checkNotNull(DxrSettings.Models.userProfile) { "No user profile" }.userIdNotNull
 		storeHolesAndUpdateIndices(userId, holes)
 		storeFloorsAndUpdateIndices(userId, floors)
 		app.tagsDirPathOf(userId).createDirectories()
@@ -115,7 +113,7 @@ object DxrRetention {
 		loadIndices(indicesPath).apply {
 			holes.forEach { hole ->
 				storeHole(userId, hole)
-				add(requireNotNull(hole.holeId).toInt().let { Range.closedOpen(it, it + 1) })
+				add(hole.holeIdNotNull.toInt().let { Range.closedOpen(it, it + 1) })
 			}
 		}.let { storeIndices(indicesPath, it) }
 	}
@@ -125,7 +123,7 @@ object DxrRetention {
 		loadIndices(indicesPath).apply {
 			floors.forEach { floor ->
 				storeFloor(userId, floor)
-				add(requireNotNull(floor.floorId).toInt().let { Range.closedOpen(it, it + 1) })
+				add(floor.floorIdNotNull.toInt().let { Range.closedOpen(it, it + 1) })
 			}
 		}.let { storeIndices(indicesPath, it) }
 	}

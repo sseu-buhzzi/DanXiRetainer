@@ -56,8 +56,8 @@ fun CoroutineScope.runBlockingOrShowSnackbarMessage(
 ) = runBlocking(context) {
 	runCatching {
 		block()
-	}.getOrElse { cause ->
-		Log.e("runBlockingOrShowSnackbarMessage", "cause: $cause\nstacktrace:\n${cause.stackTraceToString()}")
-		snackbarController.show(lazyMessage(cause))
+	}.getOrElse { exception ->
+		Log.e("runBlockingOrShowSnackbarMessage", "exception: $exception\nstacktrace:\n${exception.stackTraceToString()}")
+		snackbarController.show(lazyMessage(exception))
 	}
 }

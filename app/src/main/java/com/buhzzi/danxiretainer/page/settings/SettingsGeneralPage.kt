@@ -16,12 +16,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
+import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.cleanMode
 import com.buhzzi.danxiretainer.repository.settings.cleanModeFlow
 import com.buhzzi.danxiretainer.repository.settings.contentSource
 import com.buhzzi.danxiretainer.repository.settings.contentSourceFlow
+import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientation
+import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationFlow
 import com.buhzzi.danxiretainer.repository.settings.sortOrder
 import com.buhzzi.danxiretainer.repository.settings.sortOrderFlow
 import dart.dan_xi.provider.SortOrder
@@ -104,6 +107,33 @@ fun SettingsGeneralPage() {
 				Icons.Default.MoreHoriz,
 			) { selection ->
 				selection?.let { sortOrderActions[it]() } == true
+			}
+
+			val pagerScrollOrientation by DxrSettings.Models.pagerScrollOrientationFlow.collectAsState(null)
+			val pagerScrollOrientations = listOf(
+				"Horizontal",
+				"Vertical",
+			)
+			val pagerScrollOrientationActions = listOf(
+				{
+					DxrSettings.Models.pagerScrollOrientation = DxrPagerScrollOrientation.HORIZONTAL
+					true
+				},
+				{
+					DxrSettings.Models.pagerScrollOrientation = DxrPagerScrollOrientation.VERTICAL
+					true
+				},
+			)
+			SingleSelectListItem(
+				pagerScrollOrientations,
+				pagerScrollOrientation?.ordinal ?: 0,
+				stringResource(R.string.pager_scroll_orientation_label),
+				settingsValueStringResource(
+					pagerScrollOrientation?.ordinal?.let { pagerScrollOrientations[it] },
+				),
+				Icons.Default.MoreHoriz,
+			) { selection ->
+				selection?.let { pagerScrollOrientationActions[it]() } == true
 			}
 		}
 	}

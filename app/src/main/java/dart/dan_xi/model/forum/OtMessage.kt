@@ -38,6 +38,14 @@ data class OtMessage(
 	val data: JsonObject? = null,
 	val description: String? = null,
 ) {
+	val messageIdNotNull get() = checkNotNull(messageId) { this }
+	val messageNotNull get() = checkNotNull(message) { this }
+	val codeNotNull get() = checkNotNull(code) { this }
+	val timeCreatedNotNull get() = checkNotNull(timeCreated) { this }
+	val hasReadNotNull get() = checkNotNull(hasRead) { this }
+	val dataNotNull get() = checkNotNull(data) { this }
+	val descriptionNotNull get() = checkNotNull(description) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	override fun equals(other: Any?) = other is OtMessage && messageId == other.messageId

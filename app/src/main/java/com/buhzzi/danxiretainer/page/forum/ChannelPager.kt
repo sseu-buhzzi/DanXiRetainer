@@ -1,14 +1,10 @@
 package com.buhzzi.danxiretainer.page.forum
 
-import android.annotation.SuppressLint
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,124 +19,100 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.buhzzi.danxiretainer.util.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private class BidirectionalChannelPagerViewModel<T>(
-	backwardProducer: suspend ProducerScope<T>.() -> Unit,
-	forwardProducer: suspend ProducerScope<T>.() -> Unit,
+private class ChannelPagerViewModel<T>(
+	itemsProducer: suspend ProducerScope<T>.() -> Unit,
 	private val pageSize: Int,
 ) : ViewModel() {
 	@Deprecated("Only for debugging")
 	private var loadCount = 0
 
 	@OptIn(ExperimentalCoroutinesApi::class)
-	private val itemChannels = listOf(
-		viewModelScope.produce(capacity = 0, block = backwardProducer),
-		viewModelScope.produce(capacity = 0, block = forwardProducer),
-	)
+	private val itemsChannel = viewModelScope.produce(capacity = 0) {
+		runCatching {
+			itemsProducer()
+		}.getOrElse { exception ->
+			ended = true
+			throw exception
+		}
+	}
 
-	@SuppressLint("MutableCollectionMutableState")
-	private val cachedPagesRefState = mutableStateOf(Singleton(ArrayDeque<List<T>>()))
-	val pages: ArrayDeque<List<T>>
-		get() = cachedPagesRefState.value.`object`
+	private val cachedPages = mutableStateListOf<List<T>>()
+	val pages get() = cachedPages.toList()
 
-	private val loadingList = mutableStateListOf(false, false)
-	val loadingBackward get() = loadingList[0]
-	val loadingForward get() = loadingList[1]
+	var loading by mutableStateOf(false)
+		private set
+	var ended by mutableStateOf(false)
+		private set
 
-	private val endedList = mutableStateListOf(false, false)
-	val endedBackward get() = endedList[0]
-	val endedForward get() = endedList[1]
+	fun reachedEnd(pageIndex: Int) = ended && pageIndex >= pages.lastIndex
 
-	fun reachedBackwardEnd(pageIndex: Int) = endedList[0] && pageIndex <= 0
-	fun reachedForwardEnd(pageIndex: Int) = endedList[1] && pageIndex >= pages.lastIndex
-
-	suspend fun loadPage(backward: Boolean) {
+	suspend fun loadPage() {
 		val loadIndex = loadCount++
 
-		val directionInt = if (backward) 0 else 1
-		endedList[directionInt] && return
+		ended && return
 
-		println("$loadIndex: loadPage($backward) $loadingBackward $loadingForward")
-		loadingList[directionInt] && return
-		runCatching {
-			loadingList[directionInt] = true
+		println("$loadIndex: $loading")
+		loading && return
+		val exception = runCatching {
+			loading = true
 
 			// TODO emulate network delay, delete it
-			when (directionInt) {
-				0 -> delay(0)
-				1 -> delay(1024)
-			}
-			println("$loadIndex: -> $loadingBackward $loadingForward")
+			// delay(1024)
+			println("$loadIndex: -> $loading")
 			val items = buildList {
 				repeat(pageSize) {
-					val hole = itemChannels[directionInt].receiveCatching().getOrNull() ?: run {
-						endedList[directionInt] = true
-						return@buildList
-					}
+					val hole = itemsChannel.receiveCatching().getOrNull() ?: return@buildList
 					add(hole)
 				}
 			}
 			println("$loadIndex:, ${items.size}")
 			if (items.isNotEmpty()) {
-				if (backward) {
-					pages.addFirst(items.asReversed())
-				} else {
-					pages.addLast(items)
-				}
-				cachedPagesRefState.value = Singleton(pages)
+				cachedPages.add(items)
 			}
 			println("$loadIndex: ${items.size}, ${pages.size}")
-		}.getOrElse { cause ->
-			println("$loadIndex: ${cause.message}")
-		}
-		loadingList[directionInt] = false
-		println("$loadIndex: $loadingBackward $loadingForward ->")
+		}.exceptionOrNull()
+		loading = false
+		println("$loadIndex: $loading ->")
+		exception?.let { throw it }
 	}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun <T> HorizontalBidirectionalChannelPager(
-	backwardProducer: suspend ProducerScope<T>.() -> Unit,
-	forwardProducer: suspend ProducerScope<T>.() -> Unit,
+fun <T> HorizontalScrollChannelPager(
+	itemsProducer: suspend ProducerScope<T>.() -> Unit,
 	key: String?,
 	pageSize: Int,
 	refresh: suspend CoroutineScope.() -> Unit,
 	modifier: Modifier = Modifier,
 	itemContent: @Composable (T) -> Unit,
 ) {
-	val pagerViewModel = viewModel<BidirectionalChannelPagerViewModel<T>>(
+	val pagerViewModel = viewModel<ChannelPagerViewModel<T>>(
 		key = key,
 	) {
-		BidirectionalChannelPagerViewModel(backwardProducer, forwardProducer, pageSize)
+		ChannelPagerViewModel(itemsProducer, pageSize)
 	}
 
 	var refreshing by remember { mutableStateOf(false) }
 
-	val pagerState = rememberPagerState(1) { pagerViewModel.pages.size + 2 }
+	val pagerState = rememberPagerState(1) { pagerViewModel.pages.size + 1 }
 	HorizontalPager(
 		pagerState,
 		modifier = modifier,
-	) { index ->
-		val pageIndex = index - 1
+	) { pageIndex ->
 		pagerViewModel.pages.getOrNull(pageIndex)?.let {
 			Column(
 				verticalArrangement = Arrangement.SpaceBetween,
@@ -169,25 +141,20 @@ fun <T> HorizontalBidirectionalChannelPager(
 				}
 			}
 		} ?: run {
-			val backward = pageIndex < 0
-			LaunchedEffect(pagerViewModel, pagerState) {
-				pagerViewModel.loadPage(backward)
+			LaunchedEffect(
+				pagerViewModel,
+				pagerState,
+			) {
+				pagerViewModel.loadPage()
 			}
 			Box(
 				modifier = Modifier
 					.fillMaxSize(),
 				contentAlignment = Alignment.Center,
 			) {
-				LinearProgressIndicator(
-					modifier = Modifier
-						.run {
-							if (backward) {
-								scale(-1F, 1F)
-							} else {
-								this
-							}
-						},
-				)
+				if (pagerViewModel.loading) {
+					LinearProgressIndicator()
+				}
 			}
 		}
 	}
@@ -195,21 +162,18 @@ fun <T> HorizontalBidirectionalChannelPager(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun <T> VerticalBidirectionalChannelPager(
-	backwardProducer: suspend ProducerScope<T>.() -> Unit,
-	forwardProducer: suspend ProducerScope<T>.() -> Unit,
+fun <T> VerticalScrollChannelPager(
+	itemsProducer: suspend ProducerScope<T>.() -> Unit,
 	key: String?,
 	pageSize: Int,
 	refresh: suspend CoroutineScope.() -> Unit,
 	modifier: Modifier = Modifier,
 	itemContent: @Composable (T) -> Unit,
 ) {
-	val scope = rememberCoroutineScope()
-
-	val pagerViewModel = viewModel<BidirectionalChannelPagerViewModel<T>>(
+	val pagerViewModel = viewModel<ChannelPagerViewModel<T>>(
 		key = key,
 	) {
-		BidirectionalChannelPagerViewModel(backwardProducer, forwardProducer, pageSize)
+		ChannelPagerViewModel(itemsProducer, pageSize)
 	}
 
 	var refreshing by remember { mutableStateOf(false) }
@@ -231,91 +195,27 @@ fun <T> VerticalBidirectionalChannelPager(
 			modifier = Modifier
 				.weight(1F),
 		) {
-			// It is here to get LazyColumn's height
-			BoxWithConstraints(
+			val lazyListState = rememberLazyListState()
+			LazyColumn(
 				modifier = Modifier
 					.fillMaxSize(),
+				state = lazyListState,
 			) {
-				val lazyColumnHeight = this.maxHeight
-
-				val lazyListState = rememberLazyListState(1)
-				LazyColumn(
-					modifier = Modifier
-						.fillMaxSize(),
-					state = lazyListState,
-				) {
-					item {
-						LaunchedEffect(
-							pagerViewModel,
-							lazyListState,
-							pagerViewModel.loadingForward,
-						) {
-							pagerViewModel.loadingForward && return@LaunchedEffect
-							val currentIndex = lazyListState.firstVisibleItemIndex
-							val currentScrollOffset = lazyListState.firstVisibleItemScrollOffset
-							println("lazyListState before ${lazyListState.firstVisibleItemIndex} ${lazyListState.firstVisibleItemScrollOffset}")
-							pagerViewModel.loadPage(true)
-							println("lazyListState after ${lazyListState.firstVisibleItemIndex} ${lazyListState.firstVisibleItemScrollOffset}")
-							// lazyListState.scrollToItem(
-							// 	3,
-							// 	lazyListState.firstVisibleItemScrollOffset,
-							// )
-							lazyListState.scrollToItem(
-								currentIndex + 1,
-								currentScrollOffset,
-							)
-						}
-						if (pagerViewModel.loadingBackward) {
-							LinearProgressIndicator(
-								modifier = Modifier
-									.fillMaxWidth()
-									.scale(-1F, 1F),
-							)
-						} else {
-							Box(
-								modifier = Modifier
-									.height(64.dp),
-								contentAlignment = Alignment.BottomCenter,
-							) {
-								LinearProgressIndicator(
-									{
-										1 - lazyListState.firstVisibleItemScrollOffset / 64F
-									},
-									modifier = Modifier
-										.fillMaxWidth(),
-								)
-							}
-						}
+				items(pagerViewModel.pages.flatten()) { item ->
+					itemContent(item)
+				}
+				item {
+					LaunchedEffect(
+						pagerViewModel,
+						lazyListState,
+					) {
+						pagerViewModel.loadPage()
 					}
-					items(pagerViewModel.pages) { page ->
-						Column(
+					if (pagerViewModel.loading) {
+						LinearProgressIndicator(
 							modifier = Modifier
-								.border(1.dp, Color.Red),
-						) {
-							page.forEach { item ->
-								itemContent(item)
-							}
-						}
-					}
-					item {
-						LaunchedEffect(
-							pagerViewModel,
-							lazyListState,
-							pagerViewModel.loadingBackward,
-						) {
-							pagerViewModel.loadingBackward && return@LaunchedEffect
-							pagerViewModel.loadPage(false)
-							lazyListState.scrollToItem(
-								pagerViewModel.pages.size,
-								lazyListState.firstVisibleItemScrollOffset,
-							)
-						}
-						if (pagerViewModel.loadingForward) {
-							LinearProgressIndicator(
-								modifier = Modifier
-									.fillMaxWidth(),
-							)
-						}
+								.fillMaxWidth(),
+						)
 					}
 				}
 			}

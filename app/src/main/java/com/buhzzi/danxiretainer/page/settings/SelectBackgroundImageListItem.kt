@@ -61,8 +61,8 @@ fun SelectBackgroundImageListItem() {
 			val bitmap = BitmapFactory.decodeStream(`in`)
 				?: error(errorDecodingLabel)
 			context.addBackgroundImage(bitmap)
-		}.getOrElse { cause ->
-			dialogState = DialogState.InformException(cause)
+		}.getOrElse { exception ->
+			dialogState = DialogState.InformException(exception)
 		}
 	}
 	val selectBackgroundImageLauncher = rememberLauncherForActivityResult(
@@ -103,8 +103,8 @@ fun SelectBackgroundImageListItem() {
 					TextButton({
 						runCatching {
 							context.removeBackgroundImage()
-						}.getOrElse { cause ->
-							dialogState = DialogState.InformException(cause)
+						}.getOrElse { exception ->
+							dialogState = DialogState.InformException(exception)
 						}
 						dialogState = null
 					}) {

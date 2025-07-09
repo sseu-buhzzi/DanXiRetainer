@@ -126,12 +126,8 @@ fun HoleCard(hole: OtHole) {
 
 	val userProfile by DxrSettings.Models.userProfileFlow.collectAsState(null)
 
-	val firstFloor = checkNotNull(hole.floors?.firstFloor) {
-		hole
-	}
-	val lastFloor = checkNotNull(hole.floors.lastFloor) {
-		hole
-	}
+	val firstFloor = hole.floorsNotNull.firstFloorNotNull
+	val lastFloor = hole.floorsNotNull.lastFloorNotNull
 
 	Surface(
 		modifier = Modifier
@@ -139,56 +135,27 @@ fun HoleCard(hole: OtHole) {
 			.clickable {
 				scope.launch {
 					runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-						val userId = checkNotNull(userProfile?.userId)
+						val userId = checkNotNull(userProfile) { "No user profile" }.userIdNotNull
 						context.sessionStateDirPathOf(userId).createDirectories()
 						DxrRetention.updateSessionState(userId) {
 							copy(
 								holeId = hole.holeId,
-								holeInitialFloorRank = 0,
 								forumApiTimeOfHoles = OffsetDateTime.now().toStringRfc3339(),
 							)
 						}
 					}
 				}
 			},
-		// TODO 驗證在有圖片背景時顯示正常
-		color = MaterialTheme.colorScheme.surface.copy(0.875F),
 		shadowElevation = 4.dp,
 	) {
 		Column(
 			modifier = Modifier
 				.padding(8.dp),
 		) {
-			TagChipRow(checkNotNull(hole.tags) {
-				hole
-			})
-			Row(
-				modifier = Modifier
-					.height(IntrinsicSize.Min)
-					.padding(4.dp),
-				horizontalArrangement = Arrangement.spacedBy(4.dp),
-				verticalAlignment = Alignment.CenterVertically,
-			) {
-				val systemInDarkTheme = isSystemInDarkTheme()
-				val anonynameColor = checkNotNull(firstFloor.anonyname) {
-					hole
-				}.hashColor(systemInDarkTheme) ?: Color.Red
-				VerticalDivider(
-					modifier = Modifier
-						.padding(4.dp),
-					thickness = 4.dp,
-					color = anonynameColor,
-				)
-				Text(
-					firstFloor.anonyname,
-					color = anonynameColor,
-					fontWeight = FontWeight.Bold,
-				)
-			}
+			TagChipsRow(hole.tagsNotNull)
+			AnonynameRow(firstFloor.anonynameNotNull, true)
 			Text(
-				checkNotNull(firstFloor.filteredContent) {
-					hole
-				},
+				firstFloor.filteredContentNotNull,
 			)
 			if (lastFloor != firstFloor) {
 				Row(
@@ -198,16 +165,15 @@ fun HoleCard(hole: OtHole) {
 						.clickable {
 							scope.launch {
 								runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-									val userId = checkNotNull(userProfile?.userId)
+									val userId = checkNotNull(userProfile) { "No user profile" }.userIdNotNull
 									context.sessionStateDirPathOf(userId).createDirectories()
 									DxrRetention.updateSessionState(userId) {
 										copy(
 											holeId = hole.holeId,
-											holeInitialFloorRank = hole.floorsCount + 1,
 											forumApiTimeOfHoles = OffsetDateTime.now().toStringRfc3339(),
 										)
 									}
-									// TODO 進入尾樓
+									// TODO revert floors
 								}
 							}
 						},
@@ -228,19 +194,13 @@ fun HoleCard(hole: OtHole) {
 						Text(
 							stringResource(
 								R.string.replied_on_label,
-								checkNotNull(lastFloor.anonyname) {
-									hole
-								},
-								HumanDuration.tryFormat(context, checkNotNull(lastFloor.timeCreated) {
-									hole
-								}.toDateTimeRfc3339()),
+								lastFloor.anonynameNotNull,
+								HumanDuration.tryFormat(context, lastFloor.timeCreatedNotNull.toDateTimeRfc3339()),
 							),
 							color = replyColor,
 						)
 						Text(
-							checkNotNull(lastFloor.filteredContent) {
-								hole
-							},
+							lastFloor.filteredContentNotNull,
 							color = replyColor,
 							fontSize = 14.sp,
 						)
@@ -256,18 +216,12 @@ fun HoleCard(hole: OtHole) {
 				val bottomLineColor = MaterialTheme.colorScheme.onSurfaceVariant
 				val bottomLineHeight = 12
 				Text(
-					"#${
-						checkNotNull(hole.holeId) {
-							hole
-						}
-					}",
+					"#${hole.holeIdNotNull}",
 					color = bottomLineColor,
 					fontSize = bottomLineHeight.sp,
 				)
 				Text(
-					HumanDuration.tryFormat(context, checkNotNull(hole.timeCreated) {
-						hole
-					}.toDateTimeRfc3339()),
+					HumanDuration.tryFormat(context, hole.timeCreatedNotNull.toDateTimeRfc3339()),
 					color = bottomLineColor,
 					fontSize = bottomLineHeight.sp,
 				)
@@ -275,11 +229,7 @@ fun HoleCard(hole: OtHole) {
 					verticalAlignment = Alignment.CenterVertically,
 				) {
 					Text(
-						"${
-							checkNotNull(hole.reply) {
-								hole
-							}
-						} ",
+						"${hole.replyNotNull} ",
 						color = bottomLineColor,
 						fontSize = bottomLineHeight.sp,
 					)
@@ -295,7 +245,7 @@ fun HoleCard(hole: OtHole) {
 }
 
 @Composable
-fun FloorCard(floor: OtFloor, hole: OtHole, rank: Int) {
+fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
 	val context = LocalContext.current
 
 	Surface(
@@ -304,14 +254,16 @@ fun FloorCard(floor: OtFloor, hole: OtHole, rank: Int) {
 			.clickable {
 
 			},
-		// TODO 驗證在有圖片背景時顯示正常
-		color = MaterialTheme.colorScheme.surface.copy(0.875F),
 		shadowElevation = 4.dp,
 	) {
 		Column(
 			modifier = Modifier
 				.padding(8.dp),
 		) {
+			// TODO optional
+			if (floorIndex == 0) {
+				TagChipsRow(hole.tagsNotNull)
+			}
 			Row(
 				modifier = Modifier
 					.height(IntrinsicSize.Min)
@@ -320,9 +272,7 @@ fun FloorCard(floor: OtFloor, hole: OtHole, rank: Int) {
 				verticalAlignment = Alignment.CenterVertically,
 			) {
 				val systemInDarkTheme = isSystemInDarkTheme()
-				val anonynameColor = checkNotNull(floor.anonyname) {
-					floor
-				}.hashColor(systemInDarkTheme) ?: Color.Red
+				val anonynameColor = floor.anonynameNotNull.hashColor(systemInDarkTheme) ?: Color.Red
 				VerticalDivider(
 					modifier = Modifier
 						.padding(4.dp),
@@ -349,15 +299,13 @@ fun FloorCard(floor: OtFloor, hole: OtHole, rank: Int) {
 					}
 				}
 				Text(
-					floor.anonyname,
+					floor.anonynameNotNull,
 					color = anonynameColor,
 					fontWeight = FontWeight.Bold,
 				)
 			}
 			Text(
-				checkNotNull(floor.filteredContent) {
-					floor
-				},
+				floor.filteredContentNotNull,
 			)
 			Row(
 				modifier = Modifier
@@ -369,23 +317,19 @@ fun FloorCard(floor: OtFloor, hole: OtHole, rank: Int) {
 				val bottomLineHeight = 12
 				Row {
 					Text(
-						"${rank + 1}F",
+						"${floorIndex + 1}F",
 						color = bottomLineColor,
 						fontSize = bottomLineHeight.sp
 					)
 					Text(
-						"(##${
-							checkNotNull(floor.floorId) {
-								floor
-							}
-						})",
+						"(##${floor.floorIdNotNull})",
 						modifier = Modifier
 							.padding(4.dp, 0.dp),
 						color = bottomLineColor,
 						fontSize = (bottomLineHeight - 2).sp,
 					)
 				}
-				checkNotNull(floor.modified).toInt().takeIf { it != 0 }?.let { modifiedTimes ->
+				floor.modifiedNotNull.toInt().takeIf { it != 0 }?.let { modifiedTimes ->
 					Text(
 						if (modifiedTimes == 1) {
 							stringResource(R.string.modified_label)
@@ -397,9 +341,7 @@ fun FloorCard(floor: OtFloor, hole: OtHole, rank: Int) {
 					)
 				}
 				Text(
-					HumanDuration.tryFormat(context, checkNotNull(floor.timeCreated) {
-						floor
-					}.toDateTimeRfc3339()),
+					HumanDuration.tryFormat(context, floor.timeCreatedNotNull.toDateTimeRfc3339()),
 					color = bottomLineColor,
 					fontSize = bottomLineHeight.sp,
 				)
@@ -409,7 +351,7 @@ fun FloorCard(floor: OtFloor, hole: OtHole, rank: Int) {
 }
 
 @Composable
-fun TagChipRow(tags: List<OtTag>) {
+fun TagChipsRow(tags: List<OtTag>) {
 	FlowRow(
 		modifier = Modifier
 			.fillMaxWidth(),
@@ -467,6 +409,50 @@ fun TagChip(
 			},
 			modifier = Modifier
 				.padding(4.dp, 0.dp),
+		)
+	}
+}
+
+@Composable
+fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
+	Row(
+		modifier = Modifier
+			.height(IntrinsicSize.Min)
+			.padding(4.dp),
+		horizontalArrangement = Arrangement.spacedBy(4.dp),
+		verticalAlignment = Alignment.CenterVertically,
+	) {
+		val systemInDarkTheme = isSystemInDarkTheme()
+		val anonynameColor = anonyname.hashColor(systemInDarkTheme) ?: Color.Red
+		VerticalDivider(
+			modifier = Modifier
+				.padding(4.dp),
+			thickness = 4.dp,
+			color = anonynameColor,
+		)
+		if (posterOriginal) {
+			Surface(
+				modifier = Modifier
+					.padding(2.dp),
+				shape = RoundedCornerShape(2.dp),
+				color = anonynameColor,
+				contentColor = Color.White,
+			) {
+				Text(
+					// TODO 可選項LZ・DZ・或OP
+					"LZ",
+					modifier = Modifier
+						.padding(4.dp, 0.dp),
+					fontSize = 14.sp,
+					fontWeight = FontWeight.Bold,
+					lineHeight = 16.sp,
+				)
+			}
+		}
+		Text(
+			anonyname,
+			color = anonynameColor,
+			fontWeight = FontWeight.Bold,
 		)
 	}
 }

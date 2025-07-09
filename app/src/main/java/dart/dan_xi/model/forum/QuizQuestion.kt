@@ -41,6 +41,15 @@ data class QuizQuestion(
 	@Transient
 	val correct: Boolean = false,
 ) {
+	val analysisNotNull get() = checkNotNull(analysis) { this }
+	val answerNotNull get() = checkNotNull(answer) { this }
+	val groupNotNull get() = checkNotNull(group) { this }
+	val idNotNull get() = checkNotNull(id) { this }
+	val optionsNotNull get() = checkNotNull(options) { this }
+	val questionNotNull get() = checkNotNull(question) { this }
+	val typeNotNull get() = checkNotNull(type) { this }
+	val correctNotNull get() = checkNotNull(correct) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	companion object {

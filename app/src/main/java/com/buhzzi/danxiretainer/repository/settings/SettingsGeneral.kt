@@ -3,6 +3,7 @@ package com.buhzzi.danxiretainer.repository.settings
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
+import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.ItemDelegate
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Items
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Keys
@@ -58,4 +59,25 @@ private fun decodeSortOrderString(string: String?) = string?.let {
 }
 
 private fun encodeSortOrderString(contentResource: SortOrder?) =
+	contentResource?.name
+
+
+val Keys.pagerScrollOrientationString get() = stringPreferencesKey("pager_scroll_orientation_string")
+var Items.pagerScrollOrientationString by ItemDelegate(Keys.pagerScrollOrientationString)
+val Items.pagerScrollOrientationStringFlow get() = getFlow(Keys.pagerScrollOrientationString)
+var Models.pagerScrollOrientation
+	get() = decodePagerScrollOrientationString(Items.pagerScrollOrientationString)
+	set(value) {
+		Items.pagerScrollOrientationString = encodePagerScrollOrientationString(value)
+	}
+val Models.pagerScrollOrientationFlow
+	get() = Items.pagerScrollOrientationStringFlow.map {
+		decodePagerScrollOrientationString(it)
+	}
+
+private fun decodePagerScrollOrientationString(string: String?) = string?.let {
+	DxrPagerScrollOrientation.valueOf(it)
+}
+
+private fun encodePagerScrollOrientationString(contentResource: DxrPagerScrollOrientation?) =
 	contentResource?.name

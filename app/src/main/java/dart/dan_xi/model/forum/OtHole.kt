@@ -41,6 +41,17 @@ data class OtHole(
 	val hidden: Boolean? = null,
 	val locked: Boolean? = null,
 ) {
+	val holeIdNotNull get() = checkNotNull(holeId) { this }
+	val divisionIdNotNull get() = checkNotNull(divisionId) { this }
+	val timeCreatedNotNull get() = checkNotNull(timeCreated) { this }
+	val timeUpdatedNotNull get() = checkNotNull(timeUpdated) { this }
+	val timeDeletedNotNull get() = checkNotNull(timeDeleted) { this }
+	val tagsNotNull get() = checkNotNull(tags) { this }
+	val viewNotNull get() = checkNotNull(view) { this }
+	val replyNotNull get() = checkNotNull(reply) { this }
+	val floorsNotNull get() = checkNotNull(floors) { this }
+	val hiddenNotNull get() = checkNotNull(hidden) { this }
+	val lockedNotNull get() = checkNotNull(locked) { this }
 
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 

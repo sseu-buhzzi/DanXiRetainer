@@ -30,6 +30,9 @@ data class OtUserConfig(
 	val notify: List<String>? = null,
 	val showFolded: String? = null,
 ) {
+	val notifyNotNull get() = checkNotNull(notify) { this }
+	val showFoldedNotNull get() = checkNotNull(showFolded) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	companion object {

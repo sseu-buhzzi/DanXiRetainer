@@ -192,8 +192,8 @@ fun SettingsAccountPage() {
 						scope.launch(Dispatchers.IO) {
 							runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
 								val jwToken = DxrForumApi.authLogIn(
-									checkNotNull(email),
-									androidKeyStoreDecrypt(checkNotNull(passwordCt).toBytesBase64()).toStringUtf8(),
+									checkNotNull(email) { "No email" },
+									androidKeyStoreDecrypt(checkNotNull(passwordCt) { "No password" }.toBytesBase64()).toStringUtf8(),
 								)
 								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt == true)
 							}
@@ -208,7 +208,7 @@ fun SettingsAccountPage() {
 					{
 						scope.launch(Dispatchers.IO) {
 							runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-								val jwToken = DxrForumApi.authRefresh(checkNotNull(refreshJwt))
+								val jwToken = DxrForumApi.authRefresh(checkNotNull(refreshJwt) { "No refresh JWT" })
 								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt == true)
 							}
 						}
@@ -233,8 +233,8 @@ fun SettingsAccountPage() {
 								runCatching {
 									val user = DxrForumApi.getUserProfile()
 									DxrSettings.Models.userProfile = user
-								}.getOrElse { cause ->
-									snackbarController.show(cause.message ?: unknownErrorLabel)
+								}.getOrElse { exception ->
+									snackbarController.show(exception.message ?: unknownErrorLabel)
 								}
 							}
 						},

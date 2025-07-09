@@ -33,12 +33,16 @@ data class OtTag(
 	val temperature: Long? = null,
 	val name: String? = null,
 ) {
+	val tagIdNotNull get() = checkNotNull(tagId) { this }
+	val temperatureNotNull get() = checkNotNull(temperature) { this }
+	val nameNotNull get() = checkNotNull(name) { this }
+
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
 	override operator fun equals(other: Any?) =
 		other is OtTag && tagId == other.tagId
 
-	override fun hashCode() = checkNotNull(tagId).hashCode()
+	override fun hashCode() = tagIdNotNull.hashCode()
 
 	fun getColor(systemInDarkTheme: Boolean) =
 		name?.hashColor(systemInDarkTheme) ?: Color.Red

@@ -30,6 +30,8 @@ data class JwToken(
 	val access: String? = null,
 	val refresh: String? = null,
 ) {
+	val accessNotNull get() = checkNotNull(access) { this }
+	val refreshNotNull get() = checkNotNull(refresh) { this }
 
 	val isValid get() = access != null && refresh != null
 

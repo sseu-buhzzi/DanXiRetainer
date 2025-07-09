@@ -47,6 +47,22 @@ data class OtFloor(
 	val specialTag: String? = null,
 	val modified: Long? = null,
 ) {
+	val floorIdNotNull get() = checkNotNull(floorId) { this }
+	val holeIdNotNull get() = checkNotNull(holeId) { this }
+	val contentNotNull get() = checkNotNull(content) { this }
+	val anonynameNotNull get() = checkNotNull(anonyname) { this }
+	val timeCreatedNotNull get() = checkNotNull(timeCreated) { this }
+	val timeUpdatedNotNull get() = checkNotNull(timeUpdated) { this }
+	val deletedNotNull get() = checkNotNull(deleted) { this }
+	val foldNotNull get() = checkNotNull(fold) { this }
+	val likeNotNull get() = checkNotNull(like) { this }
+	val isMeNotNull get() = checkNotNull(isMe) { this }
+	val likedNotNull get() = checkNotNull(liked) { this }
+	val mentionNotNull get() = checkNotNull(mention) { this }
+	val dislikeNotNull get() = checkNotNull(dislike) { this }
+	val dislikedNotNull get() = checkNotNull(disliked) { this }
+	val specialTagNotNull get() = checkNotNull(specialTag) { this }
+	val modifiedNotNull get() = checkNotNull(modified) { this }
 
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
@@ -96,6 +112,7 @@ data class OtFloor(
 			content
 		}
 	}
+	val filteredContentNotNull get() = checkNotNull(filteredContent) { this }
 
 	val deleteReason get() = content.takeIf { deleted == true }
 

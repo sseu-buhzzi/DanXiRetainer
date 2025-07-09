@@ -38,6 +38,17 @@ data class OtReport(
 	val dealt: Boolean? = null,
 	val dealtBy: Long? = null,
 ) {
+	val reportIdNotNull get() = checkNotNull(reportId) { this }
+	val reasonNotNull get() = checkNotNull(reason) { this }
+	val resultNotNull get() = checkNotNull(result) { this }
+	val contentNotNull get() = checkNotNull(content) { this }
+	val floorNotNull get() = checkNotNull(floor) { this }
+	val holeIdNotNull get() = checkNotNull(holeId) { this }
+	val timeCreatedNotNull get() = checkNotNull(timeCreated) { this }
+	val timeUpdatedNotNull get() = checkNotNull(timeUpdated) { this }
+	val dealtNotNull get() = checkNotNull(dealt) { this }
+	val dealtByNotNull get() = checkNotNull(dealtBy) { this }
+
 	override fun hashCode() = checkNotNull(reportId).hashCode()
 
 	override fun toString() =

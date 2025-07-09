@@ -17,7 +17,7 @@ fun parseJwt(jwtString: String) = jwtString.split('.')
 fun getJwtExpiration(jwtString: String) = runCatching {
 	val exp = parseJwt(jwtString)
 		.jsonObject["exp"]
-		.let { requireNotNull(it) }
+		.let { requireNotNull(it) { jwtString } }
 		.jsonPrimitive
 		.long
 	Instant.ofEpochSecond(exp)

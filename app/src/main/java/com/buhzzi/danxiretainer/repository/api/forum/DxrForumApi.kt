@@ -97,7 +97,7 @@ object DxrForumApi {
 		}
 		engine {
 			DxrSettings.Models.httpProxy?.takeIf { it.enabled == true }?.runCatching {
-				proxy = ProxyBuilder.http("http://${checkNotNull(host)}:${checkNotNull(port)}")
+				proxy = ProxyBuilder.http("http://$hostNotNull:$portNotNull")
 			}
 		}
 		defaultRequest {

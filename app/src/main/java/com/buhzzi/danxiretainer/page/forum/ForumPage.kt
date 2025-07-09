@@ -1,7 +1,6 @@
 package com.buhzzi.danxiretainer.page.forum
 
 import android.os.FileObserver
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -33,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
+import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
 import com.buhzzi.danxiretainer.page.LocalSnackbarController
@@ -52,6 +53,7 @@ import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.backgroundImagePathStringFlow
 import com.buhzzi.danxiretainer.repository.settings.contentSourceFlow
+import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationFlow
 import com.buhzzi.danxiretainer.repository.settings.sortOrder
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
 import com.buhzzi.danxiretainer.util.floorIndicesPathOf
@@ -59,9 +61,10 @@ import com.buhzzi.danxiretainer.util.holeIndicesPathOf
 import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringRfc3339
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.launch
-import java.time.Duration
 import java.time.OffsetDateTime
 import kotlin.io.path.Path
 import kotlin.io.path.getLastModifiedTime
@@ -96,7 +99,7 @@ fun ForumPage() {
 		}
 	}
 
-	var selectedIndex by remember { mutableIntStateOf(0) }
+	var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
 	val selectedPage by remember { derivedStateOf { ForumPages.entries[selectedIndex] } }
 
 	CompositionLocalProvider(LocalSessionState provides sessionState) {
@@ -150,7 +153,7 @@ fun ForumPageTopBar() {
 				fun goBackToForumHolesPage() {
 					scope.launch(Dispatchers.IO) {
 						runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-							val userId = checkNotNull(userProfile?.userId)
+							val userId = checkNotNull(userProfile) { "No user profile" }.userIdNotNull
 							DxrRetention.updateSessionState(userId) {
 								copy(
 									holeId = null,
@@ -234,17 +237,11 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 		userProfile?.userId?.let { userId ->
 			when (contentSource) {
 				DxrContentSource.FORUM_API -> sessionState?.holeId?.let { currentHoleId ->
-					ForumApiFloorsPager(
-						userId, currentHoleId,
-						sessionState.holeInitialFloorRank?.toInt() ?: 0,
-					)
+					ForumApiFloorsPager(userId, currentHoleId)
 				} ?: ForumApiHolesPager(userId)
 
 				DxrContentSource.RETENTION -> sessionState?.holeId?.let { currentHoleId ->
-					RetentionFloorsPager(
-						userId, currentHoleId,
-						sessionState.holeInitialFloorRank?.toInt() ?: 0,
-					)
+					RetentionFloorsPager(userId, currentHoleId)
 				} ?: RetentionHolesPager(userId)
 
 				else -> Unit
@@ -262,57 +259,7 @@ private fun ForumApiHolesPager(userId: Long) {
 
 	val forumApiTimeOfHoles = sessionState.forumApiTimeOfHoles?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
-	VerticalBidirectionalChannelPager(
-		{
-			launch(Dispatchers.IO) {
-				runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-					// Load backward in a fixed time interval
-					// TODO untested
-					var endTime = forumApiTimeOfHoles
-					var interval = Duration.ofMillis(256 * 1024)
-					val loadLength = 10
-					val sortOrder = DxrSettings.Models.sortOrder ?: return@runBlockingOrShowSnackbarMessage
-
-					while (!endTime.isAfter(OffsetDateTime.now())) {
-						var reachedEnd = false
-						val nextEndTime = endTime.plus(interval)
-						val holesInInterval = buildList {
-							var startTime = nextEndTime
-							while (true) {
-								DxrForumApi.ensureAuth()
-								val holes = DxrForumApi.loadHoles(
-									startTime,
-									null,
-									length = loadLength.toLong(),
-									sortOrder = sortOrder,
-								).asReversed()
-								reachedEnd = holes.size < loadLength
-								reachedEnd && break
-
-								val endingHoleIndex = holes.indexOfFirst { hole ->
-									!hole.getSortingDateTime(sortOrder).isBefore(endTime)
-								}
-								if (endingHoleIndex != -1) {
-									add(holes.subList(endingHoleIndex, holes.size))
-								}
-								endingHoleIndex != 0 && break
-
-								startTime = holes.first().getSortingDateTime(sortOrder)
-							}
-						}.asReversed().flatten()
-						holesInInterval.forEach { hole -> send(hole) }
-						reachedEnd && break
-
-						holesInInterval.lastOrNull()?.getSortingDateTime(sortOrder)
-							?.let { Duration.between(endTime, it) }
-							?.multipliedBy(loadLength.toLong())
-							?.dividedBy(holesInInterval.size.toLong())
-							?.let { interval = it }
-						endTime = nextEndTime
-					}
-				}
-			}
-		},
+	ChannelPager(
 		{
 			launch(Dispatchers.IO) {
 				runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
@@ -352,7 +299,7 @@ private fun ForumApiHolesPager(userId: Long) {
 }
 
 @Composable
-private fun ForumApiFloorsPager(userId: Long, holeId: Long, initialFloorRank: Int = 0) {
+private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 	val snackbarController = LocalSnackbarController.current
 	val sessionState = LocalSessionState.current ?: return
 
@@ -360,54 +307,28 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long, initialFloorRank: In
 
 	val timeKey = sessionState.forumApiTimeOfHoles
 
-	VerticalBidirectionalChannelPager(
+	ChannelPager(
 		{
-			// TODO scroll to forward items when backward items are added in
+			// TODO reversed floors, also for retention
 			launch(Dispatchers.IO) {
 				runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
 					DxrForumApi.ensureAuth()
 					val hole = DxrForumApi.loadHoleById(holeId)
 
-					var endFloorRank = initialFloorRank.coerceIn(0 ..< hole.floorsCount.toInt())
-					val loadLength = 50
-
-					while (endFloorRank > 0) {
-						DxrForumApi.ensureAuth()
-						val startFloorRank = (endFloorRank - loadLength).coerceAtLeast(0)
-						val floors = DxrForumApi.loadFloors(
-							hole,
-							startFloor = startFloorRank.toLong(),
-							length = (endFloorRank - startFloorRank).toLong(),
-						).asReversed()
-						Log.d("ForumApiFloorsPager backward", "$startFloorRank\t${endFloorRank - startFloorRank}")
-						floors.forEachIndexed { index, floor ->
-							send(Triple(floor, hole, endFloorRank - index - 1))
-						}
-						endFloorRank -= floors.size
-					}
-				}
-			}
-		},
-		{
-			launch(Dispatchers.IO) {
-				runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-					DxrForumApi.ensureAuth()
-					val hole = DxrForumApi.loadHoleById(holeId)
-
-					var startFloorRank = initialFloorRank.coerceIn(0 ..< hole.floorsCount.toInt())
+					var startFloorIndex = 0
 					val loadLength = 50
 
 					do {
 						DxrForumApi.ensureAuth()
 						val floors = DxrForumApi.loadFloors(
 							hole,
-							startFloor = startFloorRank.toLong(),
+							startFloor = startFloorIndex.toLong(),
 							length = loadLength.toLong(),
 						)
 						floors.forEachIndexed { index, floor ->
-							send(Triple(floor, hole, startFloorRank + index))
+							send(Triple(floor, hole, startFloorIndex + index))
 						}
-						startFloorRank += floors.size
+						startFloorIndex += floors.size
 					} while (floors.size >= loadLength)
 				}
 			}
@@ -423,8 +344,8 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long, initialFloorRank: In
 		},
 		modifier = Modifier
 			.fillMaxSize(),
-	) { (floor, hole, rank) ->
-		FloorCard(floor, hole, rank)
+	) { (floor, hole, index) ->
+		FloorCard(floor, hole, index)
 	}
 }
 
@@ -455,10 +376,7 @@ private fun RetentionHolesPager(userId: Long) {
 		}
 	}
 
-	VerticalBidirectionalChannelPager(
-		{
-			// TODO 添加向前瀏覽
-		},
+	ChannelPager(
 		{
 			val holeSequence = DxrRetention.loadHoleSequenceByUpdate(userId)
 			holeSequence.forEach { hole -> send(hole) }
@@ -478,7 +396,7 @@ private fun RetentionHolesPager(userId: Long) {
 }
 
 @Composable
-private fun RetentionFloorsPager(userId: Long, holeId: Long, initialFloorRank: Int) {
+private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 	val context = LocalContext.current
 	val snackbarController = LocalSnackbarController.current
 
@@ -504,32 +422,13 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long, initialFloorRank: I
 		}
 	}
 
-	VerticalBidirectionalChannelPager(
-		{
-			// TODO untested
-			launch(Dispatchers.IO) {
-				runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-					val hole = requireNotNull(DxrRetention.loadHole(userId, holeId))
-					val floorsCount = hole.floorsCount.toInt()
-
-					var endFloorRank = initialFloorRank.coerceIn(0 ..< floorsCount)
-					DxrRetention.loadFloorSequenceReversed(userId, holeId)
-						.drop(floorsCount - endFloorRank)
-						.forEachIndexed { index, floor ->
-							println("backward\t${endFloorRank - index - 1}\t${floor.content}")
-							send(Triple(floor, hole, endFloorRank - index - 1))
-						}
-				}
-			}
-		},
+	ChannelPager(
 		{
 			launch(Dispatchers.IO) {
 				runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
-					val hole = requireNotNull(DxrRetention.loadHole(userId, holeId))
+					val hole = requireNotNull(DxrRetention.loadHole(userId, holeId)) { "DxrRetention.loadHole($userId, $holeId) failed" }
 
-					var startFloorRank = initialFloorRank.coerceIn(0 ..< hole.floorsCount.toInt())
 					DxrRetention.loadFloorSequence(userId, holeId)
-						.drop(startFloorRank)
 						.forEachIndexed { index, floor ->
 							println("forward\t$index\t${floor.content}")
 							send(Triple(floor, hole, index))
@@ -546,7 +445,38 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long, initialFloorRank: I
 		},
 		modifier = Modifier
 			.fillMaxSize(),
-	) { (floor, hole, rank) ->
-		FloorCard(floor, hole, rank)
+	) { (floor, hole, index) ->
+		FloorCard(floor, hole, index)
+	}
+}
+
+@Composable
+private fun <T> ChannelPager(
+	itemsProducer: suspend ProducerScope<T>.() -> Unit,
+	key: String?,
+	pageSize: Int,
+	refresh: suspend CoroutineScope.() -> Unit,
+	modifier: Modifier = Modifier,
+	itemContent: @Composable (T) -> Unit,
+) {
+	val pagerScrollOrientation by DxrSettings.Models.pagerScrollOrientationFlow.collectAsState(null)
+	when (pagerScrollOrientation) {
+		DxrPagerScrollOrientation.HORIZONTAL -> HorizontalScrollChannelPager(
+			itemsProducer,
+			key,
+			pageSize,
+			refresh,
+			modifier,
+			itemContent,
+		)
+		DxrPagerScrollOrientation.VERTICAL -> VerticalScrollChannelPager(
+			itemsProducer,
+			key,
+			pageSize,
+			refresh,
+			modifier,
+			itemContent,
+		)
+		else -> Unit
 	}
 }
