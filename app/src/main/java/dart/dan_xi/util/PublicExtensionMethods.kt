@@ -25,32 +25,35 @@ import androidx.core.graphics.ColorUtils
 import dart.dan_xi.common.Constant
 import kotlin.math.sqrt
 
-fun Color.withHue(hue: Float) = FloatArray(3)
-	.also { ColorUtils.colorToHSL(toArgb(), it) }
+val Color.hslFloatArray
+	get() = FloatArray(3)
+		.also { ColorUtils.colorToHSL(toArgb(), it) }
+
+val Color.hue get() = hslFloatArray[0]
+
+val Color.saturation get() = hslFloatArray[1]
+
+val Color.lightness get() = hslFloatArray[2]
+
+fun Color.withHue(hue: Float) = hslFloatArray
 	.let { Color.hsl(hue, it[1], it[2]) }
 
-fun Color.withHue(hue: (FloatArray) -> Float) = FloatArray(3)
-	.also { ColorUtils.colorToHSL(toArgb(), it) }
+fun Color.withHue(hue: (FloatArray) -> Float) = hslFloatArray
 	.let { Color.hsl(hue(it), it[1], it[2]) }
 
-fun Color.withSaturation(saturation: Float) = FloatArray(3)
-	.also { ColorUtils.colorToHSL(toArgb(), it) }
+fun Color.withSaturation(saturation: Float) = hslFloatArray
 	.let { Color.hsl(it[0], saturation, it[2]) }
 
-fun Color.withSaturation(saturation: (FloatArray) -> Float) = FloatArray(3)
-	.also { ColorUtils.colorToHSL(toArgb(), it) }
+fun Color.withSaturation(saturation: (FloatArray) -> Float) = hslFloatArray
 	.let { Color.hsl(it[0], saturation(it), it[2]) }
 
-fun Color.withLightness(lightness: Float) = FloatArray(3)
-	.also { ColorUtils.colorToHSL(toArgb(), it) }
+fun Color.withLightness(lightness: Float) = hslFloatArray
 	.let { Color.hsl(it[0], it[2], lightness) }
 
-fun Color.withLightness(lightness: (FloatArray) -> Float) = FloatArray(3)
-	.also { ColorUtils.colorToHSL(toArgb(), it) }
+fun Color.withLightness(lightness: (FloatArray) -> Float) = hslFloatArray
 	.let { Color.hsl(it[0], it[1], lightness(it)) }
 
-fun Color.autoAdapt(systemInDarkTheme: Boolean) = FloatArray(3)
-	.also { ColorUtils.colorToHSL(toArgb(), it) }
+fun Color.autoAdapt(systemInDarkTheme: Boolean) = hslFloatArray
 	.let {
 		when {
 			systemInDarkTheme && it[2] < 0.5 -> withLightness(sqrt(it[2]) * 3 / 2)

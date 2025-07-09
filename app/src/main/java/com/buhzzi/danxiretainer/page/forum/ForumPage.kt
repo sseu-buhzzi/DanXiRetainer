@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
-import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
 import com.buhzzi.danxiretainer.page.LocalSnackbarController
@@ -53,7 +52,6 @@ import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.backgroundImagePathStringFlow
 import com.buhzzi.danxiretainer.repository.settings.contentSourceFlow
-import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationFlow
 import com.buhzzi.danxiretainer.repository.settings.sortOrder
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
 import com.buhzzi.danxiretainer.util.floorIndicesPathOf
@@ -61,9 +59,7 @@ import com.buhzzi.danxiretainer.util.holeIndicesPathOf
 import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringRfc3339
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import kotlin.io.path.Path
@@ -430,7 +426,6 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 
 					DxrRetention.loadFloorSequence(userId, holeId)
 						.forEachIndexed { index, floor ->
-							println("forward\t$index\t${floor.content}")
 							send(Triple(floor, hole, index))
 						}
 				}
@@ -447,36 +442,5 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 			.fillMaxSize(),
 	) { (floor, hole, index) ->
 		FloorCard(floor, hole, index)
-	}
-}
-
-@Composable
-private fun <T> ChannelPager(
-	itemsProducer: suspend ProducerScope<T>.() -> Unit,
-	key: String?,
-	pageSize: Int,
-	refresh: suspend CoroutineScope.() -> Unit,
-	modifier: Modifier = Modifier,
-	itemContent: @Composable (T) -> Unit,
-) {
-	val pagerScrollOrientation by DxrSettings.Models.pagerScrollOrientationFlow.collectAsState(null)
-	when (pagerScrollOrientation) {
-		DxrPagerScrollOrientation.HORIZONTAL -> HorizontalScrollChannelPager(
-			itemsProducer,
-			key,
-			pageSize,
-			refresh,
-			modifier,
-			itemContent,
-		)
-		DxrPagerScrollOrientation.VERTICAL -> VerticalScrollChannelPager(
-			itemsProducer,
-			key,
-			pageSize,
-			refresh,
-			modifier,
-			itemContent,
-		)
-		else -> Unit
 	}
 }

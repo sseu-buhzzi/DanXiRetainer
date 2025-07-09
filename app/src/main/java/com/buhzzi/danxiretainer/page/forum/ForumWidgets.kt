@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,18 +15,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.ThumbDownAlt
+import androidx.compose.material.icons.filled.ThumbDownOffAlt
+import androidx.compose.material.icons.filled.ThumbUpAlt
+import androidx.compose.material.icons.filled.ThumbUpOffAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MultiChoiceSegmentedButtonRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -42,6 +55,7 @@ import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
 import com.buhzzi.danxiretainer.page.runBlockingOrShowSnackbarMessage
 import com.buhzzi.danxiretainer.page.settings.SettingsPageContent
 import com.buhzzi.danxiretainer.page.settings.SettingsPageTopBar
+import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
@@ -53,6 +67,7 @@ import dart.dan_xi.model.forum.OtHole
 import dart.dan_xi.model.forum.OtTag
 import dart.dan_xi.util.forum.HumanDuration
 import dart.dan_xi.util.hashColor
+import dart.dan_xi.util.lightness
 import dart.dan_xi.util.withLightness
 import dart.flutter.src.material.Colors
 import kotlinx.coroutines.launch
@@ -140,7 +155,7 @@ fun HoleCard(hole: OtHole) {
 						DxrRetention.updateSessionState(userId) {
 							copy(
 								holeId = hole.holeId,
-								forumApiTimeOfHoles = OffsetDateTime.now().toStringRfc3339(),
+								forumApiTimeOfFloors = OffsetDateTime.now().toStringRfc3339(),
 							)
 						}
 					}
@@ -153,7 +168,7 @@ fun HoleCard(hole: OtHole) {
 				.padding(8.dp),
 		) {
 			TagChipsRow(hole.tagsNotNull)
-			AnonynameRow(firstFloor.anonynameNotNull, true)
+			AnonynameRow(firstFloor.anonyname ?: "?", true)
 			Text(
 				firstFloor.filteredContentNotNull,
 			)
@@ -170,7 +185,7 @@ fun HoleCard(hole: OtHole) {
 									DxrRetention.updateSessionState(userId) {
 										copy(
 											holeId = hole.holeId,
-											forumApiTimeOfHoles = OffsetDateTime.now().toStringRfc3339(),
+											forumApiTimeOfFloors = OffsetDateTime.now().toStringRfc3339(),
 										)
 									}
 									// TODO revert floors
@@ -194,7 +209,7 @@ fun HoleCard(hole: OtHole) {
 						Text(
 							stringResource(
 								R.string.replied_on_label,
-								lastFloor.anonynameNotNull,
+								lastFloor.anonyname ?: "?",
 								HumanDuration.tryFormat(context, lastFloor.timeCreatedNotNull.toDateTimeRfc3339()),
 							),
 							color = replyColor,
@@ -266,43 +281,15 @@ fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
 			}
 			Row(
 				modifier = Modifier
-					.height(IntrinsicSize.Min)
-					.padding(4.dp),
-				horizontalArrangement = Arrangement.spacedBy(4.dp),
+					.fillMaxWidth(),
+				horizontalArrangement = Arrangement.SpaceBetween,
 				verticalAlignment = Alignment.CenterVertically,
 			) {
-				val systemInDarkTheme = isSystemInDarkTheme()
-				val anonynameColor = floor.anonynameNotNull.hashColor(systemInDarkTheme) ?: Color.Red
-				VerticalDivider(
-					modifier = Modifier
-						.padding(4.dp),
-					thickness = 4.dp,
-					color = anonynameColor,
+				AnonynameRow(
+					floor.anonyname ?: "?",
+					floor.anonyname == hole.floors?.firstFloor?.anonyname,
 				)
-				if (floor.anonyname == hole.floors?.firstFloor?.anonyname) {
-					Surface(
-						modifier = Modifier
-							.padding(2.dp),
-						shape = RoundedCornerShape(2.dp),
-						color = anonynameColor,
-						contentColor = Color.White,
-					) {
-						Text(
-							// TODO LZ或DZ可選項
-							"LZ",
-							modifier = Modifier
-								.padding(4.dp, 0.dp),
-							fontSize = 14.sp,
-							fontWeight = FontWeight.Bold,
-							lineHeight = 16.sp,
-						)
-					}
-				}
-				Text(
-					floor.anonynameNotNull,
-					color = anonynameColor,
-					fontWeight = FontWeight.Bold,
-				)
+				ActionsRow(floor)
 			}
 			Text(
 				floor.filteredContentNotNull,
@@ -436,7 +423,7 @@ fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
 					.padding(2.dp),
 				shape = RoundedCornerShape(2.dp),
 				color = anonynameColor,
-				contentColor = Color.White,
+				contentColor = if (anonynameColor.lightness < 0.5) Color.White else Color.Black,
 			) {
 				Text(
 					// TODO 可選項LZ・DZ・或OP
@@ -454,5 +441,121 @@ fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
 			color = anonynameColor,
 			fontWeight = FontWeight.Bold,
 		)
+	}
+}
+
+@Composable
+fun ActionsRow(
+	floor: OtFloor,
+	modifier: Modifier = Modifier,
+	rowHeight: Int = 24,
+	iconHeight: Int = 16,
+) {
+	val snackbarController = LocalSnackbarController.current
+
+	val scope = rememberCoroutineScope()
+
+	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
+
+	var like by remember { mutableLongStateOf(floor.likeNotNull) }
+	var liked by remember { mutableStateOf(floor.likedNotNull) }
+	var dislike by remember { mutableLongStateOf(floor.dislikeNotNull) }
+	var disliked by remember { mutableStateOf(floor.dislikedNotNull) }
+	MultiChoiceSegmentedButtonRow(
+		modifier = modifier
+			.height(rowHeight.dp),
+	) {
+		SegmentedButton(
+			liked,
+			{
+				scope.launch {
+					runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+						val updatedFloor = DxrForumApi.likeFloor(
+							floor.floorIdNotNull,
+							if (liked) 0 else 1,
+						)
+						updatedFloor.like?.let { like = it }
+						updatedFloor.liked?.let { liked = it }
+						updatedFloor.dislike?.let { dislike = it }
+						updatedFloor.disliked?.let { disliked = it }
+					}
+				}
+			},
+			SegmentedButtonDefaults.itemShape(0, 3),
+			contentPadding = PaddingValues(0.dp),
+			icon = { },
+		) {
+			Row(
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				Icon(
+					if (liked) {
+						Icons.Default.ThumbUpAlt
+					} else {
+						Icons.Default.ThumbUpOffAlt
+					},
+					null,
+					modifier = Modifier
+						.height(iconHeight.dp),
+				)
+				Text(
+					" $like",
+					fontSize = iconHeight.sp,
+				)
+			}
+		}
+		SegmentedButton(
+			disliked,
+			{
+				scope.launch {
+					runBlockingOrShowSnackbarMessage(snackbarController, { it.message ?: unknownErrorLabel }) {
+						val updatedFloor = DxrForumApi.likeFloor(
+							floor.floorIdNotNull,
+							if (disliked) 0 else -1,
+						)
+						updatedFloor.like?.let { like = it }
+						updatedFloor.liked?.let { liked = it }
+						updatedFloor.dislike?.let { dislike = it }
+						updatedFloor.disliked?.let { disliked = it }
+					}
+				}
+			},
+			SegmentedButtonDefaults.itemShape(1, 3),
+			contentPadding = PaddingValues(0.dp),
+			icon = { },
+		) {
+			Row(
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				Icon(
+					if (disliked) {
+						Icons.Default.ThumbDownAlt
+					} else {
+						Icons.Default.ThumbDownOffAlt
+					},
+					null,
+					modifier = Modifier
+						.height(iconHeight.dp),
+				)
+				Text(
+					" $dislike",
+					fontSize = iconHeight.sp,
+				)
+			}
+		}
+		SegmentedButton(
+			false,
+			{
+
+			},
+			SegmentedButtonDefaults.itemShape(2, 3),
+			contentPadding = PaddingValues(0.dp),
+		) {
+			Icon(
+				Icons.Default.MoreHoriz, null,
+				modifier = Modifier
+					.height(iconHeight.dp),
+			)
+		}
 	}
 }
