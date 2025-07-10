@@ -55,6 +55,7 @@ import com.buhzzi.danxiretainer.repository.settings.backgroundImagePathStringFlo
 import com.buhzzi.danxiretainer.repository.settings.contentSourceFlow
 import com.buhzzi.danxiretainer.repository.settings.sortOrder
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
+import com.buhzzi.danxiretainer.util.dxrJson
 import com.buhzzi.danxiretainer.util.floorIndicesPathOf
 import com.buhzzi.danxiretainer.util.holeIndicesPathOf
 import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
@@ -62,6 +63,8 @@ import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringRfc3339
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.time.OffsetDateTime
 import kotlin.io.path.Path
 import kotlin.io.path.getLastModifiedTime
@@ -254,12 +257,12 @@ private fun ForumApiHolesPager(userId: Long) {
 
 	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
 
-	val forumApiTimeOfHoles = sessionState.forumApiTimeOfHoles?.toDateTimeRfc3339() ?: OffsetDateTime.now()
+	val forumApiRefreshTime = sessionState.forumApiRefreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
 	ChannelPager(
 		{
 			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
-				var startTime = forumApiTimeOfHoles
+				var startTime = forumApiRefreshTime
 				val loadLength = 10
 				val sortOrder = DxrSettings.Models.sortOrder ?: return@runCatchingOnSnackbar
 
@@ -277,12 +280,15 @@ private fun ForumApiHolesPager(userId: Long) {
 				}
 			}
 		},
-		"forumApiHolesPager&userId=$userId&timeKey=$forumApiTimeOfHoles",
+		dxrJson.encodeToString(buildJsonObject {
+			put("fun", "ForumApiHolesPager")
+			put("userId", userId)
+			put("timeKey", forumApiRefreshTime.toStringRfc3339())
+		}),
 		16,
 		sessionState.pagerHoleIndex ?: 0,
 		sessionState.pagerHoleScrollOffset ?: 0,
 		{ holeIndex, holeScrollOffset ->
-			// untested TODO save it to session state
 			DxrRetention.updateSessionState(userId) {
 				copy(
 					pagerHoleIndex = holeIndex,
@@ -293,7 +299,7 @@ private fun ForumApiHolesPager(userId: Long) {
 		{
 			DxrRetention.updateSessionState(userId) {
 				copy(
-					forumApiTimeOfHoles = OffsetDateTime.now().toStringRfc3339(),
+					forumApiRefreshTime = OffsetDateTime.now().toStringRfc3339(),
 				)
 			}
 		},
@@ -312,7 +318,7 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 
 	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
 
-	val timeKey = sessionState.forumApiTimeOfHoles
+	val forumApiRefreshTime = sessionState.forumApiRefreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
 	ChannelPager(
 		{
@@ -339,7 +345,12 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 				} while (floors.size >= loadLength)
 			}
 		},
-		"forumApiFloorsPager&userId=$userId&holeId=$holeId&timeKey=$timeKey",
+		dxrJson.encodeToString(buildJsonObject {
+			put("fun", "ForumApiFloorsPager")
+			put("userId", userId)
+			put("holeId", holeId)
+			put("timeKey", forumApiRefreshTime.toStringRfc3339())
+		}),
 		16,
 		holeSessionState?.pagerFloorIndex ?: 0,
 		holeSessionState?.pagerFloorScrollOffset ?: 0,
@@ -355,7 +366,7 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 		{
 			DxrRetention.updateSessionState(userId) {
 				copy(
-					forumApiTimeOfHoles = OffsetDateTime.now().toStringRfc3339(),
+					forumApiRefreshTime = OffsetDateTime.now().toStringRfc3339(),
 				)
 			}
 		},
@@ -378,7 +389,8 @@ private fun RetentionHolesPager(userId: Long) {
 			context.holeIndicesPathOf(userId)
 		}
 	}
-	val timeKey by produceState(holeIndicesPath.getLastModifiedTime().toString(), userId) {
+	// MT is short for Modified Time
+	val holeIndicesMtString by produceState(holeIndicesPath.getLastModifiedTime().toString(), userId) {
 		val observer = object : FileObserver(holeIndicesPath.toFile(), CLOSE_WRITE) {
 			override fun onEvent(event: Int, path: String?) {
 				if (event == CLOSE_WRITE) {
@@ -400,7 +412,11 @@ private fun RetentionHolesPager(userId: Long) {
 				holeSequence.forEach { hole -> send(hole) }
 			}
 		},
-		"retentionHolesPager&usersId=$userId&timeKey=$timeKey",
+		dxrJson.encodeToString(buildJsonObject {
+			put("fun", "RetentionHolesPager")
+			put("userId", userId)
+			put("timeKey", holeIndicesMtString)
+		}),
 		16,
 		0, // TODO
 		0,
@@ -431,7 +447,8 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 			context.floorIndicesPathOf(userId)
 		}
 	}
-	val timeKey by produceState(floorIndicesPath.getLastModifiedTime().toString(), userId, holeId) {
+	// Mt is short for Modified Time
+	val floorIndicesMtString by produceState(floorIndicesPath.getLastModifiedTime().toString(), userId, holeId) {
 		val observer = object : FileObserver(floorIndicesPath.toFile(), CLOSE_WRITE) {
 			override fun onEvent(event: Int, path: String?) {
 				if (event == CLOSE_WRITE) {
@@ -457,7 +474,12 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 					}
 			}
 		},
-		"retentionFloorsPager&userId=$userId&holeId=$holeId&timeKey=$timeKey",
+		dxrJson.encodeToString(buildJsonObject {
+			put("fun", "RetentionFloorsPager")
+			put("userId", userId)
+			put("holeId", holeId)
+			put("timeKey", floorIndicesMtString)
+		}),
 		16,
 		1820, // TODO
 		0,

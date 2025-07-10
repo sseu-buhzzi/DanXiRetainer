@@ -48,11 +48,6 @@ private class ChannelPagerViewModel<T>(
 	itemsProducer: suspend ProducerScope<T>.() -> Unit,
 	private val pageSize: Int,
 ) : ViewModel() {
-	init {
-		// TODO delete this
-		Log.d("ChannelPagerViewModel", "ChannelPagerViewModel($itemsProducer, $pageSize)")
-	}
-
 	private val cachedPages = mutableStateListOf<List<T>>()
 
 	var loading by mutableStateOf(false)
@@ -78,8 +73,6 @@ private class ChannelPagerViewModel<T>(
 		override fun get(index: Int) =
 			cachedPages[index / pageSize][index % pageSize]
 	}
-
-	fun reachedEnd(pageIndex: Int) = ended && pageIndex >= cachedPages.lastIndex
 
 	suspend fun loadPage() {
 		Log.d("ChannelPagerViewModel", "loadPage: ${cachedPages.size} pages, ${readonlyItems.size} items")
@@ -189,18 +182,14 @@ fun <T> HorizontalScrollChannelPager(
 	var targetPageIndex by rememberSaveable { mutableIntStateOf(0) }
 	LaunchedEffect(pagerViewModel) {
 		pagerViewModel.viewModelScope.launch {
-			// untested TODO load until `initialItemIndex`
 			while (!pagerViewModel.ended && initialItemIndex >= pagerViewModel.readonlyItems.size) {
 				pagerViewModel.loadPage()
 			}
-			// must TODO scroll to item with its index and scroll offset
 			targetPageIndex = initialPageIndex
-			Log.d("HorizontalScrollChannelPager", "scrollToItem($initialItemIndexInPage, $initialItemScrollOffset) at LaunchedEffect(pagerViewModel) end")
 			lazyListStates[initialPageIndex].scrollToItem(initialItemIndexInPage, initialItemScrollOffset)
 		}
 	}
 	LaunchedEffect(targetPageIndex) {
-		Log.d("HorizontalScrollChannelPager", "animateScrollToPage($targetPageIndex) at loadPage()")
 		pagerState.animateScrollToPage(targetPageIndex)
 	}
 	DisposableEffect(Unit) {
@@ -209,12 +198,6 @@ fun <T> HorizontalScrollChannelPager(
 			val lazyListState = lazyListStates[pageIndex]
 			val itemIndex = pageIndex * pageSize + lazyListState.firstVisibleItemIndex
 			val itemScrollOffset = lazyListState.firstVisibleItemScrollOffset
-			Log.d(
-				"HorizontalScrollChannelPager",
-				"save $itemIndex $itemScrollOffset (${
-					pagerViewModel.readonlyItems[lazyListState.firstVisibleItemIndex].toString().substringBefore(',')
-				})})",
-			)
 			saveItemPosition(itemIndex, itemScrollOffset)
 		}
 	}
@@ -248,13 +231,6 @@ fun <T> HorizontalScrollChannelPager(
 						itemContent(item)
 					}
 				}
-				// TODO it should be impossible to get null here
-				// lazyListStates.getOrNull(pageIndex)?.let { lazyListState ->
-				// } ?: Box(
-				// 	modifier = Modifier
-				// 		.fillMaxSize()
-				// 		.verticalScroll(rememberScrollState()),
-				// )
 			} ?: run {
 				LaunchedEffect(
 					pagerViewModel,
@@ -296,22 +272,18 @@ fun <T> VerticalScrollChannelPager(
 	) {
 		ChannelPagerViewModel(itemsProducer, pageSize)
 	}
-	Log.d("VerticalScrollChannelPager", "rememberLazyListState($initialItemIndex, $initialItemScrollOffset)")
 	val lazyListState = rememberLazyListState(
 		initialItemIndex,
 		initialItemScrollOffset,
 	)
 	LaunchedEffect(pagerViewModel) {
 		pagerViewModel.viewModelScope.launch {
-			// completed TODO load until `initialItemIndex`
 			var lastPageFirstItemIndex = 0
 			while (!pagerViewModel.ended && initialItemIndex >= pagerViewModel.readonlyItems.size.also { lastPageFirstItemIndex = it }) {
 				pagerViewModel.loadPage()
 				// use part jump to simulate animate scroll, or say to make it look like on the way jumping to the initial index
-				Log.d("VerticalScrollChannelPager", "scrollToItem($initialItemIndex, 0) at loadPage()")
 				lazyListState.scrollToItem(lastPageFirstItemIndex)
 			}
-			Log.d("VerticalScrollChannelPager", "scrollToItem($initialItemIndex, $initialItemScrollOffset) at LaunchedEffect(pagerViewModel) end")
 			lazyListState.scrollToItem(initialItemIndex, initialItemScrollOffset)
 		}
 	}
@@ -334,12 +306,6 @@ fun <T> VerticalScrollChannelPager(
 		onDispose {
 			val itemIndex = lazyListState.firstVisibleItemIndex
 			val itemScrollOffset = lazyListState.firstVisibleItemScrollOffset
-			Log.d(
-				"VerticalScrollChannelPager",
-				"save $itemIndex $itemScrollOffset (${
-					pagerViewModel.readonlyItems[lazyListState.firstVisibleItemIndex].toString().substringBefore(',')
-				})})",
-			)
 			saveItemPosition(itemIndex, itemScrollOffset)
 		}
 	}
