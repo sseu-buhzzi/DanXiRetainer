@@ -62,14 +62,14 @@ import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
 import com.buhzzi.danxiretainer.util.sessionStateDirPathOf
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
-import dart.dan_xi.model.forum.OtFloor
-import dart.dan_xi.model.forum.OtHole
-import dart.dan_xi.model.forum.OtTag
-import dart.dan_xi.util.forum.HumanDuration
-import dart.dan_xi.util.hashColor
-import dart.dan_xi.util.lightness
-import dart.dan_xi.util.withLightness
-import dart.flutter.src.material.Colors
+import dart.package0.dan_xi.model.forum.OtFloor
+import dart.package0.dan_xi.model.forum.OtHole
+import dart.package0.dan_xi.model.forum.OtTag
+import dart.package0.dan_xi.util.forum.HumanDuration
+import dart.package0.dan_xi.util.hashColor
+import dart.package0.dan_xi.util.lightness
+import dart.package0.dan_xi.util.withLightness
+import dart.package0.flutter.src.material.Colors
 import kotlinx.coroutines.launch
 import kotlin.io.path.createDirectories
 

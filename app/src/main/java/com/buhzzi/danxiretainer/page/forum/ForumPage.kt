@@ -338,6 +338,7 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 						startFloor = startFloorIndex.toLong(),
 						length = loadLength.toLong(),
 					)
+					Log.d("ForumApiFloorsPager", "loadFloors($holeId, $startFloorIndex, $loadLength): { size: ${floors.size} }")
 					floors.forEachIndexed { index, floor ->
 						send(Triple(floor, hole, startFloorIndex + index))
 					}

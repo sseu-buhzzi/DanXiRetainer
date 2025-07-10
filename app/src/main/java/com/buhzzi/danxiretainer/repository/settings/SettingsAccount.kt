@@ -8,7 +8,7 @@ import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Keys
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Models
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.getFlow
 import com.buhzzi.danxiretainer.util.dxrJson
-import dart.dan_xi.model.forum.OtUser
+import dart.package0.dan_xi.model.forum.OtUser
 import kotlinx.coroutines.flow.map
 
 val Keys.email get() = stringPreferencesKey("email")

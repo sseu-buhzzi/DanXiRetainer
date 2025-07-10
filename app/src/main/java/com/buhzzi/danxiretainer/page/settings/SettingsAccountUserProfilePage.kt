@@ -86,7 +86,7 @@ fun SettingsAccountUserProfilePage() {
 							}
 						},
 						leadingContent = {
-							Icon(Icons.AutoMirrored.Filled.List, null)
+							Icon(Icons.AutoMirrored.Default.List, null)
 						},
 					)
 				}

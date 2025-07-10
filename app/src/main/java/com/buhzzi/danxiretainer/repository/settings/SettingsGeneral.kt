@@ -9,7 +9,7 @@ import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Items
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Keys
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Models
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.getFlow
-import dart.dan_xi.provider.SortOrder
+import dart.package0.dan_xi.provider.SortOrder
 import kotlinx.coroutines.flow.map
 
 val Keys.cleanMode get() = booleanPreferencesKey("clean_mode")

@@ -29,8 +29,8 @@ import com.buhzzi.danxiretainer.repository.settings.httpProxy
 import com.buhzzi.danxiretainer.repository.settings.httpProxyFlow
 import com.buhzzi.danxiretainer.repository.settings.imageBaseUrl
 import com.buhzzi.danxiretainer.repository.settings.imageBaseUrlFlow
-import dart.dan_xi.common.Constant
-import dart.dan_xi.util.WebvpnProxy
+import dart.package0.dan_xi.common.Constant
+import dart.package0.dan_xi.util.WebvpnProxy
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

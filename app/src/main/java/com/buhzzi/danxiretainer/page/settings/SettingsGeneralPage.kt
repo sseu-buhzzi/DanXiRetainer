@@ -1,14 +1,22 @@
 package com.buhzzi.danxiretainer.page.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.AcUnit
-import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.QuestionMark
+import androidx.compose.material.icons.filled.Source
+import androidx.compose.material.icons.filled.Swipe
+import androidx.compose.material.icons.filled.SwipeVertical
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,7 +35,7 @@ import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientation
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationFlow
 import com.buhzzi.danxiretainer.repository.settings.sortOrder
 import com.buhzzi.danxiretainer.repository.settings.sortOrderFlow
-import dart.dan_xi.provider.SortOrder
+import dart.package0.dan_xi.provider.SortOrder
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -77,7 +85,7 @@ fun SettingsGeneralPage() {
 				settingsValueStringResource(
 					contentSource?.ordinal?.let { contentSources[it] },
 				),
-				Icons.Default.MoreHoriz,
+				Icons.Default.Source,
 			) { selection ->
 				selection?.let { contentSourceActions[it]() } == true
 			}
@@ -104,37 +112,46 @@ fun SettingsGeneralPage() {
 				settingsValueStringResource(
 					sortOrder?.ordinal?.let { sortOrders[it] },
 				),
-				Icons.Default.MoreHoriz,
+				Icons.AutoMirrored.Default.Sort,
 			) { selection ->
 				selection?.let { sortOrderActions[it]() } == true
 			}
 
 			val pagerScrollOrientation by DxrSettings.Models.pagerScrollOrientationFlow.collectAsState(null)
+			// TODO put it in enum class members
 			val pagerScrollOrientations = listOf(
 				"Horizontal",
 				"Vertical",
 			)
-			val pagerScrollOrientationActions = listOf(
+			ListItem(
 				{
-					DxrSettings.Models.pagerScrollOrientation = DxrPagerScrollOrientation.HORIZONTAL
-					true
+					Text(stringResource(R.string.pager_scroll_orientation_label))
 				},
-				{
-					DxrSettings.Models.pagerScrollOrientation = DxrPagerScrollOrientation.VERTICAL
-					true
+				modifier = Modifier
+					.clickable {
+						DxrSettings.Models.pagerScrollOrientation = if (pagerScrollOrientation != DxrPagerScrollOrientation.HORIZONTAL) {
+							DxrPagerScrollOrientation.HORIZONTAL
+						} else {
+							DxrPagerScrollOrientation.VERTICAL
+						}
+					},
+				supportingContent = {
+					Text(
+						settingsValueStringResource(
+							pagerScrollOrientation?.ordinal?.let { pagerScrollOrientations[it] },
+						),
+					)
+				},
+				leadingContent = {
+					Icon(
+						when (pagerScrollOrientation) {
+							DxrPagerScrollOrientation.HORIZONTAL -> Icons.Default.Swipe
+							DxrPagerScrollOrientation.VERTICAL -> Icons.Default.SwipeVertical
+							else -> Icons.Default.QuestionMark
+						}, null
+					)
 				},
 			)
-			SingleSelectListItem(
-				pagerScrollOrientations,
-				pagerScrollOrientation?.ordinal ?: 0,
-				stringResource(R.string.pager_scroll_orientation_label),
-				settingsValueStringResource(
-					pagerScrollOrientation?.ordinal?.let { pagerScrollOrientations[it] },
-				),
-				Icons.Default.MoreHoriz,
-			) { selection ->
-				selection?.let { pagerScrollOrientationActions[it]() } == true
-			}
 		}
 	}
 }

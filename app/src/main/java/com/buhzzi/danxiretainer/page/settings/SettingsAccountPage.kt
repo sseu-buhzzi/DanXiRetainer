@@ -70,7 +70,7 @@ import com.buhzzi.danxiretainer.util.toBytesBase64
 import com.buhzzi.danxiretainer.util.toBytesUtf8
 import com.buhzzi.danxiretainer.util.toStringBase64
 import com.buhzzi.danxiretainer.util.toStringUtf8
-import dart.dan_xi.model.forum.JwToken
+import dart.package0.dan_xi.model.forum.JwToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter

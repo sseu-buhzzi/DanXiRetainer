@@ -53,7 +53,7 @@ fun SettingsSubpageTopBar(title: String) {
 			IconButton({
 				navController.popBackStack()
 			}) {
-				Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
+				Icon(Icons.AutoMirrored.Default.ArrowBack, null)
 			}
 		},
 	)
