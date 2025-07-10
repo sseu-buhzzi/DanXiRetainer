@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -67,7 +68,6 @@ import dart.package0.dan_xi.model.forum.OtHole
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.util.forum.HumanDuration
 import dart.package0.dan_xi.util.hashColor
-import dart.package0.dan_xi.util.lightness
 import dart.package0.dan_xi.util.withLightness
 import dart.package0.flutter.src.material.Colors
 import kotlinx.coroutines.launch
@@ -427,7 +427,8 @@ fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
 					.padding(2.dp),
 				shape = RoundedCornerShape(2.dp),
 				color = anonynameColor,
-				contentColor = if (anonynameColor.lightness < 0.5) Color.White else Color.Black,
+				// using `<= 0.5` instead of `< 0.5` to stay consistent with DanXi. Make them happy
+				contentColor = if (anonynameColor.luminance() <= 0.5) Color.White else Color.Black,
 			) {
 				Text(
 					// TODO 可選項LZ・DZ・或OP
