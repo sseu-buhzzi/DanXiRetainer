@@ -70,63 +70,7 @@ fun SelectBackgroundImageListItem() {
 	) { uri ->
 		uri?.let { onImageSelected(it) }
 	}
-	when (val dialogStateLocal = dialogState) {
-		is DialogState.InformException -> {
-			AlertDialog(
-				{ dialogState = null },
-				{
-					TextButton({ dialogState = null }) {
-						Text(stringResource(R.string.confirm_label))
-					}
-				},
-				dismissButton = {
-					TextButton({ dialogState = null }) {
-						Text(stringResource(R.string.dismiss_label))
-					}
-				},
-				icon = {
-					Icon(Icons.Default.Error, null)
-				},
-				title = {
-					Text(dialogStateLocal.cause::class.simpleName ?: stringResource(R.string.unknown_error_label))
-				},
-				text = {
-					Text(dialogStateLocal.cause.message ?: "")
-				},
-			)
-		}
-
-		is DialogState.ConfirmRemoval -> {
-			AlertDialog(
-				{ dialogState = null },
-				{
-					TextButton({
-						runCatching {
-							context.removeBackgroundImage()
-						}.getOrElse { exception ->
-							dialogState = DialogState.InformException(exception)
-						}
-						dialogState = null
-					}) {
-						Text(stringResource(R.string.confirm_label))
-					}
-				},
-				dismissButton = {
-					TextButton({ dialogState = null }) {
-						Text(stringResource(R.string.dismiss_label))
-					}
-				},
-				icon = {
-					Icon(Icons.Default.Warning, null)
-				},
-				text = {
-					Text(stringResource(R.string.background_image_confirm_delete_label))
-				},
-			)
-		}
-
-		else -> Unit
-	}
+	dialogState?.Dialog { dialogState = it }
 	ListItem(
 		{
 			Text(stringResource(R.string.background_image_label))
@@ -159,11 +103,72 @@ fun SelectBackgroundImageListItem() {
 private sealed class DialogState {
 	data class InformException(
 		val cause: Throwable,
-	) : DialogState()
+	) : DialogState() {
+		@Composable
+		override fun Dialog(dialogStateSetter: (DialogState?) -> Unit) {
+			AlertDialog(
+				{ dialogStateSetter(null) },
+				{
+					TextButton({ dialogStateSetter(null) }) {
+						Text(stringResource(R.string.confirm_label))
+					}
+				},
+				dismissButton = {
+					TextButton({ dialogStateSetter(null) }) {
+						Text(stringResource(R.string.dismiss_label))
+					}
+				},
+				icon = {
+					Icon(Icons.Default.Error, null)
+				},
+				title = {
+					Text(cause::class.simpleName ?: stringResource(R.string.unknown_error_label))
+				},
+				text = {
+					Text(cause.message ?: "")
+				},
+			)
+		}
+	}
 
 	data class ConfirmRemoval(
 		val targetPath: Path,
-	) : DialogState()
+	) : DialogState() {
+		@Composable
+		override fun Dialog(dialogStateSetter: (DialogState?) -> Unit) {
+			val context = LocalContext.current
+
+			AlertDialog(
+				{ dialogStateSetter(null) },
+				{
+					TextButton({
+						runCatching {
+							context.removeBackgroundImage()
+						}.getOrElse { exception ->
+							dialogStateSetter(InformException(exception))
+						}
+						dialogStateSetter(null)
+					}) {
+						Text(stringResource(R.string.confirm_label))
+					}
+				},
+				dismissButton = {
+					TextButton({ dialogStateSetter(null) }) {
+						Text(stringResource(R.string.dismiss_label))
+					}
+				},
+				icon = {
+					Icon(Icons.Default.Warning, null)
+				},
+				text = {
+					Text(stringResource(R.string.background_image_confirm_delete_label))
+				},
+			)
+		}
+	}
+
+	@Composable
+	abstract fun Dialog(dialogStateSetter: (DialogState?) -> Unit)
 }
 
 private fun Context.addBackgroundImage(bitmap: Bitmap) {
