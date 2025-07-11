@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.settings.DxrHttpProxy
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
+import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.authBaseUrl
 import com.buhzzi.danxiretainer.repository.settings.authBaseUrlFlow
@@ -112,42 +113,42 @@ fun SettingsNetworkPage() {
 				}
 			}
 
-			val dxrHttpProxy by DxrSettings.Models.httpProxyFlow.collectAsState(null)
+			val httpProxy by DxrSettings.Models.httpProxyFlow.collectAsState(null)
 			ToggleListItem(
-				dxrHttpProxy?.enabled == true,
+				httpProxy?.enabled == true,
 				stringResource(R.string.proxy_label),
 				stringResource(R.string.use_proxy_to_access_internet_label),
 				Icons.Default.NetworkPing,
 			) { checked ->
-				DxrSettings.Models.httpProxy = (dxrHttpProxy ?: DxrHttpProxy()).copy(
+				(httpProxy ?: DxrHttpProxy()).copy(
 					enabled = checked,
-				)
+				).let { updateHttpProxy(it) }
 			}
-			AnimatedVisibility(dxrHttpProxy?.enabled == true) {
+			AnimatedVisibility(httpProxy?.enabled == true) {
 				Column {
 					InputListItem(
-						dxrHttpProxy?.host ?: "",
+						httpProxy?.host ?: "",
 						stringResource(R.string.host_label),
-						settingsValueStringResource(dxrHttpProxy?.host),
+						settingsValueStringResource(httpProxy?.host),
 						stringResource(R.string.proxy_server_host_label),
 						Icons.Default.Dns,
 					) { text ->
-						DxrSettings.Models.httpProxy = dxrHttpProxy?.copy(
+						httpProxy?.copy(
 							host = text,
-						)
+						)?.let { updateHttpProxy(it) }
 						true
 					}
 					InputListItem(
-						dxrHttpProxy?.port?.toString() ?: "",
+						httpProxy?.port?.toString() ?: "",
 						stringResource(R.string.port_label),
-						settingsValueStringResource(dxrHttpProxy?.port?.toString()),
+						settingsValueStringResource(httpProxy?.port?.toString()),
 						stringResource(R.string.proxy_server_port_label),
 						Icons.Default.SettingsInputComponent,
 					) { text ->
 						text.toUShortOrNull()?.toInt()?.let { port ->
-							DxrSettings.Models.httpProxy = dxrHttpProxy?.copy(
+							httpProxy?.copy(
 								port = port,
-							)
+							)?.let { updateHttpProxy(it) }
 							true
 						} == true
 					}
@@ -155,4 +156,9 @@ fun SettingsNetworkPage() {
 			}
 		}
 	}
+}
+
+private fun updateHttpProxy(httpProxy: DxrHttpProxy) {
+	DxrSettings.Models.httpProxy = httpProxy
+	DxrForumApi.updateClient()
 }

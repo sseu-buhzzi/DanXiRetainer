@@ -71,39 +71,48 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
 object DxrForumApi {
-	private val baseAuthUrl get() = DxrSettings.Items.authBaseUrl ?: Constant.AUTH_BASE_URL.also {
-		DxrSettings.Items.authBaseUrl = it
-	}
-
-	private val baseUrl get() = DxrSettings.Items.forumBaseUrl ?: Constant.FORUM_BASE_URL.also {
-		DxrSettings.Items.forumBaseUrl = it
-	}
-
-	private val baseImageUrl get() = DxrSettings.Items.imageBaseUrl ?: Constant.IMAGE_BASE_URL.also {
-		DxrSettings.Items.imageBaseUrl = it
-	}
-
-	private val client = HttpClient(CIO) {
-		install(ContentNegotiation) {
-			json(dxrJson)
+	private val baseAuthUrl
+		get() = DxrSettings.Items.authBaseUrl ?: Constant.AUTH_BASE_URL.also {
+			DxrSettings.Items.authBaseUrl = it
 		}
-		install(Logging) {
-			level = LogLevel.ALL
-			logger = object : Logger {
-				override fun log(message: String) {
-					Log.d("CIO", message)
+	private val baseUrl
+		get() = DxrSettings.Items.forumBaseUrl ?: Constant.FORUM_BASE_URL.also {
+			DxrSettings.Items.forumBaseUrl = it
+		}
+	private val baseImageUrl
+		get() = DxrSettings.Items.imageBaseUrl ?: Constant.IMAGE_BASE_URL.also {
+			DxrSettings.Items.imageBaseUrl = it
+		}
+
+	private lateinit var client: HttpClient
+
+	init {
+		updateClient()
+	}
+
+	fun updateClient() {
+		client = HttpClient(CIO) {
+			install(ContentNegotiation) {
+				json(dxrJson)
+			}
+			install(Logging) {
+				level = LogLevel.ALL
+				logger = object : Logger {
+					override fun log(message: String) {
+						Log.d("CIO", message)
+					}
 				}
 			}
-		}
-		engine {
-			DxrSettings.Models.httpProxy?.takeIf { it.enabled == true }?.runCatching {
-				proxy = ProxyBuilder.http("http://$hostNotNull:$portNotNull")
+			engine {
+				DxrSettings.Models.httpProxy?.takeIf { it.enabled == true }?.runCatching {
+					proxy = ProxyBuilder.http("http://$hostNotNull:$portNotNull")
+				}
 			}
-		}
-		defaultRequest {
-			DxrSettings.Items.accessJwt?.let { accessJwt ->
-				if (HttpHeaders.Authorization !in headers) {
-					headers[HttpHeaders.Authorization] = "Bearer $accessJwt"
+			defaultRequest {
+				DxrSettings.Items.accessJwt?.let { accessJwt ->
+					if (HttpHeaders.Authorization !in headers) {
+						headers[HttpHeaders.Authorization] = "Bearer $accessJwt"
+					}
 				}
 			}
 		}
@@ -464,6 +473,7 @@ object DxrForumApi {
 					put("hole_id", holeId)
 				})
 			}
+
 			SetStatusMode.DELETE -> client.delete("$baseUrl/user/favorites") {
 				contentType(ContentType.Application.Json)
 				setBody(buildJsonObject {
@@ -485,6 +495,7 @@ object DxrForumApi {
 					put("hole_id", holeId)
 				})
 			}
+
 			SetStatusMode.DELETE -> client.delete("$baseUrl/users/subscriptions") {
 				contentType(ContentType.Application.Json)
 				setBody(buildJsonObject {
@@ -688,7 +699,7 @@ object DxrForumApi {
 
 	suspend fun adminAddSpecialTag(
 		tag: String,
-		floorId: Long?
+		floorId: Long?,
 	): Int {
 		val rsp = client.patch("$baseUrl/floors/$floorId/_webvpn") {
 			contentType(ContentType.Application.Json)
