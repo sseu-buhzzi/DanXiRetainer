@@ -147,8 +147,4 @@ enum class DxrDestination(
 	SettingsGeneral("/settings/general", {
 		SettingsGeneralPage()
 	});
-
-	object ForumHoleArguments {
-		const val HOLE_ID = "holeId"
-	}
 }
