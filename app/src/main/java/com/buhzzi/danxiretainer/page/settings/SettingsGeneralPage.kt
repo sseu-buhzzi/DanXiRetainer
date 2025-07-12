@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Source
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.SwipeVertical
+import androidx.compose.material.icons.filled.VerticalAlignBottom
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -31,6 +32,8 @@ import com.buhzzi.danxiretainer.repository.settings.cleanMode
 import com.buhzzi.danxiretainer.repository.settings.cleanModeFlow
 import com.buhzzi.danxiretainer.repository.settings.contentSource
 import com.buhzzi.danxiretainer.repository.settings.contentSourceFlow
+import com.buhzzi.danxiretainer.repository.settings.floorsReversed
+import com.buhzzi.danxiretainer.repository.settings.floorsReversedFlow
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientation
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationFlow
 import com.buhzzi.danxiretainer.repository.settings.sortOrder
@@ -152,6 +155,16 @@ fun SettingsGeneralPage() {
 					)
 				},
 			)
+
+			val floorsReversed by DxrSettings.Items.floorsReversedFlow.collectAsState(null)
+			ToggleListItem(
+				floorsReversed == true,
+				stringResource(R.string.floors_reversed_label),
+				stringResource(R.string.floors_reversed_description),
+				Icons.Default.VerticalAlignBottom,
+			) { checked ->
+				DxrSettings.Items.floorsReversed = checked
+			}
 		}
 	}
 }

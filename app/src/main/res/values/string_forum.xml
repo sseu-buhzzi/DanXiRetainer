@@ -1,5 +1,6 @@
 <resources>
 	<string name="forum_label">論壇</string>
+
 	<string name="posted_on_label">%s于%s發佈</string>
 	<string name="replied_on_label">%s于%s回覆</string>
 	<string name="human_duration_moments_label">剛々</string>
@@ -9,4 +10,11 @@
 	<string name="human_duration_days_label">%d天前</string>
 	<string name="modified_label">已修改</string>
 	<string name="modified_times_label">已修改%d次</string>
+
+	<string name="floors_order_label">樓層排序方向</string>
+	<string name="open_in_normal_order_at_newest_label">以正序載入至最新</string>
+	<string name="open_in_reversed_order_at_newest_label">以倒序載入至最新</string>
+	<string name="change_floors_order_to_normal_label">變更預設爲以正序載入</string>
+	<string name="change_floors_order_to_reversed_label">變更預設爲以倒序載入</string>
+	<string name="floors_order_current_label">（當前）</string>
 </resources>

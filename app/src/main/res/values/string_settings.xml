@@ -54,4 +54,6 @@
 	<string name="content_sources_label">內容源</string>
 	<string name="sort_order_label">排序依據</string>
 	<string name="pager_scroll_orientation_label">分頁滾動方向</string>
+	<string name="floors_reversed_label">樓層倒序</string>
+	<string name="floors_reversed_description">瀏覽帖子樓層時按樓層倒序載入</string>
 </resources>

@@ -50,7 +50,7 @@ fun SelectBackgroundImageListItem() {
 	val backgroundImagePathString by DxrSettings.Items.backgroundImagePathStringFlow.collectAsState(null)
 	val userProfile by DxrSettings.Models.userProfileFlow.collectAsState(null)
 
-	var dialogState by remember { mutableStateOf<DialogState?>(null) }
+	var dialogEvent by remember { mutableStateOf<DialogEvent?>(null) }
 
 	val errorReadingLabel = stringResource(R.string.background_image_error_reading_label)
 	val errorDecodingLabel = stringResource(R.string.background_image_error_decoding_label)
@@ -62,7 +62,7 @@ fun SelectBackgroundImageListItem() {
 				?: error(errorDecodingLabel)
 			context.addBackgroundImage(bitmap)
 		}.getOrElse { exception ->
-			dialogState = DialogState.InformException(exception)
+			dialogEvent = DialogEvent.InformException(exception)
 		}
 	}
 	val selectBackgroundImageLauncher = rememberLauncherForActivityResult(
@@ -70,7 +70,7 @@ fun SelectBackgroundImageListItem() {
 	) { uri ->
 		uri?.let { onImageSelected(it) }
 	}
-	dialogState?.Dialog { dialogState = it }
+	dialogEvent?.Dialog { dialogEvent = it }
 	ListItem(
 		{
 			Text(stringResource(R.string.background_image_label))
@@ -79,7 +79,7 @@ fun SelectBackgroundImageListItem() {
 			.clickable {
 				val targetPath = context.backgroundImagePathOf(userProfile?.userId)
 				if (targetPath.exists()) {
-					dialogState = DialogState.ConfirmRemoval(targetPath)
+					dialogEvent = DialogEvent.ConfirmRemoval(targetPath)
 				} else {
 					selectBackgroundImageLauncher.launch(
 						PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
@@ -100,21 +100,21 @@ fun SelectBackgroundImageListItem() {
 	)
 }
 
-private sealed class DialogState {
+private sealed class DialogEvent {
 	data class InformException(
 		val cause: Throwable,
-	) : DialogState() {
+	) : DialogEvent() {
 		@Composable
-		override fun Dialog(dialogStateSetter: (DialogState?) -> Unit) {
+		override fun Dialog(dialogEventSetter: (DialogEvent?) -> Unit) {
 			AlertDialog(
-				{ dialogStateSetter(null) },
+				{ dialogEventSetter(null) },
 				{
-					TextButton({ dialogStateSetter(null) }) {
+					TextButton({ dialogEventSetter(null) }) {
 						Text(stringResource(R.string.confirm_label))
 					}
 				},
 				dismissButton = {
-					TextButton({ dialogStateSetter(null) }) {
+					TextButton({ dialogEventSetter(null) }) {
 						Text(stringResource(R.string.dismiss_label))
 					}
 				},
@@ -133,27 +133,27 @@ private sealed class DialogState {
 
 	data class ConfirmRemoval(
 		val targetPath: Path,
-	) : DialogState() {
+	) : DialogEvent() {
 		@Composable
-		override fun Dialog(dialogStateSetter: (DialogState?) -> Unit) {
+		override fun Dialog(dialogEventSetter: (DialogEvent?) -> Unit) {
 			val context = LocalContext.current
 
 			AlertDialog(
-				{ dialogStateSetter(null) },
+				{ dialogEventSetter(null) },
 				{
 					TextButton({
 						runCatching {
 							context.removeBackgroundImage()
 						}.getOrElse { exception ->
-							dialogStateSetter(InformException(exception))
+							dialogEventSetter(InformException(exception))
 						}
-						dialogStateSetter(null)
+						dialogEventSetter(null)
 					}) {
 						Text(stringResource(R.string.confirm_label))
 					}
 				},
 				dismissButton = {
-					TextButton({ dialogStateSetter(null) }) {
+					TextButton({ dialogEventSetter(null) }) {
 						Text(stringResource(R.string.dismiss_label))
 					}
 				},
@@ -168,7 +168,7 @@ private sealed class DialogState {
 	}
 
 	@Composable
-	abstract fun Dialog(dialogStateSetter: (DialogState?) -> Unit)
+	abstract fun Dialog(dialogEventSetter: (DialogEvent?) -> Unit)
 }
 
 private fun Context.addBackgroundImage(bitmap: Bitmap) {

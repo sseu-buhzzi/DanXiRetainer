@@ -81,3 +81,7 @@ private fun decodePagerScrollOrientationString(string: String?) = string?.let {
 
 private fun encodePagerScrollOrientationString(contentResource: DxrPagerScrollOrientation?) =
 	contentResource?.name
+
+val Keys.floorsReversed get() = booleanPreferencesKey("floors_reversed")
+var Items.floorsReversed by ItemDelegate(Keys.floorsReversed)
+val Items.floorsReversedFlow get() = getFlow(Keys.floorsReversed)

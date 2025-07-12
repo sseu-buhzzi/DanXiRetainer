@@ -149,9 +149,7 @@ fun TagChip(
 		contentColor = contentColor,
 	) {
 		Text(
-			checkNotNull(tag.name) {
-				tag
-			},
+			tag.nameNotNull,
 			modifier = Modifier
 				.padding(4.dp, 0.dp),
 		)

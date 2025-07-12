@@ -54,6 +54,7 @@ import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.backgroundImagePathStringFlow
 import com.buhzzi.danxiretainer.repository.settings.contentSourceFlow
 import com.buhzzi.danxiretainer.repository.settings.sortOrder
+import com.buhzzi.danxiretainer.repository.settings.userProfile
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
 import com.buhzzi.danxiretainer.util.dxrJson
 import com.buhzzi.danxiretainer.util.floorIndicesPathOf
@@ -61,7 +62,10 @@ import com.buhzzi.danxiretainer.util.holeIndicesPathOf
 import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringRfc3339
+import dart.package0.dan_xi.model.forum.OtFloor
+import dart.package0.dan_xi.model.forum.OtHole
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -140,8 +144,6 @@ fun ForumPageTopBar() {
 
 	val scope = rememberCoroutineScope()
 
-	val userProfile by DxrSettings.Models.userProfileFlow.collectAsState(null)
-
 	TopAppBar(
 		{
 			sessionState?.holeId?.let { holeId ->
@@ -153,7 +155,7 @@ fun ForumPageTopBar() {
 				fun goBackToForumHolesPage() {
 					scope.launch(Dispatchers.IO) {
 						runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
-							val userId = checkNotNull(userProfile) { "No user profile" }.userIdNotNull
+							val userId = checkNotNull(DxrSettings.Models.userProfile) { "No user profile" }.userIdNotNull
 							DxrRetention.updateSessionState(userId) {
 								copy(
 									holeId = null,
@@ -262,22 +264,7 @@ private fun ForumApiHolesPager(userId: Long) {
 	ChannelPager(
 		{
 			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
-				var startTime = forumApiRefreshTime
-				val loadLength = 10
-				val sortOrder = DxrSettings.Models.sortOrder ?: return@runCatchingOnSnackbar
-
-				while (true) {
-					DxrForumApi.ensureAuth()
-					val holes = DxrForumApi.loadHoles(
-						startTime,
-						null,
-						length = loadLength.toLong(),
-						sortOrder = sortOrder,
-					)
-					holes.forEach { hole -> send(hole) }
-					holes.size < loadLength && break
-					startTime = holes.last().getSortingDateTime(sortOrder)
-				}
+				sendForumApiHoles(forumApiRefreshTime)
 			}
 		},
 		dxrJson.encodeToString(buildJsonObject {
@@ -310,40 +297,45 @@ private fun ForumApiHolesPager(userId: Long) {
 	}
 }
 
+private suspend fun ProducerScope<OtHole>.sendForumApiHoles(forumApiRefreshTime: OffsetDateTime) {
+	var startTime = forumApiRefreshTime
+	val loadLength = 10
+	val sortOrder = DxrSettings.Models.sortOrder ?: return
+
+	while (true) {
+		DxrForumApi.ensureAuth()
+		val holes = DxrForumApi.loadHoles(
+			startTime,
+			null,
+			length = loadLength.toLong(),
+			sortOrder = sortOrder,
+		)
+		holes.forEach { hole ->
+			send(hole)
+		}
+		holes.size < loadLength && break
+		startTime = holes.last().getSortingDateTime(sortOrder)
+	}
+}
+
 @Composable
 private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 	val snackbarController = LocalSnackbarController.current
-	val sessionState = LocalSessionState.current ?: return
 	val holeSessionState = DxrRetention.loadHoleSessionState(userId, holeId)
 
 	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
 
-	val forumApiRefreshTime = sessionState.forumApiRefreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
+	val forumApiRefreshTime = holeSessionState?.forumApiRefreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
 	ChannelPager(
 		{
 			// TODO reversed floors, also for retention
 			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
-				DxrForumApi.ensureAuth()
-				val hole = DxrForumApi.loadHoleById(holeId)
-				Log.d("ForumApiFloorsPager", "loadHoleById($holeId)")
-
-				var startFloorIndex = 0
-				val loadLength = 50
-
-				do {
-					DxrForumApi.ensureAuth()
-					val floors = DxrForumApi.loadFloors(
-						hole,
-						startFloor = startFloorIndex.toLong(),
-						length = loadLength.toLong(),
-					)
-					Log.d("ForumApiFloorsPager", "loadFloors($holeId, $startFloorIndex, $loadLength): { size: ${floors.size} }")
-					floors.forEachIndexed { index, floor ->
-						send(Triple(floor, hole, startFloorIndex + index))
-					}
-					startFloorIndex += floors.size
-				} while (floors.size >= loadLength)
+				if (holeSessionState?.reversed == true) {
+					sendForumApiFloorsReversed(holeId)
+				} else {
+					sendForumApiFloors(holeId)
+				}
 			}
 		},
 		dxrJson.encodeToString(buildJsonObject {
@@ -356,7 +348,6 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 		holeSessionState?.pagerFloorIndex ?: 0,
 		holeSessionState?.pagerFloorScrollOffset ?: 0,
 		{ floorIndex, floorScrollOffset ->
-			// untested TODO save it to session state of the hole
 			DxrRetention.updateHoleSessionState(userId, holeId) {
 				copy(
 					pagerFloorIndex = floorIndex,
@@ -376,6 +367,50 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 	) { (floor, hole, index) ->
 		FloorCard(floor, hole, index)
 	}
+}
+
+private suspend fun ProducerScope<Triple<OtFloor, OtHole, Int>>.sendForumApiFloors(holeId: Long) {
+	DxrForumApi.ensureAuth()
+	val hole = DxrForumApi.loadHoleById(holeId)
+
+	var startFloorIndex = 0
+	val loadLength = 50
+
+	do {
+		DxrForumApi.ensureAuth()
+		val floors = DxrForumApi.loadFloors(
+			hole,
+			startFloor = startFloorIndex.toLong(),
+			length = loadLength.toLong(),
+		)
+		floors.forEachIndexed { index, floor ->
+			send(Triple(floor, hole, startFloorIndex + index))
+		}
+		startFloorIndex += floors.size
+	} while (floors.size >= loadLength)
+}
+
+private suspend fun ProducerScope<Triple<OtFloor, OtHole, Int>>.sendForumApiFloorsReversed(holeId: Long) {
+	DxrForumApi.ensureAuth()
+	val hole = DxrForumApi.loadHoleById(holeId)
+	Log.d("sendForumApiFloorsReversed", "loadHoleById($holeId)")
+
+	var endFloorIndex = hole.floorsCount.toInt()
+	val loadLength = 50
+
+	do {
+		DxrForumApi.ensureAuth()
+		val startFloorIndex = (endFloorIndex - loadLength).coerceAtLeast(0)
+		val floors = DxrForumApi.loadFloors(
+			hole,
+			startFloor = startFloorIndex.toLong(),
+			length = (endFloorIndex - startFloorIndex).toLong(),
+		).asReversed()
+		floors.forEachIndexed { index, floor ->
+			send(Triple(floor, hole, endFloorIndex - index - 1))
+		}
+		endFloorIndex = startFloorIndex
+	} while (endFloorIndex > 0)
 }
 
 @Composable
@@ -466,6 +501,7 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 
 	ChannelPager(
 		{
+			// TODO reversed floors, also for retention
 			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
 				val hole = requireNotNull(DxrRetention.loadHole(userId, holeId)) { "DxrRetention.loadHole($userId, $holeId) failed" }
 

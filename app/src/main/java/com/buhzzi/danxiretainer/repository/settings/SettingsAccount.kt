@@ -19,6 +19,7 @@ val Keys.passwordCt get() = stringPreferencesKey("password_ct")
 var Items.passwordCt by ItemDelegate(Keys.passwordCt)
 val Items.passwordCtFlow get() = getFlow(Keys.passwordCt)
 
+// TODO 加入NotNull獲取器
 val Keys.userProfileJsonString get() = stringPreferencesKey("user_profile_json_string")
 var Items.userProfileJsonString by ItemDelegate(Keys.userProfileJsonString)
 val Items.userProfileJsonStringFlow get() = getFlow(Keys.userProfileJsonString)
