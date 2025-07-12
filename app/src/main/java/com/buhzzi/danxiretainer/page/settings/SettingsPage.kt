@@ -46,7 +46,7 @@ fun SettingsPageContent(modifier: Modifier = Modifier) {
 	}
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsPageTopBar() {
 	TopAppBar({

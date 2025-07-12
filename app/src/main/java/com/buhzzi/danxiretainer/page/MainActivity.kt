@@ -8,7 +8,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -81,7 +80,6 @@ val LocalNavController = compositionLocalOf<NavController> {
 	error("No NavController provided")
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DxrRouter() {
 	val navController = rememberNavController()

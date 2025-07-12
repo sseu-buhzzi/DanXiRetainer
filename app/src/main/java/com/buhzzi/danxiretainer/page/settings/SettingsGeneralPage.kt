@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.Source
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.SwipeVertical
 import androidx.compose.material.icons.filled.VerticalAlignBottom
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
@@ -44,7 +43,6 @@ import com.buhzzi.danxiretainer.repository.settings.sortOrderOrDefault
 import com.buhzzi.danxiretainer.repository.settings.sortOrderOrDefaultFlow
 import dart.package0.dan_xi.provider.SortOrder
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsGeneralPage() {
 	DxrScaffoldWrapper(

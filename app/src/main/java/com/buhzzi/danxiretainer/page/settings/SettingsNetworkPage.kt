@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.NetworkPing
 import androidx.compose.material.icons.filled.SettingsInputComponent
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,7 +35,6 @@ import com.buhzzi.danxiretainer.repository.settings.imageBaseUrlOrDefaultFlow
 import dart.package0.dan_xi.common.Constant
 import dart.package0.dan_xi.util.WebvpnProxy
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsNetworkPage() {
 	DxrScaffoldWrapper(

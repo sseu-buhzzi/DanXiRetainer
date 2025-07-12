@@ -2,7 +2,6 @@ package com.buhzzi.danxiretainer.page.retension
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -17,7 +16,7 @@ fun RetentionPageContent(modifier: Modifier = Modifier) {
 		)
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RetentionPageTopBar() {
 	TopAppBar({

@@ -46,7 +46,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HoleCard(hole: OtHole) {
 	val context = LocalContext.current
