@@ -17,4 +17,13 @@
 	<string name="change_floors_order_to_normal_label">變更預設爲以正序載入</string>
 	<string name="change_floors_order_to_reversed_label">變更預設爲以倒序載入</string>
 	<string name="floors_order_current_label">（當前）</string>
+	<string name="floor_time_created">發帖時間：%s</string>
+	<string name="floor_time_updated">修改時間：%s</string>
+	<string name="floor_copy_selected">選擇複製</string>
+	<string name="floor_copy_all">全部複製</string>
+	<string name="floor_copy_json">複製JSON</string>
+	<string name="floor_copy_id">複製樓層號</string>
+	<string name="floor_share_as_text">以文本形式分享樓層</string>
+	<string name="floor_display_someone_only">只看此人</string>
+	<string name="floor_report">舉報</string>
 </resources>

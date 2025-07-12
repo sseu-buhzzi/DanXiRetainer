@@ -25,12 +25,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.LocalSnackbarController
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
@@ -42,6 +40,7 @@ fun HoleActionsRow(
 	modifier: Modifier = Modifier,
 	containerHeight: Dp = ActionSegmentedButtonDefaults.containerHeight,
 	iconSize: Dp = ActionSegmentedButtonDefaults.iconSize,
+	moreAction: () -> Unit,
 ) {
 	MultiChoiceSegmentedButtonRow(
 		modifier = modifier
@@ -50,6 +49,7 @@ fun HoleActionsRow(
 		MoreActionSegmentedButton(
 			0, 1,
 			iconSize = iconSize,
+			action = moreAction,
 		)
 	}
 }
@@ -61,6 +61,7 @@ fun FloorActionsRow(
 	containerHeight: Dp = ActionSegmentedButtonDefaults.containerHeight,
 	iconSize: Dp = ActionSegmentedButtonDefaults.iconSize,
 	labelSize: TextUnit = ActionSegmentedButtonDefaults.labelSize,
+	moreAction: () -> Unit,
 ) {
 	val likeDislikeState = rememberLikeDislikeState(
 		floor.likeNotNull.toInt(),
@@ -91,6 +92,7 @@ fun FloorActionsRow(
 		MoreActionSegmentedButton(
 			2, 3,
 			iconSize = iconSize,
+			action = moreAction,
 		)
 	}
 }
@@ -147,11 +149,12 @@ private fun MultiChoiceSegmentedButtonRowScope.MoreActionSegmentedButton(
 	count: Int,
 	modifier: Modifier = Modifier,
 	iconSize: Dp = ActionSegmentedButtonDefaults.iconSize,
+	action: () -> Unit
 ) {
 	ActionSegmentedButton(
 		false,
 		{
-
+			action()
 		},
 		index,
 		count,

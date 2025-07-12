@@ -53,7 +53,7 @@ fun HoleCard(hole: OtHole) {
 
 	val scope = rememberCoroutineScope()
 
-	var bottomSheetEvent by remember { mutableStateOf<BottomSheetEvent?>(null) }
+	var bottomSheetEvent by remember { mutableStateOf<HolesBottomSheetEvent?>(null) }
 
 	bottomSheetEvent?.BottomSheet { bottomSheetEvent = it }
 
@@ -69,7 +69,7 @@ fun HoleCard(hole: OtHole) {
 			.padding(4.dp)
 			.combinedClickable(
 				onLongClick = {
-					bottomSheetEvent = BottomSheetEvent.HoleActions(hole)
+					bottomSheetEvent = HolesBottomSheetEvent.HoleActions(hole)
 				},
 			) {
 				scope.launch(Dispatchers.IO) {
@@ -92,7 +92,7 @@ fun HoleCard(hole: OtHole) {
 				verticalAlignment = Alignment.CenterVertically,
 			) {
 				AnonynameRow(firstFloor.anonyname ?: "?", true)
-				HoleActionsRow()
+				HoleActionsRow { bottomSheetEvent = HolesBottomSheetEvent.HoleActions(hole) }
 			}
 			Text(
 				firstFloor.filteredContentNotNull,
@@ -103,9 +103,7 @@ fun HoleCard(hole: OtHole) {
 						.height(IntrinsicSize.Min)
 						.padding(4.dp)
 						.combinedClickable(
-							onLongClick = {
-								bottomSheetEvent = BottomSheetEvent.LastFloorActions(hole)
-							},
+							onLongClick = { bottomSheetEvent = HolesBottomSheetEvent.LastFloorActions(hole) },
 						) {
 							scope.launch(Dispatchers.IO) {
 								runCatchingOnSnackbar(snackbarController) {
@@ -180,14 +178,14 @@ fun HoleCard(hole: OtHole) {
 	}
 }
 
-private sealed class BottomSheetEvent(
+private sealed class HolesBottomSheetEvent(
 	val hole: OtHole,
 ) {
 	// feat TODO hole actions can provide an access to last floor actions
-	class HoleActions(hole: OtHole) : BottomSheetEvent(hole) {
+	class HoleActions(hole: OtHole) : HolesBottomSheetEvent(hole) {
 		@OptIn(ExperimentalMaterial3Api::class)
 		@Composable
-		override fun BottomSheet(bottomSheetEventSetter: (BottomSheetEvent?) -> Unit) {
+		override fun BottomSheet(bottomSheetEventSetter: (HolesBottomSheetEvent?) -> Unit) {
 			ActionsBottomSheet(
 				{ bottomSheetEventSetter(null) },
 			) {
@@ -203,10 +201,10 @@ private sealed class BottomSheetEvent(
 	}
 
 	// feat TODO open to last, open in reversed order, change the order, etc.
-	class LastFloorActions(hole: OtHole) : BottomSheetEvent(hole) {
+	class LastFloorActions(hole: OtHole) : HolesBottomSheetEvent(hole) {
 		@OptIn(ExperimentalMaterial3Api::class)
 		@Composable
-		override fun BottomSheet(bottomSheetEventSetter: (BottomSheetEvent?) -> Unit) {
+		override fun BottomSheet(bottomSheetEventSetter: (HolesBottomSheetEvent?) -> Unit) {
 			ActionsBottomSheet(
 				{ bottomSheetEventSetter(null) },
 			) {
@@ -218,7 +216,7 @@ private sealed class BottomSheetEvent(
 	}
 
 	@Composable
-	abstract fun BottomSheet(bottomSheetEventSetter: (BottomSheetEvent?) -> Unit)
+	abstract fun BottomSheet(bottomSheetEventSetter: (HolesBottomSheetEvent?) -> Unit)
 }
 
 @Composable
@@ -228,9 +226,7 @@ private fun OpenFloorsInOrderItem(hole: OtHole, reversed: Boolean) {
 	)
 
 	ClickCatchingActionBottomSheetItem(
-		{
-			openFloorsAtNewest(hole, reversed)
-		},
+		{ openFloorsAtNewest(hole, reversed) },
 	) {
 		Text(buildString {
 			append(
