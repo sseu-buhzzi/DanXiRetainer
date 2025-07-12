@@ -7,10 +7,10 @@ data class DxrSessionState(
 	val holeId: Long? = null,
 	val pagerHoleIndex: Int? = null,
 	val pagerHoleScrollOffset: Int? = null,
-	val forumApiRefreshTime: String? = null,
+	val refreshTime: String? = null,
 ) {
 	val holeIdNotNull get() = checkNotNull(holeId) { this }
 	val pagerHoleIndexNotNull get() = checkNotNull(pagerHoleIndex) { this }
 	val pagerHoleScrollOffsetNotNull get() = checkNotNull(pagerHoleScrollOffset) { this }
-	val forumApiRefreshTimeNotNull get() = checkNotNull(forumApiRefreshTime) { this }
+	val refreshTimeNotNull get() = checkNotNull(refreshTime) { this }
 }

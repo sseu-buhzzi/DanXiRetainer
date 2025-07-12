@@ -320,17 +320,17 @@ object DxrRetention {
 		writeRetainedJson(app.sessionStateCurrentPathOf(userId), dxrJson.encodeToJsonElement(sessionState))
 	}
 
-	fun loadSessionState(userId: Long): DxrSessionState? {
+	fun loadSessionState(userId: Long): DxrSessionState {
 		val path = app.sessionStateCurrentPathOf(userId)
 		if (path.notExists()) {
 			path.createParentDirectories().createFile()
 		}
-		val json = readRetainedJson(path) as? JsonObject ?: return null
+		val json = readRetainedJson(path) as? JsonObject ?: return DxrSessionState()
 		return dxrJson.decodeFromJsonElement(json)
 	}
 
 	fun updateSessionState(userId: Long, update: DxrSessionState.() -> DxrSessionState) {
-		val sessionState = loadSessionState(userId) ?: DxrSessionState()
+		val sessionState = loadSessionState(userId)
 		storeSessionState(userId, sessionState.update())
 	}
 
@@ -338,17 +338,17 @@ object DxrRetention {
 		writeRetainedJson(app.holeSessionStatePathOf(userId, holeId), dxrJson.encodeToJsonElement(holeSessionState))
 	}
 
-	fun loadHoleSessionState(userId: Long, holeId: Long): DxrHoleSessionState? {
+	fun loadHoleSessionState(userId: Long, holeId: Long): DxrHoleSessionState {
 		val path = app.holeSessionStatePathOf(userId, holeId)
 		if (path.notExists()) {
 			path.createParentDirectories().createFile()
 		}
-		val json = readRetainedJson(path) as? JsonObject ?: return null
+		val json = readRetainedJson(path) as? JsonObject ?: return DxrHoleSessionState()
 		return dxrJson.decodeFromJsonElement(json)
 	}
 
 	fun updateHoleSessionState(userId: Long, holeId: Long, update: DxrHoleSessionState.() -> DxrHoleSessionState) {
-		val holeSessionState = loadHoleSessionState(userId, holeId) ?: DxrHoleSessionState()
+		val holeSessionState = loadHoleSessionState(userId, holeId)
 		storeHoleSessionState(userId, holeId, holeSessionState.update())
 	}
 

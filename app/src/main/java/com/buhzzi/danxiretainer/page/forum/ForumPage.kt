@@ -1,7 +1,6 @@
 package com.buhzzi.danxiretainer.page.forum
 
 import android.os.FileObserver
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -44,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
+import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
 import com.buhzzi.danxiretainer.page.LocalSnackbarController
@@ -59,9 +59,11 @@ import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
 import com.buhzzi.danxiretainer.util.dxrJson
 import com.buhzzi.danxiretainer.util.floorIndicesPathOf
 import com.buhzzi.danxiretainer.util.holeIndicesPathOf
-import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
+import com.buhzzi.danxiretainer.util.holeSessionStatePathOf
+import com.buhzzi.danxiretainer.util.sessionStateDirPathOf
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringRfc3339
+import com.buhzzi.danxiretainer.util.updateWith
 import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
 import kotlinx.coroutines.Dispatchers
@@ -73,35 +75,26 @@ import java.time.OffsetDateTime
 import kotlin.io.path.Path
 import kotlin.io.path.getLastModifiedTime
 
-val LocalSessionState = compositionLocalOf<DxrSessionState?> { null }
+val LocalSessionState = compositionLocalOf<DxrSessionState> {
+	error("LocalSessionState not provided")
+}
 
 @Composable
 fun ForumPage() {
 	val context = LocalContext.current
 
 	val userProfile by DxrSettings.Models.userProfileFlow.collectAsState(null)
+	// optional TODO this kind of `return`s can be more user-friendly loading information boxes
+	val userId = userProfile?.userId ?: return
 
-	// TODO 移除其他trigger
-	val sessionState by produceState<DxrSessionState?>(null, userProfile?.userId) {
-		val userId = userProfile?.userId ?: return@produceState
-
-		value = DxrRetention.loadSessionState(userId)
-
-		val observer = userProfile?.userId?.let { userId ->
-			object : FileObserver(context.sessionStateCurrentPathOf(userId).toFile(), CLOSE_WRITE) {
-				override fun onEvent(event: Int, path: String?) {
-					if (event == CLOSE_WRITE) {
-						value = DxrRetention.loadSessionState(userId)
-					}
-				}
-			}
-		}
-		observer?.startWatching()
-
-		awaitDispose {
-			observer?.stopWatching()
+	// TODO 移除其他trigger, replace them with unified entrance function
+	val sessionStateNullable by produceState<DxrSessionState?>(null, userId) {
+		val sessionStateCurrentPath = context.sessionStateDirPathOf(userId)
+		updateWith(listOf(sessionStateCurrentPath.toFile())) {
+			DxrRetention.loadSessionState(userId)
 		}
 	}
+	val sessionState = sessionStateNullable ?: return
 
 	var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
 	val selectedPage by remember { derivedStateOf { ForumPages.entries[selectedIndex] } }
@@ -144,12 +137,12 @@ fun ForumPageTopBar() {
 
 	TopAppBar(
 		{
-			sessionState?.holeId?.let { holeId ->
+			sessionState.holeId?.let { holeId ->
 				Text("#$holeId")
 			} ?: Text(stringResource(R.string.forum_label))
 		},
 		navigationIcon = {
-			if (sessionState?.holeId != null) {
+			if (sessionState.holeId != null) {
 				fun goBackToForumHolesPage() {
 					scope.launch(Dispatchers.IO) {
 						runCatchingOnSnackbar(snackbarController) {
@@ -236,11 +229,11 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 		}
 		userProfile?.userId?.let { userId ->
 			when (contentSource) {
-				DxrContentSource.FORUM_API -> sessionState?.holeId?.let { currentHoleId ->
+				DxrContentSource.FORUM_API -> sessionState.holeId?.let { currentHoleId ->
 					ForumApiFloorsPager(userId, currentHoleId)
 				} ?: ForumApiHolesPager(userId)
 
-				DxrContentSource.RETENTION -> sessionState?.holeId?.let { currentHoleId ->
+				DxrContentSource.RETENTION -> sessionState.holeId?.let { currentHoleId ->
 					RetentionFloorsPager(userId, currentHoleId)
 				} ?: RetentionHolesPager(userId)
 
@@ -253,36 +246,28 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 @Composable
 private fun ForumApiHolesPager(userId: Long) {
 	val snackbarController = LocalSnackbarController.current
-	val sessionState = LocalSessionState.current ?: return
-
-	val forumApiRefreshTime = sessionState.forumApiRefreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
+	val sessionState = LocalSessionState.current
+	val refreshTime = sessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
 	ChannelPager(
 		{
 			runCatchingOnSnackbar(snackbarController) {
-				sendForumApiHoles(forumApiRefreshTime)
+				sendForumApiHoles(refreshTime)
 			}
 		},
 		dxrJson.encodeToString(buildJsonObject {
 			put("fun", "ForumApiHolesPager")
 			put("userId", userId)
-			put("timeKey", forumApiRefreshTime.toStringRfc3339())
+			put("refreshTime", refreshTime.toStringRfc3339())
 		}),
 		16,
 		sessionState.pagerHoleIndex ?: 0,
 		sessionState.pagerHoleScrollOffset ?: 0,
-		{ holeIndex, holeScrollOffset ->
-			DxrRetention.updateSessionState(userId) {
-				copy(
-					pagerHoleIndex = holeIndex,
-					pagerHoleScrollOffset = holeScrollOffset,
-				)
-			}
-		},
+		getHolePositionSaver(userId),
 		{
 			DxrRetention.updateSessionState(userId) {
 				copy(
-					forumApiRefreshTime = OffsetDateTime.now().toStringRfc3339(),
+					refreshTime = OffsetDateTime.now().toStringRfc3339(),
 				)
 			}
 		},
@@ -293,8 +278,8 @@ private fun ForumApiHolesPager(userId: Long) {
 	}
 }
 
-private suspend fun ProducerScope<OtHole>.sendForumApiHoles(forumApiRefreshTime: OffsetDateTime) {
-	var startTime = forumApiRefreshTime
+private suspend fun ProducerScope<OtHole>.sendForumApiHoles(refreshTime: OffsetDateTime) {
+	var startTime = refreshTime
 	val loadLength = 10
 	val sortOrder = DxrSettings.Models.sortOrder ?: return
 
@@ -316,16 +301,22 @@ private suspend fun ProducerScope<OtHole>.sendForumApiHoles(forumApiRefreshTime:
 
 @Composable
 private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
+	val context = LocalContext.current
 	val snackbarController = LocalSnackbarController.current
-	val holeSessionState = DxrRetention.loadHoleSessionState(userId, holeId)
 
-	val forumApiRefreshTime = holeSessionState?.forumApiRefreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
+	val holeSessionStateNullable by produceState<DxrHoleSessionState?>(null, userId, holeId) {
+		val holeSessionStatePath = context.holeSessionStatePathOf(userId, holeId)
+		updateWith(listOf(holeSessionStatePath.toFile())) {
+			DxrRetention.loadHoleSessionState(userId, holeId)
+		}
+	}
+	val holeSessionState = holeSessionStateNullable ?: return
+	val refreshTime = holeSessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
 	ChannelPager(
 		{
-			// TODO reversed floors, also for retention
 			runCatchingOnSnackbar(snackbarController) {
-				if (holeSessionState?.reversed == true) {
+				if (holeSessionState.reversed == true) {
 					sendForumApiFloorsReversed(holeId)
 				} else {
 					sendForumApiFloors(holeId)
@@ -336,23 +327,16 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 			put("fun", "ForumApiFloorsPager")
 			put("userId", userId)
 			put("holeId", holeId)
-			put("timeKey", forumApiRefreshTime.toStringRfc3339())
+			put("refreshTime", refreshTime.toStringRfc3339())
 		}),
 		16,
-		holeSessionState?.pagerFloorIndex ?: 0,
-		holeSessionState?.pagerFloorScrollOffset ?: 0,
-		{ floorIndex, floorScrollOffset ->
-			DxrRetention.updateHoleSessionState(userId, holeId) {
-				copy(
-					pagerFloorIndex = floorIndex,
-					pagerFloorScrollOffset = floorScrollOffset,
-				)
-			}
-		},
+		holeSessionState.pagerFloorIndex ?: 0,
+		holeSessionState.pagerFloorScrollOffset ?: 0,
+		getFloorPositionSaver(userId, holeId),
 		{
 			DxrRetention.updateHoleSessionState(userId, holeId) {
 				copy(
-					forumApiRefreshTime = OffsetDateTime.now().toStringRfc3339(),
+					refreshTime = OffsetDateTime.now().toStringRfc3339(),
 				)
 			}
 		},
@@ -387,7 +371,6 @@ private suspend fun ProducerScope<Triple<OtFloor, OtHole, Int>>.sendForumApiFloo
 private suspend fun ProducerScope<Triple<OtFloor, OtHole, Int>>.sendForumApiFloorsReversed(holeId: Long) {
 	DxrForumApi.ensureAuth()
 	val hole = DxrForumApi.loadHoleById(holeId)
-	Log.d("sendForumApiFloorsReversed", "loadHoleById($holeId)")
 
 	var endFloorIndex = hole.floorsCount.toInt()
 	val loadLength = 50
@@ -411,6 +394,9 @@ private suspend fun ProducerScope<Triple<OtFloor, OtHole, Int>>.sendForumApiFloo
 private fun RetentionHolesPager(userId: Long) {
 	val context = LocalContext.current
 	val snackbarController = LocalSnackbarController.current
+	val sessionState = LocalSessionState.current
+
+	val refreshTime = sessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
 	val holeIndicesPath by remember {
 		derivedStateOf {
@@ -443,14 +429,13 @@ private fun RetentionHolesPager(userId: Long) {
 		dxrJson.encodeToString(buildJsonObject {
 			put("fun", "RetentionHolesPager")
 			put("userId", userId)
-			put("timeKey", holeIndicesMtString)
+			put("refreshTime", refreshTime.toStringRfc3339())
+			put("holeIndicesModifiedTime", holeIndicesMtString)
 		}),
 		16,
-		0, // TODO
-		0,
-		{ holeIndex, holeScrollOffset ->
-			// TODO
-		},
+		sessionState.pagerHoleIndex ?: 0,
+		sessionState.pagerHoleScrollOffset ?: 0,
+		getHolePositionSaver(userId),
 		{
 			runCatchingOnSnackbar(snackbarController) {
 				DxrRetention.storeForExample()
@@ -467,6 +452,15 @@ private fun RetentionHolesPager(userId: Long) {
 private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 	val context = LocalContext.current
 	val snackbarController = LocalSnackbarController.current
+
+	val holeSessionStateNullable by produceState<DxrHoleSessionState?>(null, userId, holeId) {
+		val holeSessionStatePath = context.holeSessionStatePathOf(userId, holeId)
+		updateWith(listOf(holeSessionStatePath.toFile())) {
+			DxrRetention.loadHoleSessionState(userId, holeId)
+		}
+	}
+	val holeSessionState = holeSessionStateNullable ?: return
+	val refreshTime = holeSessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
 	val floorIndicesPath by remember {
 		derivedStateOf {
@@ -495,7 +489,11 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 			runCatchingOnSnackbar(snackbarController) {
 				val hole = requireNotNull(DxrRetention.loadHole(userId, holeId)) { "DxrRetention.loadHole($userId, $holeId) failed" }
 
-				DxrRetention.loadFloorSequence(userId, holeId)
+				if (holeSessionState.reversed == true) {
+					DxrRetention.loadFloorSequenceReversed(userId, holeId)
+				} else {
+					DxrRetention.loadFloorSequence(userId, holeId)
+				}
 					.forEachIndexed { index, floor ->
 						send(Triple(floor, hole, index))
 					}
@@ -505,14 +503,13 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 			put("fun", "RetentionFloorsPager")
 			put("userId", userId)
 			put("holeId", holeId)
-			put("timeKey", floorIndicesMtString)
+			put("refreshTime", refreshTime.toStringRfc3339())
+			put("floorIndicesModifiedTime", floorIndicesMtString)
 		}),
-		16,
-		1820, // TODO
+		holeSessionState.pagerFloorIndex ?: 0,
+		holeSessionState.pagerFloorScrollOffset ?: 0,
 		0,
-		{ floorIndex, floorScrollOffset ->
-			// TODO
-		},
+		getFloorPositionSaver(userId, holeId),
 		{
 			runCatchingOnSnackbar(snackbarController) {
 				DxrRetention.storeForExample()
@@ -522,5 +519,23 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 			.fillMaxSize(),
 	) { (floor, hole, index) ->
 		FloorCard(floor, hole, index)
+	}
+}
+
+private fun getHolePositionSaver(userId: Long) = { holeIndex: Int, holeScrollOffset: Int ->
+	DxrRetention.updateSessionState(userId) {
+		copy(
+			pagerHoleIndex = holeIndex,
+			pagerHoleScrollOffset = holeScrollOffset,
+		)
+	}
+}
+
+private fun getFloorPositionSaver(userId: Long, holeId: Long) = { floorIndex: Int, floorScrollOffset: Int ->
+	DxrRetention.updateHoleSessionState(userId, holeId) {
+		copy(
+			pagerFloorIndex = floorIndex,
+			pagerFloorScrollOffset = floorScrollOffset,
+		)
 	}
 }

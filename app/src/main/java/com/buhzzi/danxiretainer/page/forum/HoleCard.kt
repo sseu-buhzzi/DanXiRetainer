@@ -272,7 +272,7 @@ private fun openFloorsAtNewest(
 			reversed = true,
 			pagerFloorIndex = 0,
 			pagerFloorScrollOffset = 0,
-			forumApiRefreshTime = OffsetDateTime.now(),
+			refreshTime = OffsetDateTime.now(),
 		)
 	} else {
 		openFloors(
@@ -280,7 +280,7 @@ private fun openFloorsAtNewest(
 			reversed = false,
 			pagerFloorIndex = hole.floorsCount.toInt() - 1,
 			pagerFloorScrollOffset = 0,
-			forumApiRefreshTime = OffsetDateTime.now(),
+			refreshTime = OffsetDateTime.now(),
 		)
 	}
 }
@@ -290,7 +290,7 @@ private fun openFloors(
 	reversed: Boolean? = null,
 	pagerFloorIndex: Int? = null,
 	pagerFloorScrollOffset: Int? = null,
-	forumApiRefreshTime: OffsetDateTime? = null,
+	refreshTime: OffsetDateTime? = null,
 ) {
 	val userId = checkNotNull(DxrSettings.Models.userProfile) { "No user profile" }.userIdNotNull
 	DxrRetention.updateSessionState(userId) {
@@ -303,7 +303,7 @@ private fun openFloors(
 			reversed = reversed ?: this.reversed,
 			pagerFloorIndex = pagerFloorIndex ?: this.pagerFloorIndex,
 			pagerFloorScrollOffset = pagerFloorScrollOffset ?: this.pagerFloorScrollOffset,
-			forumApiRefreshTime = forumApiRefreshTime?.toStringRfc3339() ?: this.forumApiRefreshTime,
+			refreshTime = refreshTime?.toStringRfc3339() ?: this.refreshTime,
 		)
 	}
 }

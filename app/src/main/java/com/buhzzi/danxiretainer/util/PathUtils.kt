@@ -4,14 +4,14 @@ import android.content.Context
 import java.nio.file.Path
 import kotlin.io.path.div
 
-val Context.filesDirPath: Path get() =
-	filesDir.toPath()
+val Context.filesDirPath: Path
+	get() = filesDir.toPath()
 
-val Context.usersDirPath get() =
-	filesDirPath / "users"
+val Context.usersDirPath
+	get() = filesDirPath / "users"
 
-val Context.settingsDirPath get() =
-	filesDirPath / "settings"
+val Context.settingsDirPath
+	get() = filesDirPath / "settings"
 
 fun Context.backgroundImagePathOf(userId: Long?) = run {
 	userId?.let { settingsDirPathOf(it) }
