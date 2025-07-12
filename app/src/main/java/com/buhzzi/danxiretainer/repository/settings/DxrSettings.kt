@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
+import com.buhzzi.danxiretainer.util.dxrJson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,6 +65,19 @@ object DxrSettings {
 		override fun getValue(thisRef: Any, property: KProperty<*>) = get(key)
 
 		override fun setValue(thisRef: Any, property: KProperty<*>, value: T?) = set(key, value)
+	}
+
+	inline fun <reified T : Enum<T>> decodeModelEnumString(string: String?) =
+		enumValues<T>().firstOrNull { it.name == string }
+
+	fun <T : Enum<T>> encodeModelEnumString(model: T?) = model?.name
+
+	inline fun <reified T> decodeModelJsonString(string: String?) = string?.runCatching {
+		dxrJson.decodeFromString<T>(this)
+	}?.getOrNull()
+
+	fun <T> encodeModelJsonString(model: T?) = model?.let {
+		dxrJson.encodeToString(it)
 	}
 
 	object Keys

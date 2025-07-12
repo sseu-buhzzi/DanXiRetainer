@@ -15,8 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
-import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.LocalSnackbarController
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import kotlinx.coroutines.Dispatchers

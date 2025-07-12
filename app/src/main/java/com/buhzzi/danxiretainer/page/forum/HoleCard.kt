@@ -35,8 +35,9 @@ import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.floorsReversed
-import com.buhzzi.danxiretainer.repository.settings.floorsReversedFlow
-import com.buhzzi.danxiretainer.repository.settings.userProfile
+import com.buhzzi.danxiretainer.repository.settings.floorsReversedOrDefault
+import com.buhzzi.danxiretainer.repository.settings.floorsReversedOrDefaultFlow
+import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringRfc3339
 import dart.package0.dan_xi.model.forum.OtHole
@@ -57,7 +58,9 @@ fun HoleCard(hole: OtHole) {
 
 	bottomSheetEvent?.BottomSheet { bottomSheetEvent = it }
 
-	val reversed by DxrSettings.Items.floorsReversedFlow.collectAsState(null)
+	val reversed by DxrSettings.Models.floorsReversedOrDefaultFlow.collectAsState(
+		DxrSettings.Models.floorsReversedOrDefault,
+	)
 
 	val firstFloor = hole.floorsNotNull.firstFloorNotNull
 	val lastFloor = hole.floorsNotNull.lastFloorNotNull
@@ -107,7 +110,7 @@ fun HoleCard(hole: OtHole) {
 						) {
 							scope.launch(Dispatchers.IO) {
 								runCatchingOnSnackbar(snackbarController) {
-									openFloorsAtNewest(hole, reversed == true)
+									openFloorsAtNewest(hole, reversed)
 								}
 							}
 						},
@@ -221,7 +224,9 @@ private sealed class BottomSheetEvent(
 
 @Composable
 private fun OpenFloorsInOrderItem(hole: OtHole, reversed: Boolean) {
-	val reversedInSettings by DxrSettings.Items.floorsReversedFlow.collectAsState(null)
+	val reversedInSettings by DxrSettings.Models.floorsReversedOrDefaultFlow.collectAsState(
+		DxrSettings.Models.floorsReversedOrDefault,
+	)
 
 	ClickCatchingActionBottomSheetItem(
 		{
@@ -245,15 +250,17 @@ private fun OpenFloorsInOrderItem(hole: OtHole, reversed: Boolean) {
 
 @Composable
 private fun ToggleFloorsOrderItem() {
-	val reversed by DxrSettings.Items.floorsReversedFlow.collectAsState(null)
+	val reversed by DxrSettings.Models.floorsReversedOrDefaultFlow.collectAsState(
+		DxrSettings.Models.floorsReversedOrDefault,
+	)
 
 	ClickCatchingActionBottomSheetItem(
 		{
-			DxrSettings.Items.floorsReversed = reversed != true
+			DxrSettings.Items.floorsReversed = !reversed
 		},
 	) {
 		Text(
-			if (reversed == true) {
+			if (reversed) {
 				stringResource(R.string.change_floors_order_to_normal_label)
 			} else {
 				stringResource(R.string.change_floors_order_to_reversed_label)
@@ -292,7 +299,7 @@ private fun openFloors(
 	pagerFloorScrollOffset: Int? = null,
 	refreshTime: OffsetDateTime? = null,
 ) {
-	val userId = checkNotNull(DxrSettings.Models.userProfile) { "No user profile" }.userIdNotNull
+	val userId = DxrSettings.Models.userProfileNotNull.userIdNotNull
 	DxrRetention.updateSessionState(userId) {
 		copy(
 			holeId = hole.holeId,

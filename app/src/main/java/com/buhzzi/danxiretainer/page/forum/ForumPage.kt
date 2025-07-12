@@ -51,11 +51,12 @@ import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
-import com.buhzzi.danxiretainer.repository.settings.backgroundImagePathStringFlow
-import com.buhzzi.danxiretainer.repository.settings.contentSourceFlow
-import com.buhzzi.danxiretainer.repository.settings.sortOrder
-import com.buhzzi.danxiretainer.repository.settings.userProfile
+import com.buhzzi.danxiretainer.repository.settings.backgroundImagePathFlow
+import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefault
+import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefaultFlow
+import com.buhzzi.danxiretainer.repository.settings.sortOrderOrDefault
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
+import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.dxrJson
 import com.buhzzi.danxiretainer.util.floorIndicesPathOf
 import com.buhzzi.danxiretainer.util.holeIndicesPathOf
@@ -72,7 +73,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.OffsetDateTime
-import kotlin.io.path.Path
 import kotlin.io.path.getLastModifiedTime
 
 val LocalSessionState = compositionLocalOf<DxrSessionState> {
@@ -146,7 +146,7 @@ fun ForumPageTopBar() {
 				fun goBackToForumHolesPage() {
 					scope.launch(Dispatchers.IO) {
 						runCatchingOnSnackbar(snackbarController) {
-							val userId = checkNotNull(DxrSettings.Models.userProfile) { "No user profile" }.userIdNotNull
+							val userId = DxrSettings.Models.userProfileNotNull.userIdNotNull
 							DxrRetention.updateSessionState(userId) {
 								copy(
 									holeId = null,
@@ -211,14 +211,16 @@ fun ForumPageTopBar() {
 fun ForumPageContent(modifier: Modifier = Modifier) {
 	val sessionState = LocalSessionState.current
 
-	val userProfile by DxrSettings.Models.userProfileFlow.collectAsState(null)
-	val contentSource by DxrSettings.Models.contentSourceFlow.collectAsState(null)
+	val userProfileNullable by DxrSettings.Models.userProfileFlow.collectAsState(null)
+	val contentSource by DxrSettings.Models.contentSourceOrDefaultFlow.collectAsState(
+		DxrSettings.Models.contentSourceOrDefault,
+	)
 
 	Box(
 		modifier = modifier,
 	) {
-		val backgroundImagePathString by DxrSettings.Items.backgroundImagePathStringFlow.collectAsState(null)
-		backgroundImagePathString?.let { Path(it).toFile() }?.let { backgroundImageFile ->
+		val backgroundImagePathString by DxrSettings.Models.backgroundImagePathFlow.collectAsState(null)
+		backgroundImagePathString?.toFile()?.let { backgroundImageFile ->
 			Image(
 				rememberAsyncImagePainter(backgroundImageFile),
 				null,
@@ -227,18 +229,17 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 				contentScale = ContentScale.Crop,
 			)
 		}
-		userProfile?.userId?.let { userId ->
-			when (contentSource) {
-				DxrContentSource.FORUM_API -> sessionState.holeId?.let { currentHoleId ->
-					ForumApiFloorsPager(userId, currentHoleId)
-				} ?: ForumApiHolesPager(userId)
 
-				DxrContentSource.RETENTION -> sessionState.holeId?.let { currentHoleId ->
-					RetentionFloorsPager(userId, currentHoleId)
-				} ?: RetentionHolesPager(userId)
+		val userProfile = userProfileNullable ?: return
+		val userId = userProfile.userId ?: return
+		when (contentSource) {
+			DxrContentSource.FORUM_API -> sessionState.holeId?.let { currentHoleId ->
+				ForumApiFloorsPager(userId, currentHoleId)
+			} ?: ForumApiHolesPager(userId)
 
-				else -> Unit
-			}
+			DxrContentSource.RETENTION -> sessionState.holeId?.let { currentHoleId ->
+				RetentionFloorsPager(userId, currentHoleId)
+			} ?: RetentionHolesPager(userId)
 		}
 	}
 }
@@ -281,7 +282,7 @@ private fun ForumApiHolesPager(userId: Long) {
 private suspend fun ProducerScope<OtHole>.sendForumApiHoles(refreshTime: OffsetDateTime) {
 	var startTime = refreshTime
 	val loadLength = 10
-	val sortOrder = DxrSettings.Models.sortOrder ?: return
+	val sortOrder = DxrSettings.Models.sortOrderOrDefault
 
 	while (true) {
 		DxrForumApi.ensureAuth()
@@ -487,7 +488,7 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 		{
 			// TODO reversed floors, also for retention
 			runCatchingOnSnackbar(snackbarController) {
-				val hole = requireNotNull(DxrRetention.loadHole(userId, holeId)) { "DxrRetention.loadHole($userId, $holeId) failed" }
+				val hole = checkNotNull(DxrRetention.loadHole(userId, holeId)) { "DxrRetention.loadHole($userId, $holeId) failed" }
 
 				if (holeSessionState.reversed == true) {
 					DxrRetention.loadFloorSequenceReversed(userId, holeId)

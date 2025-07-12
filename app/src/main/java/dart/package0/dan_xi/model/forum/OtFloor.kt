@@ -20,7 +20,7 @@
 package dart.package0.dan_xi.model.forum
 
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
-import com.buhzzi.danxiretainer.repository.settings.cleanMode
+import com.buhzzi.danxiretainer.repository.settings.cleanModeOrDefault
 import com.buhzzi.danxiretainer.util.dxrJson
 import dart.package0.dan_xi.util.forum.CleanModeFilter
 import kotlinx.serialization.Serializable
@@ -106,7 +106,7 @@ data class OtFloor(
 	)
 
 	val filteredContent get() = content?.let { _ ->
-		if (DxrSettings.Items.cleanMode == true) {
+		if (DxrSettings.Models.cleanModeOrDefault) {
 			CleanModeFilter.cleanText(content)
 		} else {
 			content

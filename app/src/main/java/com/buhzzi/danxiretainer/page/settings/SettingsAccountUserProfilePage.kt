@@ -54,68 +54,68 @@ fun SettingsAccountUserProfilePage() {
 				.fillMaxSize()
 				.verticalScroll(rememberScrollState()),
 		) {
-			val userProfileJson by DxrSettings.Models.userProfileFlow.map { userProfile ->
+			val userProfileJsonNullable by DxrSettings.Models.userProfileFlow.map { userProfile ->
 				dxrJson.encodeToJsonElement(userProfile) as? JsonObject
 			}.collectAsState(null)
-
-			userProfileJson?.let { userProfileJsonNonNull ->
-				userProfileJsonNonNull.forEach { (key, value) ->
-					ListItem(
-						{
-							Text(key)
-						},
-						supportingContent = {
-							Surface(
-								modifier = Modifier
-									.fillMaxWidth()
-									.clickable {
-										// TODO 複製値
-									},
-								shape = RoundedCornerShape(4.dp),
-								color = MaterialTheme.colorScheme.surfaceVariant,
-								contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-							) {
-								Text(
-									dxrPrettyJson.encodeToString(value),
-									modifier = Modifier
-										.padding(4.dp),
-									style = MaterialTheme.typography.bodySmall.copy(
-										fontFamily = FontFamily.Monospace,
-									),
-								)
-							}
-						},
-						leadingContent = {
-							Icon(Icons.AutoMirrored.Default.List, null)
-						},
-					)
-				}
-
-				HorizontalDivider()
-
+			val userProfileJson = userProfileJsonNullable ?: run {
 				ListItem(
 					{
-						Text(stringResource(R.string.erase_user_profile_label))
+						Text(stringResource(R.string.no_user_profile_label))
 					},
 					modifier = Modifier
 						.clickable {
-							DxrSettings.Models.userProfile = null
+							navController.popBackStack()
 						},
 					leadingContent = {
-						Icon(Icons.Default.DeleteForever, null)
-					}
+						Icon(Icons.Default.Close, null)
+					},
 				)
-			} ?: ListItem(
+				return@Column
+			}
+
+			userProfileJson.forEach { (key, value) ->
+				ListItem(
+					{
+						Text(key)
+					},
+					supportingContent = {
+						Surface(
+							modifier = Modifier
+								.fillMaxWidth()
+								.clickable {
+									// TODO 複製値
+								},
+							shape = RoundedCornerShape(4.dp),
+							color = MaterialTheme.colorScheme.surfaceVariant,
+							contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+						) {
+							Text(
+								dxrPrettyJson.encodeToString(value),
+								modifier = Modifier
+									.padding(4.dp),
+								style = MaterialTheme.typography.bodySmall.copy(
+									fontFamily = FontFamily.Monospace,
+								),
+							)
+						}
+					},
+					leadingContent = {
+						Icon(Icons.AutoMirrored.Default.List, null)
+					},
+				)
+			}
+
+			HorizontalDivider()
+
+			ListItem(
 				{
-					Text(stringResource(R.string.no_user_profile_label))
+					Text(stringResource(R.string.erase_user_profile_label))
 				},
 				modifier = Modifier
-					.clickable {
-						navController.popBackStack()
-					},
+					.clickable { DxrSettings.Models.userProfile = null },
 				leadingContent = {
-					Icon(Icons.Default.Close, null)
-				},
+					Icon(Icons.Default.DeleteForever, null)
+				}
 			)
 		}
 	}

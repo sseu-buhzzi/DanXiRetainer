@@ -4,11 +4,11 @@ import android.util.Log
 import com.buhzzi.danxiretainer.page.settings.handleJwtAndOptionallyFetchUserProfile
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.accessJwt
-import com.buhzzi.danxiretainer.repository.settings.authBaseUrl
+import com.buhzzi.danxiretainer.repository.settings.authBaseUrlOrDefault
 import com.buhzzi.danxiretainer.repository.settings.email
-import com.buhzzi.danxiretainer.repository.settings.forumBaseUrl
+import com.buhzzi.danxiretainer.repository.settings.forumBaseUrlOrDefault
 import com.buhzzi.danxiretainer.repository.settings.httpProxy
-import com.buhzzi.danxiretainer.repository.settings.imageBaseUrl
+import com.buhzzi.danxiretainer.repository.settings.imageBaseUrlOrDefault
 import com.buhzzi.danxiretainer.repository.settings.passwordCt
 import com.buhzzi.danxiretainer.repository.settings.refreshJwt
 import com.buhzzi.danxiretainer.util.androidKeyStoreDecrypt
@@ -71,18 +71,9 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
 object DxrForumApi {
-	private val baseAuthUrl
-		get() = DxrSettings.Items.authBaseUrl ?: Constant.AUTH_BASE_URL.also {
-			DxrSettings.Items.authBaseUrl = it
-		}
-	private val baseUrl
-		get() = DxrSettings.Items.forumBaseUrl ?: Constant.FORUM_BASE_URL.also {
-			DxrSettings.Items.forumBaseUrl = it
-		}
-	private val baseImageUrl
-		get() = DxrSettings.Items.imageBaseUrl ?: Constant.IMAGE_BASE_URL.also {
-			DxrSettings.Items.imageBaseUrl = it
-		}
+	private val baseAuthUrl get() = DxrSettings.Models.authBaseUrlOrDefault
+	private val baseUrl get() = DxrSettings.Models.forumBaseUrlOrDefault
+	private val baseImageUrl get() = DxrSettings.Models.imageBaseUrlOrDefault
 
 	private lateinit var client: HttpClient
 
@@ -318,7 +309,7 @@ object DxrForumApi {
 			}))
 		}
 		rsp.checkStatus()
-		return requireNotNull(rsp.body<JsonObject>()["image"]).jsonObject["display_url"]?.let { dxrJson.decodeFromJsonElement(it) }
+		return checkNotNull(rsp.body<JsonObject>()["image"]).jsonObject["display_url"]?.let { dxrJson.decodeFromJsonElement(it) }
 	}
 
 	suspend fun newFloor(
@@ -821,7 +812,7 @@ object DxrForumApi {
 		rsp.checkStatus()
 		return rsp.body<JsonObject>().run {
 			this["questions"]?.let { dxrJson.decodeFromJsonElement<List<QuizQuestion>>(it) } to
-				requireNotNull(this["version"]).let { dxrJson.decodeFromJsonElement(it) }
+				checkNotNull(this["version"]).let { dxrJson.decodeFromJsonElement(it) }
 		}
 	}
 

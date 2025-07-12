@@ -6,7 +6,7 @@ import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
-import com.buhzzi.danxiretainer.repository.settings.userProfile
+import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.dxrJson
 import com.buhzzi.danxiretainer.util.dxrPrettyJson
 import com.buhzzi.danxiretainer.util.escapeTsv
@@ -100,7 +100,7 @@ object DxrRetention {
 			}
 		}
 
-		val userId = checkNotNull(DxrSettings.Models.userProfile) { "No user profile" }.userIdNotNull
+		val userId = DxrSettings.Models.userProfileNotNull.userIdNotNull
 		storeHolesAndUpdateIndices(userId, holes)
 		storeFloorsAndUpdateIndices(userId, floors)
 		app.tagsDirPathOf(userId).createDirectories()

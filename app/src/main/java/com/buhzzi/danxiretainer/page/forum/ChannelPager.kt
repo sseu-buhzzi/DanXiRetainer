@@ -34,7 +34,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
-import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationFlow
+import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefault
+import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefaultFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -115,7 +116,9 @@ fun <T> ChannelPager(
 	modifier: Modifier = Modifier,
 	itemContent: @Composable (T) -> Unit,
 ) {
-	val pagerScrollOrientation by DxrSettings.Models.pagerScrollOrientationFlow.collectAsState(null)
+	val pagerScrollOrientation by DxrSettings.Models.pagerScrollOrientationOrDefaultFlow.collectAsState(
+		DxrSettings.Models.pagerScrollOrientationOrDefault,
+	)
 	when (pagerScrollOrientation) {
 		DxrPagerScrollOrientation.HORIZONTAL -> HorizontalScrollChannelPager(
 			itemsProducer,

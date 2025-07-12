@@ -29,18 +29,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
-import com.buhzzi.danxiretainer.repository.settings.backgroundImagePathString
+import com.buhzzi.danxiretainer.repository.settings.backgroundImagePath
 import com.buhzzi.danxiretainer.repository.settings.backgroundImagePathStringFlow
 import com.buhzzi.danxiretainer.repository.settings.userProfile
-import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
 import com.buhzzi.danxiretainer.util.backgroundImagePathOf
 import java.nio.file.Path
-import kotlin.io.path.Path
 import kotlin.io.path.createParentDirectories
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.exists
 import kotlin.io.path.outputStream
-import kotlin.io.path.pathString
 
 @Composable
 fun SelectBackgroundImageListItem() {
@@ -48,7 +45,6 @@ fun SelectBackgroundImageListItem() {
 	val context = LocalContext.current
 
 	val backgroundImagePathString by DxrSettings.Items.backgroundImagePathStringFlow.collectAsState(null)
-	val userProfile by DxrSettings.Models.userProfileFlow.collectAsState(null)
 
 	var dialogEvent by remember { mutableStateOf<DialogEvent?>(null) }
 
@@ -77,7 +73,7 @@ fun SelectBackgroundImageListItem() {
 		},
 		modifier = Modifier
 			.clickable {
-				val targetPath = context.backgroundImagePathOf(userProfile?.userId)
+				val targetPath = context.backgroundImagePathOf(DxrSettings.Models.userProfile?.userId)
 				if (targetPath.exists()) {
 					dialogEvent = DialogEvent.ConfirmRemoval(targetPath)
 				} else {
@@ -89,6 +85,7 @@ fun SelectBackgroundImageListItem() {
 		supportingContent = {
 			Text(
 				settingsValueStringResource(
+					// serves as `String` here
 					backgroundImagePathString,
 					nullLabelId = R.string.background_image_pick_one_label,
 				),
@@ -172,17 +169,15 @@ private sealed class DialogEvent {
 }
 
 private fun Context.addBackgroundImage(bitmap: Bitmap) {
-	val userProfile = DxrSettings.Models.userProfile
-	val targetPath = backgroundImagePathOf(userProfile?.userId)
+	val targetPath = backgroundImagePathOf(DxrSettings.Models.userProfile?.userId)
 	targetPath.createParentDirectories().outputStream().use { out ->
 		bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
 	}
-	DxrSettings.Items.backgroundImagePathString = targetPath.pathString
+	DxrSettings.Models.backgroundImagePath = targetPath
 }
 
 private fun Context.removeBackgroundImage() {
-	DxrSettings.Items.backgroundImagePathString?.let {
-		Path(it).deleteIfExists()
-		DxrSettings.Items.backgroundImagePathString = null
-	}
+	val backgroundImagePath = DxrSettings.Models.backgroundImagePath ?: return
+	backgroundImagePath.deleteIfExists()
+	DxrSettings.Models.backgroundImagePath = null
 }

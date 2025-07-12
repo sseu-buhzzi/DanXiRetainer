@@ -9,7 +9,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.AcUnit
-import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Source
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.SwipeVertical
@@ -29,15 +28,20 @@ import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.cleanMode
-import com.buhzzi.danxiretainer.repository.settings.cleanModeFlow
+import com.buhzzi.danxiretainer.repository.settings.cleanModeOrDefault
+import com.buhzzi.danxiretainer.repository.settings.cleanModeOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.contentSource
-import com.buhzzi.danxiretainer.repository.settings.contentSourceFlow
+import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefault
+import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.floorsReversed
-import com.buhzzi.danxiretainer.repository.settings.floorsReversedFlow
+import com.buhzzi.danxiretainer.repository.settings.floorsReversedOrDefault
+import com.buhzzi.danxiretainer.repository.settings.floorsReversedOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientation
-import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationFlow
+import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefault
+import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.sortOrder
-import com.buhzzi.danxiretainer.repository.settings.sortOrderFlow
+import com.buhzzi.danxiretainer.repository.settings.sortOrderOrDefault
+import com.buhzzi.danxiretainer.repository.settings.sortOrderOrDefaultFlow
 import dart.package0.dan_xi.provider.SortOrder
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -54,7 +58,9 @@ fun SettingsGeneralPage() {
 				.fillMaxSize()
 				.verticalScroll(rememberScrollState()),
 		) {
-			val cleanMode by DxrSettings.Items.cleanModeFlow.collectAsState(null)
+			val cleanMode by DxrSettings.Models.cleanModeOrDefaultFlow.collectAsState(
+				DxrSettings.Models.cleanModeOrDefault,
+			)
 			ToggleListItem(
 				cleanMode == true,
 				stringResource(R.string.clean_mode_label),
@@ -66,7 +72,9 @@ fun SettingsGeneralPage() {
 
 			SelectBackgroundImageListItem()
 
-			val contentSource by DxrSettings.Models.contentSourceFlow.collectAsState(null)
+			val contentSource by DxrSettings.Models.contentSourceOrDefaultFlow.collectAsState(
+				DxrSettings.Models.contentSourceOrDefault,
+			)
 			val contentSources = listOf(
 				"Forum API",
 				"Retention",
@@ -83,17 +91,19 @@ fun SettingsGeneralPage() {
 			)
 			SingleSelectListItem(
 				contentSources,
-				contentSource?.ordinal ?: 0,
+				contentSource.ordinal,
 				stringResource(R.string.content_sources_label),
 				settingsValueStringResource(
-					contentSource?.ordinal?.let { contentSources[it] },
+					contentSource.ordinal.let { contentSources[it] },
 				),
 				Icons.Default.Source,
 			) { selection ->
 				selection?.let { contentSourceActions[it]() } == true
 			}
 
-			val sortOrder by DxrSettings.Models.sortOrderFlow.collectAsState(null)
+			val sortOrder by DxrSettings.Models.sortOrderOrDefaultFlow.collectAsState(
+				DxrSettings.Models.sortOrderOrDefault
+			)
 			val sortOrders = listOf(
 				"Last Replied",
 				"Last Created",
@@ -110,17 +120,19 @@ fun SettingsGeneralPage() {
 			)
 			SingleSelectListItem(
 				sortOrders,
-				sortOrder?.ordinal ?: 0,
+				sortOrder.ordinal,
 				stringResource(R.string.sort_order_label),
 				settingsValueStringResource(
-					sortOrder?.ordinal?.let { sortOrders[it] },
+					sortOrder.ordinal.let { sortOrders[it] },
 				),
 				Icons.AutoMirrored.Default.Sort,
 			) { selection ->
 				selection?.let { sortOrderActions[it]() } == true
 			}
 
-			val pagerScrollOrientation by DxrSettings.Models.pagerScrollOrientationFlow.collectAsState(null)
+			val pagerScrollOrientation by DxrSettings.Models.pagerScrollOrientationOrDefaultFlow.collectAsState(
+				DxrSettings.Models.pagerScrollOrientationOrDefault,
+			)
 			// TODO put it in enum class members
 			val pagerScrollOrientations = listOf(
 				"Horizontal",
@@ -141,7 +153,7 @@ fun SettingsGeneralPage() {
 				supportingContent = {
 					Text(
 						settingsValueStringResource(
-							pagerScrollOrientation?.ordinal?.let { pagerScrollOrientations[it] },
+							pagerScrollOrientation.ordinal.let { pagerScrollOrientations[it] },
 						),
 					)
 				},
@@ -150,15 +162,16 @@ fun SettingsGeneralPage() {
 						when (pagerScrollOrientation) {
 							DxrPagerScrollOrientation.HORIZONTAL -> Icons.Default.Swipe
 							DxrPagerScrollOrientation.VERTICAL -> Icons.Default.SwipeVertical
-							else -> Icons.Default.QuestionMark
 						}, null
 					)
 				},
 			)
 
-			val floorsReversed by DxrSettings.Items.floorsReversedFlow.collectAsState(null)
+			val floorsReversed by DxrSettings.Models.floorsReversedOrDefaultFlow.collectAsState(
+				DxrSettings.Models.floorsReversedOrDefault,
+			)
 			ToggleListItem(
-				floorsReversed == true,
+				floorsReversed,
 				stringResource(R.string.floors_reversed_label),
 				stringResource(R.string.floors_reversed_description),
 				Icons.Default.VerticalAlignBottom,

@@ -61,7 +61,8 @@ import com.buhzzi.danxiretainer.repository.settings.passwordCtFlow
 import com.buhzzi.danxiretainer.repository.settings.refreshJwt
 import com.buhzzi.danxiretainer.repository.settings.refreshJwtFlow
 import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwt
-import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwtFlow
+import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwtOrDefault
+import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwtOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.userProfile
 import com.buhzzi.danxiretainer.util.androidKeyStoreDecrypt
 import com.buhzzi.danxiretainer.util.androidKeyStoreEncrypt
@@ -180,7 +181,9 @@ fun SettingsAccountPage() {
 				true
 			}
 
-			val shouldLoadUserAfterJwt by DxrSettings.Items.shouldLoadUserAfterJwtFlow.collectAsState(null)
+			val shouldLoadUserAfterJwt by DxrSettings.Models.shouldLoadUserAfterJwtOrDefaultFlow.collectAsState(
+				DxrSettings.Models.shouldLoadUserAfterJwtOrDefault,
+			)
 			Row(
 				modifier = Modifier
 					.padding(horizontal = 16.dp),

@@ -23,13 +23,16 @@ import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.authBaseUrl
-import com.buhzzi.danxiretainer.repository.settings.authBaseUrlFlow
+import com.buhzzi.danxiretainer.repository.settings.authBaseUrlOrDefault
+import com.buhzzi.danxiretainer.repository.settings.authBaseUrlOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.forumBaseUrl
-import com.buhzzi.danxiretainer.repository.settings.forumBaseUrlFlow
+import com.buhzzi.danxiretainer.repository.settings.forumBaseUrlOrDefault
+import com.buhzzi.danxiretainer.repository.settings.forumBaseUrlOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.httpProxy
 import com.buhzzi.danxiretainer.repository.settings.httpProxyFlow
 import com.buhzzi.danxiretainer.repository.settings.imageBaseUrl
-import com.buhzzi.danxiretainer.repository.settings.imageBaseUrlFlow
+import com.buhzzi.danxiretainer.repository.settings.imageBaseUrlOrDefault
+import com.buhzzi.danxiretainer.repository.settings.imageBaseUrlOrDefaultFlow
 import dart.package0.dan_xi.common.Constant
 import dart.package0.dan_xi.util.WebvpnProxy
 
@@ -47,9 +50,11 @@ fun SettingsNetworkPage() {
 				.fillMaxSize()
 				.verticalScroll(rememberScrollState()),
 		) {
-			val authBaseUrl by DxrSettings.Items.authBaseUrlFlow.collectAsState(null)
+			val authBaseUrl by DxrSettings.Models.authBaseUrlOrDefaultFlow.collectAsState(
+				DxrSettings.Models.authBaseUrlOrDefault,
+			)
 			InputListItem(
-				authBaseUrl ?: "",
+				authBaseUrl,
 				stringResource(R.string.auth_base_url_label),
 				settingsValueStringResource(authBaseUrl),
 				null,
@@ -59,9 +64,11 @@ fun SettingsNetworkPage() {
 				true
 			}
 
-			val forumBaseUrl by DxrSettings.Items.forumBaseUrlFlow.collectAsState(null)
+			val forumBaseUrl by DxrSettings.Models.forumBaseUrlOrDefaultFlow.collectAsState(
+				DxrSettings.Models.forumBaseUrlOrDefault,
+			)
 			InputListItem(
-				forumBaseUrl ?: "",
+				forumBaseUrl,
 				stringResource(R.string.forum_base_url_label),
 				settingsValueStringResource(forumBaseUrl),
 				null,
@@ -71,9 +78,11 @@ fun SettingsNetworkPage() {
 				true
 			}
 
-			val imageBaseUrl by DxrSettings.Items.imageBaseUrlFlow.collectAsState(null)
+			val imageBaseUrl by DxrSettings.Models.imageBaseUrlOrDefaultFlow.collectAsState(
+				DxrSettings.Models.imageBaseUrlOrDefault,
+			)
 			InputListItem(
-				imageBaseUrl ?: "",
+				imageBaseUrl,
 				stringResource(R.string.image_base_url_label),
 				settingsValueStringResource(imageBaseUrl),
 				null,
