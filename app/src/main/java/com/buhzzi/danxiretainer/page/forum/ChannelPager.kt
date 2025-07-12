@@ -192,7 +192,8 @@ fun <T> HorizontalScrollChannelPager(
 	LaunchedEffect(targetPageIndex) {
 		pagerState.animateScrollToPage(targetPageIndex)
 	}
-	DisposableEffect(Unit) {
+	var refreshing by remember { mutableStateOf(false) }
+	DisposableEffect(refreshing) {
 		onDispose {
 			val pageIndex = pagerState.currentPage
 			val lazyListState = lazyListStates[pageIndex]
@@ -202,7 +203,6 @@ fun <T> HorizontalScrollChannelPager(
 		}
 	}
 
-	var refreshing by remember { mutableStateOf(false) }
 	PullToRefreshBox(
 		refreshing,
 		{
@@ -302,7 +302,8 @@ fun <T> VerticalScrollChannelPager(
 		}
 	}
 	 */
-	DisposableEffect(Unit) {
+	var refreshing by remember { mutableStateOf(false) }
+	DisposableEffect(refreshing) {
 		onDispose {
 			val itemIndex = lazyListState.firstVisibleItemIndex
 			val itemScrollOffset = lazyListState.firstVisibleItemScrollOffset
@@ -310,7 +311,6 @@ fun <T> VerticalScrollChannelPager(
 		}
 	}
 
-	var refreshing by remember { mutableStateOf(false) }
 	PullToRefreshBox(
 		refreshing,
 		{
