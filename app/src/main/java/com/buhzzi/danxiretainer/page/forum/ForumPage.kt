@@ -140,8 +140,6 @@ fun ForumPageTopBar() {
 	val snackbarController = LocalSnackbarController.current
 	val sessionState = LocalSessionState.current
 
-	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
-
 	val scope = rememberCoroutineScope()
 
 	TopAppBar(
@@ -154,7 +152,7 @@ fun ForumPageTopBar() {
 			if (sessionState?.holeId != null) {
 				fun goBackToForumHolesPage() {
 					scope.launch(Dispatchers.IO) {
-						runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+						runCatchingOnSnackbar(snackbarController) {
 							val userId = checkNotNull(DxrSettings.Models.userProfile) { "No user profile" }.userIdNotNull
 							DxrRetention.updateSessionState(userId) {
 								copy(
@@ -257,13 +255,11 @@ private fun ForumApiHolesPager(userId: Long) {
 	val snackbarController = LocalSnackbarController.current
 	val sessionState = LocalSessionState.current ?: return
 
-	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
-
 	val forumApiRefreshTime = sessionState.forumApiRefreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
 	ChannelPager(
 		{
-			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+			runCatchingOnSnackbar(snackbarController) {
 				sendForumApiHoles(forumApiRefreshTime)
 			}
 		},
@@ -323,14 +319,12 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 	val snackbarController = LocalSnackbarController.current
 	val holeSessionState = DxrRetention.loadHoleSessionState(userId, holeId)
 
-	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
-
 	val forumApiRefreshTime = holeSessionState?.forumApiRefreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
 	ChannelPager(
 		{
 			// TODO reversed floors, also for retention
-			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+			runCatchingOnSnackbar(snackbarController) {
 				if (holeSessionState?.reversed == true) {
 					sendForumApiFloorsReversed(holeId)
 				} else {
@@ -356,7 +350,7 @@ private fun ForumApiFloorsPager(userId: Long, holeId: Long) {
 			}
 		},
 		{
-			DxrRetention.updateSessionState(userId) {
+			DxrRetention.updateHoleSessionState(userId, holeId) {
 				copy(
 					forumApiRefreshTime = OffsetDateTime.now().toStringRfc3339(),
 				)
@@ -418,8 +412,6 @@ private fun RetentionHolesPager(userId: Long) {
 	val context = LocalContext.current
 	val snackbarController = LocalSnackbarController.current
 
-	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
-
 	val holeIndicesPath by remember {
 		derivedStateOf {
 			context.holeIndicesPathOf(userId)
@@ -443,7 +435,7 @@ private fun RetentionHolesPager(userId: Long) {
 
 	ChannelPager(
 		{
-			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+			runCatchingOnSnackbar(snackbarController) {
 				val holeSequence = DxrRetention.loadHoleSequenceByUpdate(userId)
 				holeSequence.forEach { hole -> send(hole) }
 			}
@@ -460,7 +452,7 @@ private fun RetentionHolesPager(userId: Long) {
 			// TODO
 		},
 		{
-			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+			runCatchingOnSnackbar(snackbarController) {
 				DxrRetention.storeForExample()
 			}
 		},
@@ -475,8 +467,6 @@ private fun RetentionHolesPager(userId: Long) {
 private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 	val context = LocalContext.current
 	val snackbarController = LocalSnackbarController.current
-
-	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
 
 	val floorIndicesPath by remember {
 		derivedStateOf {
@@ -502,7 +492,7 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 	ChannelPager(
 		{
 			// TODO reversed floors, also for retention
-			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+			runCatchingOnSnackbar(snackbarController) {
 				val hole = requireNotNull(DxrRetention.loadHole(userId, holeId)) { "DxrRetention.loadHole($userId, $holeId) failed" }
 
 				DxrRetention.loadFloorSequence(userId, holeId)
@@ -524,7 +514,7 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 			// TODO
 		},
 		{
-			runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+			runCatchingOnSnackbar(snackbarController) {
 				DxrRetention.storeForExample()
 			}
 		},

@@ -110,13 +110,11 @@ private fun MultiChoiceSegmentedButtonRowScope.LikeActionSegmentedButton(
 
 	val scope = rememberCoroutineScope()
 
-	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
-
 	ActionSegmentedButton(
 		likeState.liked,
 		{
 			scope.launch {
-				runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+				runCatchingOnSnackbar(snackbarController) {
 					val updatedFloor = DxrForumApi.likeFloor(floorId, likeState.inverseValue)
 					likeDislikeState.updateWith(updatedFloor)
 				}

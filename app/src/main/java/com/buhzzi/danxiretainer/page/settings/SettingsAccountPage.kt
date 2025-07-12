@@ -180,7 +180,6 @@ fun SettingsAccountPage() {
 				true
 			}
 
-			val unknownErrorLabel = stringResource(R.string.unknown_error_label)
 			val shouldLoadUserAfterJwt by DxrSettings.Items.shouldLoadUserAfterJwtFlow.collectAsState(null)
 			Row(
 				modifier = Modifier
@@ -190,7 +189,7 @@ fun SettingsAccountPage() {
 				Button(
 					{
 						scope.launch(Dispatchers.IO) {
-							runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+							runCatchingOnSnackbar(snackbarController) {
 								val jwToken = DxrForumApi.authLogIn(
 									checkNotNull(email) { "No email" },
 									androidKeyStoreDecrypt(checkNotNull(passwordCt) { "No password" }.toBytesBase64()).toStringUtf8(),
@@ -207,7 +206,7 @@ fun SettingsAccountPage() {
 				Button(
 					{
 						scope.launch(Dispatchers.IO) {
-							runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+							runCatchingOnSnackbar(snackbarController) {
 								val jwToken = DxrForumApi.authRefresh(checkNotNull(refreshJwt) { "No refresh JWT" })
 								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt == true)
 							}
@@ -230,11 +229,9 @@ fun SettingsAccountPage() {
 					Button(
 						{
 							scope.launch(Dispatchers.IO) {
-								runCatching {
+								runCatchingOnSnackbar(snackbarController) {
 									val user = DxrForumApi.getUserProfile()
 									DxrSettings.Models.userProfile = user
-								}.getOrElse { exception ->
-									snackbarController.show(exception.message ?: unknownErrorLabel)
 								}
 							}
 						},

@@ -122,10 +122,10 @@ private sealed class DialogEvent {
 					Icon(Icons.Default.Error, null)
 				},
 				title = {
-					Text(cause::class.simpleName ?: stringResource(R.string.unknown_error_label))
+					Text(stringResource(R.string.background_image_exception_happened_label))
 				},
 				text = {
-					Text(cause.message ?: "")
+					Text(cause.toString())
 				},
 			)
 		}

@@ -47,8 +47,7 @@ val LocalSnackbarController = compositionLocalOf<SnackbarController> {
 
 suspend fun CoroutineScope.runCatchingOnSnackbar(
 	snackbarController: SnackbarController,
-	// TODO 用預設
-	lazyMessage: (Throwable) -> String,
+	lazyMessage: (Throwable) -> String = { it.toString() },
 	block: suspend CoroutineScope.() -> Unit,
 ) = runCatching {
 	block()

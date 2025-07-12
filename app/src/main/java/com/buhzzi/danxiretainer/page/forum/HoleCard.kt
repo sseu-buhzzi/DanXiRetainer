@@ -51,8 +51,6 @@ fun HoleCard(hole: OtHole) {
 	val context = LocalContext.current
 	val snackbarController = LocalSnackbarController.current
 
-	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
-
 	val scope = rememberCoroutineScope()
 
 	var bottomSheetEvent by remember { mutableStateOf<BottomSheetEvent?>(null) }
@@ -73,7 +71,7 @@ fun HoleCard(hole: OtHole) {
 				},
 			) {
 				scope.launch(Dispatchers.IO) {
-					runCatchingOnSnackbar(snackbarController, { it.message ?: it::class.simpleName ?: unknownErrorLabel }) {
+					runCatchingOnSnackbar(snackbarController) {
 						openFloors(hole)
 					}
 				}
@@ -108,7 +106,7 @@ fun HoleCard(hole: OtHole) {
 							},
 						) {
 							scope.launch(Dispatchers.IO) {
-								runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+								runCatchingOnSnackbar(snackbarController) {
 									openFloorsAtNewest(hole, reversed == true)
 								}
 							}

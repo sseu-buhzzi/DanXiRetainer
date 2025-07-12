@@ -49,6 +49,7 @@
 	<string name="background_image_label">背景圖像</string>
 	<string name="background_image_pick_one_label">選擇一張圖像作爲論壇背景</string>
 	<string name="background_image_confirm_delete_label">確認刪除已有的背景圖像？</string>
+	<string name="background_image_exception_happened_label">出現異常</string>
 	<string name="background_image_error_reading_label">讀取圖像出錯</string>
 	<string name="background_image_error_decoding_label">解碼圖像出錯</string>
 	<string name="content_sources_label">內容源</string>

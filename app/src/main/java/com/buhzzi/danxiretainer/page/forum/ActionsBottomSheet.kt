@@ -48,8 +48,6 @@ fun ClickCatchingActionBottomSheetItem(
 ) {
 	val snackbarController = LocalSnackbarController.current
 
-	val unknownErrorLabel = stringResource(R.string.unknown_error_label)
-
 	val scope = rememberCoroutineScope()
 
 	ListItem(
@@ -57,7 +55,7 @@ fun ClickCatchingActionBottomSheetItem(
 		modifier = Modifier
 			.clickable {
 				scope.launch(Dispatchers.IO) {
-					runCatchingOnSnackbar(snackbarController, { it.message ?: unknownErrorLabel }) {
+					runCatchingOnSnackbar(snackbarController) {
 						click()
 					}
 				}
