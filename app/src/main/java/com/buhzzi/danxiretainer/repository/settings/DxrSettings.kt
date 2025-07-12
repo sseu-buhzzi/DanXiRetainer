@@ -70,13 +70,13 @@ object DxrSettings {
 	inline fun <reified T : Enum<T>> decodeModelEnumString(string: String?) =
 		enumValues<T>().firstOrNull { it.name == string }
 
-	fun <T : Enum<T>> encodeModelEnumString(model: T?) = model?.name
+	inline fun <reified T : Enum<T>> encodeModelEnumString(model: T?) = model?.name
 
 	inline fun <reified T> decodeModelJsonString(string: String?) = string?.runCatching {
 		dxrJson.decodeFromString<T>(this)
 	}?.getOrNull()
 
-	fun <T> encodeModelJsonString(model: T?) = model?.let {
+	inline fun <reified T : Any> encodeModelJsonString(model: T?) = model?.let {
 		dxrJson.encodeToString(it)
 	}
 
