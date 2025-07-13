@@ -37,15 +37,14 @@ import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefa
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefaultFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.getOrElse
-import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.produceIn
 import kotlinx.coroutines.launch
 import java.util.Collections
 
 private class ChannelPagerViewModel<T>(
-	itemsProducer: suspend ProducerScope<T>.() -> Unit,
+	itemsFlow: Flow<T>,
 	private val pageSize: Int,
 ) : ViewModel() {
 	private val cachedPages = mutableStateListOf<List<T>>()
@@ -55,14 +54,9 @@ private class ChannelPagerViewModel<T>(
 	var ended by mutableStateOf(false)
 		private set
 
-	@OptIn(ExperimentalCoroutinesApi::class)
-	private val itemsChannel = viewModelScope.produce(capacity = 0) {
-		try {
-			itemsProducer()
-		} finally {
-			ended = true
-		}
-	}
+	// `produce` has default capacity of `Channel.RENDEZVOUS`, which is `0`
+	// `produceIn` will not always act like that, it may preserve a buffer
+	private val itemsChannel = itemsFlow.produceIn(viewModelScope)
 
 	val readonlyPages: List<List<T>> = Collections.unmodifiableList(cachedPages)
 	val readonlyItems = object : AbstractList<T>() {
@@ -76,7 +70,7 @@ private class ChannelPagerViewModel<T>(
 
 	suspend fun loadPage() {
 		Log.d("ChannelPagerViewModel", "loadPage: ${cachedPages.size} pages, ${readonlyItems.size} items")
-		ended && return
+		// ended && return
 
 		loading && return
 		try {
@@ -86,6 +80,7 @@ private class ChannelPagerViewModel<T>(
 			val items = buildList {
 				repeat(pageSize) {
 					val hole = itemsChannel.receiveCatching().getOrElse { exception ->
+						ended = true
 						buildingException = exception
 						return@buildList
 					}
@@ -105,7 +100,7 @@ private class ChannelPagerViewModel<T>(
 
 @Composable
 fun <T> ChannelPager(
-	itemsProducer: suspend ProducerScope<T>.() -> Unit,
+	itemsFlow: Flow<T>,
 	key: String?,
 	pageSize: Int,
 	initialItemIndex: Int,
@@ -120,37 +115,35 @@ fun <T> ChannelPager(
 	)
 	when (pagerScrollOrientation) {
 		DxrPagerScrollOrientation.HORIZONTAL -> HorizontalScrollChannelPager(
-			itemsProducer,
-			key,
-			pageSize,
-			initialItemIndex,
-			initialItemScrollOffset,
-			saveItemPosition,
-			refresh,
-			modifier,
-			itemContent,
+			itemsFlow = itemsFlow,
+			key = key,
+			pageSize = pageSize,
+			initialItemIndex = initialItemIndex,
+			initialItemScrollOffset = initialItemScrollOffset,
+			saveItemPosition = saveItemPosition,
+			refresh = refresh,
+			modifier = modifier,
+			itemContent = itemContent,
 		)
 
 		DxrPagerScrollOrientation.VERTICAL -> VerticalScrollChannelPager(
-			itemsProducer,
-			key,
-			pageSize,
-			initialItemIndex,
-			initialItemScrollOffset,
-			saveItemPosition,
-			refresh,
-			modifier,
-			itemContent,
+			itemsFlow = itemsFlow,
+			key = key,
+			pageSize = pageSize,
+			initialItemIndex = initialItemIndex,
+			initialItemScrollOffset = initialItemScrollOffset,
+			saveItemPosition = saveItemPosition,
+			refresh = refresh,
+			modifier = modifier,
+			itemContent = itemContent,
 		)
-
-		else -> Unit
 	}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> HorizontalScrollChannelPager(
-	itemsProducer: suspend ProducerScope<T>.() -> Unit,
+	itemsFlow: Flow<T>,
 	key: String?,
 	pageSize: Int,
 	initialItemIndex: Int,
@@ -163,7 +156,7 @@ fun <T> HorizontalScrollChannelPager(
 	val pagerViewModel = viewModel<ChannelPagerViewModel<T>>(
 		key = key,
 	) {
-		ChannelPagerViewModel(itemsProducer, pageSize)
+		ChannelPagerViewModel(itemsFlow, pageSize)
 	}
 	val initialPageIndex = initialItemIndex / pageSize
 	val initialItemIndexInPage = initialItemIndex % pageSize
@@ -257,7 +250,7 @@ fun <T> HorizontalScrollChannelPager(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> VerticalScrollChannelPager(
-	itemsProducer: suspend ProducerScope<T>.() -> Unit,
+	itemsFlow: Flow<T>,
 	key: String?,
 	pageSize: Int,
 	initialItemIndex: Int,
@@ -270,7 +263,7 @@ fun <T> VerticalScrollChannelPager(
 	val pagerViewModel = viewModel<ChannelPagerViewModel<T>>(
 		key = key,
 	) {
-		ChannelPagerViewModel(itemsProducer, pageSize)
+		ChannelPagerViewModel(itemsFlow, pageSize)
 	}
 	val lazyListState = rememberLazyListState(
 		initialItemIndex,

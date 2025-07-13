@@ -384,30 +384,30 @@ object DxrRetention {
 		}
 		?: buildJsonObject { }
 
-	fun loadHoleSequenceByCreation(userId: Long) = loadDescendingIdSequence(app.holeIndicesPathOf(userId))
+	fun loadHolesSequenceByCreation(userId: Long) = loadDescendingIdsSequence(app.holeIndicesPathOf(userId))
 		.mapNotNull { loadHole(userId, it.toLong()) }
 
-	fun loadHoleSequenceByUpdate(userId: Long) = loadDescendingIdSequence(app.floorIndicesPathOf(userId))
+	fun loadHolesSequenceByUpdate(userId: Long) = loadDescendingIdsSequence(app.floorIndicesPathOf(userId))
 		.mapNotNull { loadFloor(userId, it.toLong()) }
 		.mapNotNull { it.holeId }
 		.distinct()
 		.mapNotNull { loadHole(userId, it.toLong()) }
 
 	// TODO 以預加載OtHole縮小firstFloor到lastFloor間者範圍
-	fun loadFloorSequence(userId: Long, holeId: Long) = loadIncreasingIdSequence(app.floorIndicesPathOf(userId))
+	fun loadFloorsSequence(userId: Long, holeId: Long) = loadIncreasingIdsSequence(app.floorIndicesPathOf(userId))
 		.mapNotNull { loadFloor(userId, it.toLong()) }
 		.filter { it.holeId == holeId }
 
 	// TODO 以預加載OtHole縮小firstFloor到lastFloor間者範圍
-	fun loadFloorSequenceReversed(userId: Long, holeId: Long) = loadDescendingIdSequence(app.floorIndicesPathOf(userId))
+	fun loadFloorsReversedSequence(userId: Long, holeId: Long) = loadDescendingIdsSequence(app.floorIndicesPathOf(userId))
 		.mapNotNull { loadFloor(userId, it.toLong()) }
 		.filter { it.holeId == holeId }
 
-	private fun loadIncreasingIdSequence(path: Path) = loadIndices(path)
+	private fun loadIncreasingIdsSequence(path: Path) = loadIndices(path)
 		.asRanges().asSequence()
 		.flatMap { it.lowerEndpoint() ..< it.upperEndpoint() }
 
-	private fun loadDescendingIdSequence(path: Path) = loadIndices(path)
+	private fun loadDescendingIdsSequence(path: Path) = loadIndices(path)
 		.asDescendingSetOfRanges().asSequence()
 		.flatMap { it.upperEndpoint() - 1 downTo it.lowerEndpoint() }
 }

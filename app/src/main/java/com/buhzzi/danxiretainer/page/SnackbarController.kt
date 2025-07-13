@@ -45,13 +45,32 @@ val LocalSnackbarController = compositionLocalOf<SnackbarController> {
 	error("SnackbarController not provided")
 }
 
-suspend fun CoroutineScope.runCatchingOnSnackbar(
+suspend fun <R> runCatchingOnSnackbar(
 	snackbarController: SnackbarController,
 	lazyMessage: (Throwable) -> String = { it.toString() },
-	block: suspend CoroutineScope.() -> Unit,
+	block: suspend () -> R,
+) = Unit.runCatchingOnSnackbar(
+	snackbarController = snackbarController,
+	lazyMessage = lazyMessage,
+) {
+	block()
+}
+
+suspend fun <T, R> T.runCatchingOnSnackbar(
+	snackbarController: SnackbarController,
+	lazyMessage: (Throwable) -> String = { it.toString() },
+	block: suspend T.() -> R,
 ) = runCatching {
 	block()
-}.getOrElse { exception ->
-	Log.e("runBlockingOrShowSnackbarMessage", "exception: $exception\nstacktrace:\n${exception.stackTraceToString()}")
+}.onFailure { exception ->
+	showExceptionOnSnackbar(snackbarController, exception, lazyMessage)
+}
+
+fun showExceptionOnSnackbar(
+	snackbarController: SnackbarController,
+	exception: Throwable,
+	lazyMessage: (Throwable) -> String = { it.toString() },
+) {
+	Log.e("SnackbarController", "exception: $exception\nstacktrace:\n${exception.stackTraceToString()}")
 	snackbarController.show(lazyMessage(exception))
 }

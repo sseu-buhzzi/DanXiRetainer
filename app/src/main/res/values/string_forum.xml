@@ -12,13 +12,16 @@
 	<string name="modified_times_label">已修改%d次</string>
 
 	<string name="floors_order_label">樓層排序方向</string>
-	<string name="open_in_normal_order_at_newest_label">以正序載入至最新</string>
-	<string name="open_in_reversed_order_at_newest_label">以倒序載入至最新</string>
+	<string name="open_in_normal_order_at_beginning_label">以正序載入至首樓</string>
+	<string name="open_in_reversed_order_at_beginning_label">以倒序載入至首樓</string>
+	<string name="open_in_normal_order_at_ending_label">以正序載入至末樓</string>
+	<string name="open_in_reversed_order_at_ending_label">以倒序載入至末樓</string>
 	<string name="change_floors_order_to_normal_label">變更預設爲以正序載入</string>
 	<string name="change_floors_order_to_reversed_label">變更預設爲以倒序載入</string>
 	<string name="floors_order_current_label">（當前）</string>
 	<string name="floor_time_created">發帖時間：%s</string>
 	<string name="floor_time_updated">修改時間：%s</string>
+	<string name="floor_time_deleted">刪除時間：%s</string>
 	<string name="floor_copy_selected">選擇複製</string>
 	<string name="floor_copy_all">全部複製</string>
 	<string name="floor_copy_json">複製JSON</string>

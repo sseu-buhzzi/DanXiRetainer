@@ -5,9 +5,14 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -15,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,12 +31,41 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.buhzzi.danxiretainer.R
+import com.buhzzi.danxiretainer.page.LocalSnackbarController
+import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
+import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.util.dxrPrettyJson
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
 import dart.package0.dan_xi.util.forum.HumanDuration
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+
+@Composable
+fun RowScope.FloorsTopBarActions(holeId: Long) {
+	val snackbarController = LocalSnackbarController.current
+
+	val scope = rememberCoroutineScope()
+
+	var bottomSheetEvent by remember { mutableStateOf<FloorsBottomSheetEvent?>(null) }
+
+	bottomSheetEvent?.BottomSheet { bottomSheetEvent = it }
+
+	IconButton(
+		{
+			scope.launch(Dispatchers.IO) {
+				runCatchingOnSnackbar(snackbarController) {
+					bottomSheetEvent = FloorsBottomSheetEvent.HoleActions(DxrContent.loadHole(holeId))
+				}
+			}
+		},
+	) {
+		Icon(Icons.Default.MoreVert, null)
+	}
+}
 
 @Composable
 fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
@@ -45,7 +80,7 @@ fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
 			.padding(4.dp)
 			.combinedClickable(
 				onLongClick = {
-					bottomSheetEvent = FloorsBottomSheetEvent.FloorActions(floor, hole, floorIndex)
+					bottomSheetEvent = FloorsBottomSheetEvent.FloorActions(floor, floorIndex)
 				},
 			) {
 
@@ -69,7 +104,7 @@ fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
 					floor.anonyname ?: "?",
 					floor.anonyname == hole.floors?.firstFloor?.anonyname,
 				)
-				FloorActionsRow(floor) { bottomSheetEvent = FloorsBottomSheetEvent.FloorActions(floor, hole, floorIndex) }
+				FloorActionsRow(floor) { bottomSheetEvent = FloorsBottomSheetEvent.FloorActions(floor, floorIndex) }
 			}
 			// TODO Markdown and mentions
 			Text(
@@ -118,24 +153,39 @@ fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
 	}
 }
 
-private sealed class FloorsBottomSheetEvent(
-	val floor: OtFloor,
-	val hole: OtHole,
-	val floorIndex: Int,
-) {
-	class FloorActions(
-		floor: OtFloor,
-		hole: OtHole,
-		floorIndex: Int,
-	) : FloorsBottomSheetEvent(floor, hole, floorIndex) {
+private sealed class FloorsBottomSheetEvent {
+	class HoleActions(
+		val hole: OtHole,
+	) : FloorsBottomSheetEvent() {
 		@OptIn(ExperimentalMaterial3Api::class)
 		@Composable
 		override fun BottomSheet(bottomSheetEventSetter: (FloorsBottomSheetEvent?) -> Unit) {
 			ActionsBottomSheet(
 				{ bottomSheetEventSetter(null) },
 			) {
-				FloorTimeFieldItem(R.string.floor_time_created, floor.timeCreated.toString())
-				FloorTimeFieldItem(R.string.floor_time_updated, floor.timeUpdated.toString())
+				FloorCopyTimeItem(R.string.floor_time_created, hole.timeCreated?.toDateTimeRfc3339())
+				FloorCopyTimeItem(R.string.floor_time_updated, hole.timeUpdated?.toDateTimeRfc3339())
+				// optional TODO hide if not deleted
+				FloorCopyTimeItem(R.string.floor_time_deleted, hole.timeDeleted?.toDateTimeRfc3339())
+				HoleCopyJsonItem(hole)
+				HoleCopyIndexItem(hole)
+				HoleShareAsTextItem(hole)
+			}
+		}
+	}
+
+	class FloorActions(
+		val floor: OtFloor,
+		val floorIndex: Int,
+	) : FloorsBottomSheetEvent() {
+		@OptIn(ExperimentalMaterial3Api::class)
+		@Composable
+		override fun BottomSheet(bottomSheetEventSetter: (FloorsBottomSheetEvent?) -> Unit) {
+			ActionsBottomSheet(
+				{ bottomSheetEventSetter(null) },
+			) {
+				FloorCopyTimeItem(R.string.floor_time_created, floor.timeCreated?.toDateTimeRfc3339())
+				FloorCopyTimeItem(R.string.floor_time_updated, floor.timeUpdated?.toDateTimeRfc3339())
 				FloorCopySelectedItem(floor)
 				FloorCopyAllItem(floor)
 				FloorCopyJsonItem(floor)
@@ -150,20 +200,24 @@ private sealed class FloorsBottomSheetEvent(
 }
 
 @Composable
-private fun FloorTimeFieldItem(labelId: Int, timeString: String) {
+private fun FloorCopyTimeItem(labelId: Int, time: OffsetDateTime?) {
 	val clipboard = LocalClipboard.current
+	val postTimeFormatter = remember { DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss") }
+	val postTimeString = remember(time) {
+		time?.format(postTimeFormatter).toString()
+	}
 	ClickCatchingActionBottomSheetItem(
 		{
 			clipboard.setClipEntry(
 				ClipData.newPlainText(
 					null,
-					timeString,
+					postTimeString,
 				).toClipEntry(),
 			)
 		},
 	) {
 		Text(
-			stringResource(labelId, timeString)
+			stringResource(labelId, postTimeString)
 		)
 	}
 }
@@ -197,6 +251,23 @@ private fun FloorCopyAllItem(floor: OtFloor) {
 }
 
 @Composable
+private fun HoleCopyJsonItem(hole: OtHole) {
+	val clipboard = LocalClipboard.current
+	ClickCatchingActionBottomSheetItem(
+		{
+			clipboard.setClipEntry(
+				ClipData.newPlainText(
+					null,
+					dxrPrettyJson.encodeToString(hole),
+				).toClipEntry(),
+			)
+		},
+	) {
+		Text(stringResource(R.string.floor_copy_json))
+	}
+}
+
+@Composable
 private fun FloorCopyJsonItem(floor: OtFloor) {
 	val clipboard = LocalClipboard.current
 	ClickCatchingActionBottomSheetItem(
@@ -210,6 +281,23 @@ private fun FloorCopyJsonItem(floor: OtFloor) {
 		},
 	) {
 		Text(stringResource(R.string.floor_copy_json))
+	}
+}
+
+@Composable
+private fun HoleCopyIndexItem(hole: OtHole) {
+	val clipboard = LocalClipboard.current
+	ClickCatchingActionBottomSheetItem(
+		{
+			clipboard.setClipEntry(
+				ClipData.newPlainText(
+					null,
+					"#${hole.holeId}",
+				).toClipEntry(),
+			)
+		},
+	) {
+		Text(stringResource(R.string.floor_copy_id))
 	}
 }
 
@@ -231,14 +319,43 @@ private fun FloorCopyIndexItem(floor: OtFloor) {
 }
 
 @Composable
+private fun HoleShareAsTextItem(hole: OtHole) {
+	val clipboard = LocalClipboard.current
+	val snackbarController = LocalSnackbarController.current
+	val scope = rememberCoroutineScope()
+	val postTimeFormatter = remember { DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm") }
+	ClickCatchingActionBottomSheetItem(
+		{
+			scope.launch {
+				runCatchingOnSnackbar(snackbarController) {
+					clipboard.setClipEntry(
+						ClipData.newPlainText(
+							null,
+							buildList {
+								DxrContent.floorsFlow(hole.holeIdNotNull).collect { (floor, _, floorIndex) ->
+									add(renderFloorAsText(floor, floorIndex + 1, postTimeFormatter))
+								}
+							}.joinToString("\n\n"),
+						).toClipEntry(),
+					)
+				}
+			}
+		},
+	) {
+		Text(stringResource(R.string.floor_share_as_text))
+	}
+}
+
+@Composable
 private fun FloorShareAsTextItem(floor: OtFloor, floorIndex: Int) {
 	val clipboard = LocalClipboard.current
+	val postTimeFormatter = remember { DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm") }
 	ClickCatchingActionBottomSheetItem(
 		{
 			clipboard.setClipEntry(
 				ClipData.newPlainText(
 					null,
-					renderFloorAsText(floor, floorIndex + 1)
+					renderFloorAsText(floor, floorIndex + 1, postTimeFormatter),
 				).toClipEntry(),
 			)
 		},
@@ -247,12 +364,14 @@ private fun FloorShareAsTextItem(floor: OtFloor, floorIndex: Int) {
 	}
 }
 
-private val postTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")
-
 // The ending `.` in below comment comes from `DanXi/lib/page/forum/hole_detail.dart:165:49` at commit `880293e63a3c4762e4c0c6a53438e008aef9330f`
 // `index` is `floorIndex + 1`
 /// Build the text form of a floor for sharing.
-private fun renderFloorAsText(floor: OtFloor, index: Int) = buildString {
+private fun renderFloorAsText(
+	floor: OtFloor,
+	index: Int,
+	postTimeFormatter: DateTimeFormatter,
+) = buildString {
 	val postTime = floor.timeCreated?.toDateTimeRfc3339()?.format(postTimeFormatter)
 	append("${floor.anonyname} 于 $postTime")
 	append("${index}F (##${floor.floorId})")

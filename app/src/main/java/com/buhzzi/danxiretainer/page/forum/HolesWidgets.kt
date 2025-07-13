@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -45,6 +46,11 @@ import dart.package0.dan_xi.util.forum.HumanDuration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
+
+@Composable
+fun RowScope.HolesTopBarActions() {
+	// TODO view switching
+}
 
 @Composable
 fun HoleCard(hole: OtHole) {
@@ -107,7 +113,12 @@ fun HoleCard(hole: OtHole) {
 						) {
 							scope.launch(Dispatchers.IO) {
 								runCatchingOnSnackbar(snackbarController) {
-									openFloorsAtNewest(hole, reversed)
+									val options = if (reversed) {
+										OpenFloorsOptions.REVERSED_ENDING
+									} else {
+										OpenFloorsOptions.NORMAL_ENDING
+									}
+									openFloorsAtEnding(hole, options)
 								}
 							}
 						},
@@ -181,7 +192,6 @@ fun HoleCard(hole: OtHole) {
 private sealed class HolesBottomSheetEvent(
 	val hole: OtHole,
 ) {
-	// feat TODO hole actions can provide an access to last floor actions
 	class HoleActions(hole: OtHole) : HolesBottomSheetEvent(hole) {
 		@OptIn(ExperimentalMaterial3Api::class)
 		@Composable
@@ -189,6 +199,8 @@ private sealed class HolesBottomSheetEvent(
 			ActionsBottomSheet(
 				{ bottomSheetEventSetter(null) },
 			) {
+				OpenFloorsInOrderItem(hole, OpenFloorsOptions.NORMAL_BEGINNING)
+				OpenFloorsInOrderItem(hole, OpenFloorsOptions.REVERSED_BEGINNING)
 				ClickCatchingActionBottomSheetItem(
 					{
 						bottomSheetEventSetter(LastFloorActions(hole))
@@ -200,7 +212,6 @@ private sealed class HolesBottomSheetEvent(
 		}
 	}
 
-	// feat TODO open to last, open in reversed order, change the order, etc.
 	class LastFloorActions(hole: OtHole) : HolesBottomSheetEvent(hole) {
 		@OptIn(ExperimentalMaterial3Api::class)
 		@Composable
@@ -208,8 +219,8 @@ private sealed class HolesBottomSheetEvent(
 			ActionsBottomSheet(
 				{ bottomSheetEventSetter(null) },
 			) {
-				OpenFloorsInOrderItem(hole, false)
-				OpenFloorsInOrderItem(hole, true)
+				OpenFloorsInOrderItem(hole, OpenFloorsOptions.NORMAL_ENDING)
+				OpenFloorsInOrderItem(hole, OpenFloorsOptions.REVERSED_ENDING)
 				ToggleFloorsOrderItem()
 			}
 		}
@@ -220,23 +231,24 @@ private sealed class HolesBottomSheetEvent(
 }
 
 @Composable
-private fun OpenFloorsInOrderItem(hole: OtHole, reversed: Boolean) {
-	val reversedInSettings by DxrSettings.Models.floorsReversedOrDefaultFlow.collectAsState(
+private fun OpenFloorsInOrderItem(hole: OtHole, options: OpenFloorsOptions) {
+	val reversed by DxrSettings.Models.floorsReversedOrDefaultFlow.collectAsState(
 		DxrSettings.Models.floorsReversedOrDefault,
 	)
 
 	ClickCatchingActionBottomSheetItem(
-		{ openFloorsAtNewest(hole, reversed) },
+		{ openFloorsAtEnding(hole, options) },
 	) {
 		Text(buildString {
 			append(
-				if (reversed) {
-					stringResource(R.string.open_in_reversed_order_at_newest_label)
-				} else {
-					stringResource(R.string.open_in_normal_order_at_newest_label)
+				when (options) {
+					OpenFloorsOptions.NORMAL_ENDING -> stringResource(R.string.open_in_normal_order_at_ending_label)
+					OpenFloorsOptions.NORMAL_BEGINNING -> stringResource(R.string.open_in_normal_order_at_beginning_label)
+					OpenFloorsOptions.REVERSED_ENDING -> stringResource(R.string.open_in_reversed_order_at_ending_label)
+					OpenFloorsOptions.REVERSED_BEGINNING -> stringResource(R.string.open_in_reversed_order_at_beginning_label)
 				},
 			)
-			if (reversed == reversedInSettings) {
+			if (options.reversed == reversed) {
 				append(stringResource(R.string.floors_order_current_label))
 			}
 		})
@@ -264,27 +276,19 @@ private fun ToggleFloorsOrderItem() {
 	}
 }
 
-private fun openFloorsAtNewest(
-	hole: OtHole,
-	reversed: Boolean,
-) {
-	if (reversed) {
-		openFloors(
-			hole,
-			reversed = true,
-			pagerFloorIndex = 0,
-			pagerFloorScrollOffset = 0,
-			refreshTime = OffsetDateTime.now(),
-		)
+private fun openFloorsAtEnding(hole: OtHole, options: OpenFloorsOptions) {
+	val pagerFloorIndex = if (options.reversed xor options.beginning) {
+		0
 	} else {
-		openFloors(
-			hole,
-			reversed = false,
-			pagerFloorIndex = hole.floorsCount.toInt() - 1,
-			pagerFloorScrollOffset = 0,
-			refreshTime = OffsetDateTime.now(),
-		)
+		hole.floorsCount.toInt() - 1
 	}
+	openFloors(
+		hole,
+		reversed = options.reversed,
+		pagerFloorIndex = pagerFloorIndex,
+		pagerFloorScrollOffset = 0,
+		refreshTime = OffsetDateTime.now(),
+	)
 }
 
 private fun openFloors(
@@ -308,4 +312,14 @@ private fun openFloors(
 			refreshTime = refreshTime?.toStringRfc3339() ?: this.refreshTime,
 		)
 	}
+}
+
+private enum class OpenFloorsOptions(
+	val reversed: Boolean,
+	val beginning: Boolean,
+) {
+	NORMAL_ENDING(false, false),
+	NORMAL_BEGINNING(false, true),
+	REVERSED_ENDING(true, false),
+	REVERSED_BEGINNING(true, true);
 }
