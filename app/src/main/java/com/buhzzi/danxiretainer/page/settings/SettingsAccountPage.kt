@@ -33,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -132,10 +131,8 @@ fun SettingsAccountPage() {
 
 			val jwtExpirationFormatter = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss") }
 			val accessJwt by DxrSettings.Items.accessJwtFlow.collectAsState(null)
-			val accessJwtExpirationText by remember {
-				derivedStateOf {
-					accessJwt?.let { getJwtExpiration(it) }?.format(jwtExpirationFormatter)
-				}
+			val accessJwtExpirationText = remember(accessJwt) {
+				accessJwt?.let { getJwtExpiration(it) }?.format(jwtExpirationFormatter)
 			}
 			InputListItem(
 				accessJwt ?: "",
@@ -154,10 +151,8 @@ fun SettingsAccountPage() {
 			}
 
 			val refreshJwt by DxrSettings.Items.refreshJwtFlow.collectAsState(null)
-			val refreshJwtExpirationText by remember {
-				derivedStateOf {
-					refreshJwt?.let { getJwtExpiration(it) }?.format(jwtExpirationFormatter)
-				}
+			val refreshJwtExpirationText = remember(refreshJwt) {
+				refreshJwt?.let { getJwtExpiration(it) }?.format(jwtExpirationFormatter)
 			}
 			InputListItem(
 				refreshJwt ?: "",

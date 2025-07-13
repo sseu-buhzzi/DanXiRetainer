@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -171,14 +170,12 @@ fun <T> HorizontalScrollChannelPager(
 	val pagerState = rememberPagerState(initialPageIndex) {
 		pagerViewModel.readonlyPages.size + if (pagerViewModel.ended) 0 else 1
 	}
-	val lazyListStates by remember {
-		derivedStateOf {
-			List(pagerState.pageCount) { pageIndex ->
-				if (pageIndex == initialItemIndex) LazyListState(
-					initialItemIndexInPage,
-					initialItemScrollOffset,
-				) else LazyListState()
-			}
+	val lazyListStates = remember(pagerViewModel, pagerState.pageCount) {
+		List(pagerState.pageCount) { pageIndex ->
+			if (pageIndex == initialItemIndex) LazyListState(
+				initialItemIndexInPage,
+				initialItemScrollOffset,
+			) else LazyListState()
 		}
 	}
 

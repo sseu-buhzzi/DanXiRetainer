@@ -1,6 +1,5 @@
 package com.buhzzi.danxiretainer.page.forum
 
-import android.os.FileObserver
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -24,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -96,7 +94,7 @@ fun ForumPage() {
 	val sessionState = sessionStateNullable ?: return
 
 	var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
-	val selectedPage by remember { derivedStateOf { ForumPages.entries[selectedIndex] } }
+	val selectedPage = remember(selectedIndex) { ForumPages.entries[selectedIndex] }
 
 	CompositionLocalProvider(LocalSessionState provides sessionState) {
 		DxrScaffoldWrapper(
@@ -398,24 +396,11 @@ private fun RetentionHolesPager(userId: Long) {
 
 	val refreshTime = sessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
-	val holeIndicesPath by remember {
-		derivedStateOf {
-			context.holeIndicesPathOf(userId)
-		}
-	}
+	val holeIndicesPath = remember(userId) { context.holeIndicesPathOf(userId) }
 	// MT is short for Modified Time
 	val holeIndicesMtString by produceState(holeIndicesPath.getLastModifiedTime().toString(), userId) {
-		val observer = object : FileObserver(holeIndicesPath.toFile(), CLOSE_WRITE) {
-			override fun onEvent(event: Int, path: String?) {
-				if (event == CLOSE_WRITE) {
-					value = holeIndicesPath.getLastModifiedTime().toString()
-				}
-			}
-		}
-		observer.startWatching()
-
-		awaitDispose {
-			observer.stopWatching()
+		updateWith(listOf(holeIndicesPath.toFile())) {
+			holeIndicesPath.getLastModifiedTime().toString()
 		}
 	}
 
@@ -462,24 +447,11 @@ private fun RetentionFloorsPager(userId: Long, holeId: Long) {
 	val holeSessionState = holeSessionStateNullable ?: return
 	val refreshTime = holeSessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
-	val floorIndicesPath by remember {
-		derivedStateOf {
-			context.floorIndicesPathOf(userId)
-		}
-	}
+	val floorIndicesPath = remember(userId) { context.floorIndicesPathOf(userId) }
 	// Mt is short for Modified Time
 	val floorIndicesMtString by produceState(floorIndicesPath.getLastModifiedTime().toString(), userId, holeId) {
-		val observer = object : FileObserver(floorIndicesPath.toFile(), CLOSE_WRITE) {
-			override fun onEvent(event: Int, path: String?) {
-				if (event == CLOSE_WRITE) {
-					value = floorIndicesPath.getLastModifiedTime().toString()
-				}
-			}
-		}
-		observer.startWatching()
-
-		awaitDispose {
-			observer.stopWatching()
+		updateWith(listOf(floorIndicesPath.toFile())) {
+			floorIndicesPath.getLastModifiedTime().toString()
 		}
 	}
 
