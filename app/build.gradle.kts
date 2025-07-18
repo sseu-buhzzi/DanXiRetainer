@@ -41,6 +41,8 @@ android {
 }
 
 dependencies {
+	implementation(libs.duktape.android)
+
 	implementation(libs.coil.compose)
 
 	implementation(libs.ktor.client.core)

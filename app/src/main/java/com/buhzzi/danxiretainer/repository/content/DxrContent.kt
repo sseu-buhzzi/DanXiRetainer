@@ -64,6 +64,21 @@ object DxrContent {
 			)
 			holes.forEach { hole ->
 				emit(hole)
+				runCatching {
+					DxrRetention.retainHole(userId, hole, DxrForumApi::loadHoles)
+				}
+				hole.tags?.forEach { tag ->
+					runCatching {
+						DxrRetention.retainTag(userId, tag, DxrForumApi::loadHoles)
+					}
+				}
+				hole.floors?.asList?.forEach { floor ->
+					floor ?: return@forEach
+					runCatching {
+						DxrRetention.retainFloor(userId, floor, DxrForumApi::loadHoles)
+					}
+				}
+				// optional TODO use `forumApiFloorsFlow()` to store full floors
 			}
 			holes.size < loadLength && break
 			startTime = holes.last().getSortingDateTime(sortOrder)
@@ -104,6 +119,9 @@ object DxrContent {
 	}
 
 	fun forumApiFloorsFlow(holeId: Long) = flow {
+		val userProfile = DxrSettings.Models.userProfileNotNull
+		val userId = userProfile.userIdNotNull
+
 		DxrForumApi.ensureAuth()
 		val hole = DxrForumApi.loadHoleById(holeId)
 
@@ -119,6 +137,9 @@ object DxrContent {
 			)
 			floors.forEachIndexed { index, floor ->
 				emit(Triple(floor, hole, startFloorIndex + index))
+				runCatching {
+					DxrRetention.retainFloor(userId, floor, DxrForumApi::loadFloors)
+				}
 			}
 			startFloorIndex += floors.size
 		} while (floors.size >= loadLength)

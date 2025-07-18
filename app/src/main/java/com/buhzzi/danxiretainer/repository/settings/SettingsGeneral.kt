@@ -4,6 +4,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
 import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
+import com.buhzzi.danxiretainer.model.settings.DxrRetentionDecider
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.ItemDelegate
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Items
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Keys
@@ -110,3 +111,19 @@ val Models.floorsReversedOrDefault
 	get() = Items.floorsReversed == true
 val Models.floorsReversedOrDefaultFlow
 	get() = Items.floorsReversedFlow.map { it == true }
+
+
+val Keys.retentionDeciderJsString get() = stringPreferencesKey("retention_decider_js_string")
+var Items.retentionDeciderJsString by ItemDelegate(Keys.retentionDeciderJsString)
+val Items.retentionDeciderJsStringFlow get() = getFlow(Keys.retentionDeciderJsString)
+var Models.retentionDecider
+	get() = Items.retentionDeciderJsString?.let { DxrRetentionDecider(it) }
+	set(value) {
+		Items.retentionDeciderJsString = value?.decideJavaScript
+	}
+val Models.retentionDeciderFlow
+	get() = Items.retentionDeciderJsStringFlow.map { it?.let { DxrRetentionDecider(it) } }
+val Models.retentionDeciderOrDefault
+	get() = retentionDecider ?: DxrRetentionDecider("true")
+val Models.retentionDeciderOrDefaultFlow
+	get() = retentionDeciderFlow.map { it ?: DxrRetentionDecider("true") }

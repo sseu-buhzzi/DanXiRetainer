@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.Javascript
 import androidx.compose.material.icons.filled.Source
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.SwipeVertical
@@ -24,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
 import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
+import com.buhzzi.danxiretainer.model.settings.DxrRetentionDecider
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.cleanMode
@@ -38,6 +40,9 @@ import com.buhzzi.danxiretainer.repository.settings.floorsReversedOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientation
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefault
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefaultFlow
+import com.buhzzi.danxiretainer.repository.settings.retentionDecider
+import com.buhzzi.danxiretainer.repository.settings.retentionDeciderOrDefault
+import com.buhzzi.danxiretainer.repository.settings.retentionDeciderOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.sortOrder
 import com.buhzzi.danxiretainer.repository.settings.sortOrderOrDefault
 import com.buhzzi.danxiretainer.repository.settings.sortOrderOrDefaultFlow
@@ -175,6 +180,20 @@ fun SettingsGeneralPage() {
 				Icons.Default.VerticalAlignBottom,
 			) { checked ->
 				DxrSettings.Items.floorsReversed = checked
+			}
+
+			val retentionDecider by DxrSettings.Models.retentionDeciderOrDefaultFlow.collectAsState(
+				DxrSettings.Models.retentionDeciderOrDefault,
+			)
+			InputListItem(
+				retentionDecider.decideJavaScript,
+				stringResource(R.string.retention_decider_label),
+				retentionDecider.decideJavaScript,
+				stringResource(R.string.retention_decider_description),
+				Icons.Default.Javascript,
+			) { text ->
+				DxrSettings.Models.retentionDecider = DxrRetentionDecider(text)
+				true
 			}
 		}
 	}

@@ -35,6 +35,8 @@ data class OtFloors(
 
 	fun toJson() = dxrJson.encodeToJsonElement(this)
 
+	val asList get() = listOf(firstFloor, lastFloor)
+
 	companion object {
 		fun fromJson(json: JsonElement) = dxrJson.decodeFromJsonElement<OtFloors>(json)
 	}

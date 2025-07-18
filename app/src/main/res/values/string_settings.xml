@@ -57,4 +57,6 @@
 	<string name="pager_scroll_orientation_label">分頁滾動方向</string>
 	<string name="floors_reversed_label">樓層倒序</string>
 	<string name="floors_reversed_description">瀏覽帖子樓層時按樓層倒序載入</string>
+	<string name="retention_decider_label">畱檔決定依據</string>
+	<string name="retention_decider_description">使用一段JavaScript表達式（例如`request.retention.reply &lt; 10`・`request.type == "user_demand"`等）來決定何時應該對論壇資料畱檔。</string>
 </resources>

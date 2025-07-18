@@ -27,7 +27,7 @@ fun Context.settingsDirPathOf(userId: Long) =
 fun Context.holesDirPathOf(userId: Long) =
 	userDirPathOf(userId) / "holes"
 
-fun Context.holeIndicesPathOf(userId: Long) =
+fun Context.holesIndicesPathOf(userId: Long) =
 	holesDirPathOf(userId) / "indices.bin"
 
 fun Context.holePathOf(userId: Long, holeId: Long) =
@@ -36,7 +36,7 @@ fun Context.holePathOf(userId: Long, holeId: Long) =
 fun Context.floorsDirPathOf(userId: Long) =
 	userDirPathOf(userId) / "floors"
 
-fun Context.floorIndicesPathOf(userId: Long) =
+fun Context.floorsIndicesPathOf(userId: Long) =
 	floorsDirPathOf(userId) / "indices.bin"
 
 fun Context.floorPathOf(userId: Long, floorId: Long) =
@@ -57,5 +57,5 @@ fun Context.sessionStateCurrentPathOf(userId: Long) =
 fun Context.holeSessionStatesDirPathOf(userId: Long) =
 	sessionStateDirPathOf(userId) / "holes"
 
-fun Context.holeSessionStatePathOf(userId: Long, holeId: Long) =
+fun Context.holesSessionStatePathOf(userId: Long, holeId: Long) =
 	holeSessionStatesDirPathOf(userId) / "$holeId.json"

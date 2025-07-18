@@ -46,7 +46,7 @@ import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.dxrJson
-import com.buhzzi.danxiretainer.util.holeSessionStatePathOf
+import com.buhzzi.danxiretainer.util.holesSessionStatePathOf
 import com.buhzzi.danxiretainer.util.sessionStateDirPathOf
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringRfc3339
@@ -231,7 +231,7 @@ private fun FloorsPager(userId: Long, holeId: Long) {
 	val snackbarController = LocalSnackbarController.current
 
 	val holeSessionStateNullable by produceState<DxrHoleSessionState?>(null, userId, holeId) {
-		val holeSessionStatePath = context.holeSessionStatePathOf(userId, holeId)
+		val holeSessionStatePath = context.holesSessionStatePathOf(userId, holeId)
 		updateWith(listOf(holeSessionStatePath.toFile())) {
 			DxrRetention.loadHoleSessionState(userId, holeId)
 		}
