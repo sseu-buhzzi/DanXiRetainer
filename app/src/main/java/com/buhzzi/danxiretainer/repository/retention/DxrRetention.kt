@@ -411,13 +411,21 @@ object DxrRetention {
 		.distinct()
 		.mapNotNull { loadHole(userId, it) }
 
-	// TODO 以預加載OtHole縮小firstFloor到lastFloor間者範圍
 	fun loadFloorsSequence(userId: Long, holeId: Long) = loadIncreasingIdsSequence(app.floorsIndicesPathOf(userId))
+		.run {
+			loadHoleFloorsRange(userId, holeId)
+				?.let { range -> filter { it in range } }
+				?: this
+		}
 		.mapNotNull { loadFloor(userId, it) }
 		.filter { it.holeId == holeId }
 
-	// TODO 以預加載OtHole縮小firstFloor到lastFloor間者範圍
 	fun loadFloorsReversedSequence(userId: Long, holeId: Long) = loadDescendingIdsSequence(app.floorsIndicesPathOf(userId))
+		.run {
+			loadHoleFloorsRange(userId, holeId)
+				?.let { range -> filter { it in range } }
+				?: this
+		}
 		.mapNotNull { loadFloor(userId, it) }
 		.filter { it.holeId == holeId }
 
@@ -430,6 +438,11 @@ object DxrRetention {
 		.asDescendingSetOfRanges().asSequence()
 		.flatMap { it.upperEndpoint() - 1 downTo it.lowerEndpoint() }
 		.map { it.toLong() }
+
+	private fun loadHoleFloorsRange(userId: Long, holeId: Long) = loadHole(userId, holeId)
+		?.floors
+		?.runCatching { firstFloorNotNull.floorIdNotNull .. lastFloorNotNull.floorIdNotNull }
+		?.getOrNull()
 
 	fun retainHole(userId: Long, hole: OtHole, sourceFunction: KFunction<*>) {
 		val retentionDecider = DxrSettings.Models.retentionDeciderOrDefault
