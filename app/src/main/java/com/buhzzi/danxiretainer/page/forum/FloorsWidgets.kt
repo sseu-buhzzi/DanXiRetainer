@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +31,7 @@ import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.LocalSnackbarController
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
@@ -49,6 +51,20 @@ fun RowScope.FloorsTopBarActions(holeId: Long) {
 	val snackbarController = LocalSnackbarController.current
 
 	val scope = rememberCoroutineScope()
+
+	val pagerSharedEventViewModel = viewModel<ChannelPagerSharedEventViewModel>()
+
+	IconButton(
+		{
+			scope.launch(Dispatchers.IO) {
+				runCatchingOnSnackbar(snackbarController) {
+					pagerSharedEventViewModel.refreshTrigger.emit(Unit)
+				}
+			}
+		},
+	) {
+		Icon(Icons.Default.Refresh, null)
+	}
 
 	var bottomSheetEvent by remember { mutableStateOf<FloorsBottomSheetEvent?>(null) }
 

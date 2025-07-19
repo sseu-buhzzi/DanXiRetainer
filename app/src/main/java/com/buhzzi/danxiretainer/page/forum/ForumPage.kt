@@ -70,7 +70,6 @@ fun ForumPage() {
 	// optional TODO this kind of `return`s can be more user-friendly loading information boxes
 	val userId = userProfile?.userId ?: return
 
-	// TODO 移除其他trigger, replace them with unified entrance function
 	val sessionStateNullable by produceState<DxrSessionState?>(null, userId) {
 		val sessionStateCurrentPath = context.sessionStateDirPathOf(userId)
 		updateWith(listOf(sessionStateCurrentPath.toFile())) {
@@ -210,7 +209,14 @@ private fun HolesPager(userId: Long) {
 		16,
 		sessionState.pagerHoleIndex ?: 0,
 		sessionState.pagerHoleScrollOffset ?: 0,
-		getHolePositionSaver(userId),
+		{ holeIndex, holeScrollOffset ->
+			DxrRetention.updateSessionState(userId) {
+				copy(
+					pagerHoleIndex = holeIndex,
+					pagerHoleScrollOffset = holeScrollOffset,
+				)
+			}
+		},
 		{
 			DxrRetention.updateSessionState(userId) {
 				copy(
@@ -256,7 +262,14 @@ private fun FloorsPager(userId: Long, holeId: Long) {
 		16,
 		holeSessionState.pagerFloorIndex ?: 0,
 		holeSessionState.pagerFloorScrollOffset ?: 0,
-		getFloorPositionSaver(userId, holeId),
+		{ floorIndex, floorScrollOffset ->
+			DxrRetention.updateHoleSessionState(userId, holeId) {
+				copy(
+					pagerFloorIndex = floorIndex,
+					pagerFloorScrollOffset = floorScrollOffset,
+				)
+			}
+		},
 		{
 			DxrRetention.updateHoleSessionState(userId, holeId) {
 				copy(
@@ -268,23 +281,5 @@ private fun FloorsPager(userId: Long, holeId: Long) {
 			.fillMaxSize(),
 	) { (floor, hole, index) ->
 		FloorCard(floor, hole, index)
-	}
-}
-
-private fun getHolePositionSaver(userId: Long) = { holeIndex: Int, holeScrollOffset: Int ->
-	DxrRetention.updateSessionState(userId) {
-		copy(
-			pagerHoleIndex = holeIndex,
-			pagerHoleScrollOffset = holeScrollOffset,
-		)
-	}
-}
-
-private fun getFloorPositionSaver(userId: Long, holeId: Long) = { floorIndex: Int, floorScrollOffset: Int ->
-	DxrRetention.updateHoleSessionState(userId, holeId) {
-		copy(
-			pagerFloorIndex = floorIndex,
-			pagerFloorScrollOffset = floorScrollOffset,
-		)
 	}
 }
