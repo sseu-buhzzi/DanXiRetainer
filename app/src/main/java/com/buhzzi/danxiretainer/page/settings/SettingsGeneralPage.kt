@@ -70,7 +70,7 @@ fun SettingsGeneralPage() {
 				stringResource(R.string.clean_mode_description),
 				Icons.Default.AcUnit,
 			) { checked ->
-				DxrSettings.Items.cleanMode = checked
+				DxrSettings.Prefs.cleanMode = checked
 			}
 
 			SelectBackgroundImageListItem()
@@ -179,7 +179,7 @@ fun SettingsGeneralPage() {
 				stringResource(R.string.floors_reversed_description),
 				Icons.Default.VerticalAlignBottom,
 			) { checked ->
-				DxrSettings.Items.floorsReversed = checked
+				DxrSettings.Prefs.floorsReversed = checked
 			}
 
 			val retentionDecider by DxrSettings.Models.retentionDeciderOrDefaultFlow.collectAsState(

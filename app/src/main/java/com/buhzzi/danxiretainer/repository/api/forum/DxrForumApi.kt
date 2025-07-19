@@ -100,7 +100,7 @@ object DxrForumApi {
 				}
 			}
 			defaultRequest {
-				DxrSettings.Items.accessJwt?.let { accessJwt ->
+				DxrSettings.Prefs.accessJwt?.let { accessJwt ->
 					if (HttpHeaders.Authorization !in headers) {
 						headers[HttpHeaders.Authorization] = "Bearer $accessJwt"
 					}
@@ -139,16 +139,16 @@ object DxrForumApi {
 	}
 
 	suspend fun ensureAuth() {
-		val accessJwt = DxrSettings.Items.accessJwt
-		val refreshJwt = DxrSettings.Items.refreshJwt
+		val accessJwt = DxrSettings.Prefs.accessJwt
+		val refreshJwt = DxrSettings.Prefs.refreshJwt
 
 		if (accessJwt?.let { judgeJwtValid(it) } != true) {
 			val jwToken = if (refreshJwt?.let { judgeJwtValid(it) } == true) {
 				authRefresh(refreshJwt)
 			} else {
 				authLogIn(
-					checkNotNull(DxrSettings.Items.email),
-					androidKeyStoreDecrypt(checkNotNull(DxrSettings.Items.passwordCt).toBytesBase64()).toStringUtf8(),
+					checkNotNull(DxrSettings.Prefs.email),
+					androidKeyStoreDecrypt(checkNotNull(DxrSettings.Prefs.passwordCt).toBytesBase64()).toStringUtf8(),
 				)
 			}
 			handleJwtAndOptionallyFetchUserProfile(jwToken, true)

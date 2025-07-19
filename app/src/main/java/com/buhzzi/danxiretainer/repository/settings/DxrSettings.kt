@@ -81,6 +81,6 @@ object DxrSettings {
 	}
 
 	object Keys
-	object Items
+	object Prefs
 	object Models
 }

@@ -44,7 +44,7 @@ fun SelectBackgroundImageListItem() {
 	// TODO 用戶登入後將設定目錄中的圖像移動至用戶設定目錄
 	val context = LocalContext.current
 
-	val backgroundImagePathString by DxrSettings.Items.backgroundImagePathStringFlow.collectAsState(null)
+	val backgroundImagePathString by DxrSettings.Prefs.backgroundImagePathStringFlow.collectAsState(null)
 
 	var dialogEvent by remember { mutableStateOf<DialogEvent?>(null) }
 

@@ -263,7 +263,7 @@ private fun ToggleFloorsOrderItem() {
 
 	ClickCatchingActionBottomSheetItem(
 		{
-			DxrSettings.Items.floorsReversed = !reversed
+			DxrSettings.Prefs.floorsReversed = !reversed
 		},
 	) {
 		Text(

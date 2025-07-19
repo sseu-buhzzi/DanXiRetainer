@@ -58,7 +58,7 @@ fun SettingsNetworkPage() {
 				null,
 				Icons.Default.Dns,
 			) { text ->
-				DxrSettings.Items.authBaseUrl = text
+				DxrSettings.Prefs.authBaseUrl = text
 				true
 			}
 
@@ -72,7 +72,7 @@ fun SettingsNetworkPage() {
 				null,
 				Icons.Default.Dns,
 			) { text ->
-				DxrSettings.Items.forumBaseUrl = text
+				DxrSettings.Prefs.forumBaseUrl = text
 				true
 			}
 
@@ -86,7 +86,7 @@ fun SettingsNetworkPage() {
 				null,
 				Icons.Default.Dns,
 			) { text ->
-				DxrSettings.Items.imageBaseUrl = text
+				DxrSettings.Prefs.imageBaseUrl = text
 				true
 			}
 
@@ -103,16 +103,16 @@ fun SettingsNetworkPage() {
 			) { selection ->
 				when (selection?.let { serversAlternatives[it] }) {
 					"fduhole.com" -> {
-						DxrSettings.Items.authBaseUrl = Constant.AUTH_BASE_URL
-						DxrSettings.Items.forumBaseUrl = Constant.FORUM_BASE_URL
-						DxrSettings.Items.imageBaseUrl = Constant.IMAGE_BASE_URL
+						DxrSettings.Prefs.authBaseUrl = Constant.AUTH_BASE_URL
+						DxrSettings.Prefs.forumBaseUrl = Constant.FORUM_BASE_URL
+						DxrSettings.Prefs.imageBaseUrl = Constant.IMAGE_BASE_URL
 						true
 					}
 
 					"webvpn.fudan.edu.cn" -> {
-						DxrSettings.Items.authBaseUrl = WebvpnProxy.vpnPrefix["auth.fduhole.com"]
-						DxrSettings.Items.forumBaseUrl = WebvpnProxy.vpnPrefix["forum.fduhole.com"]
-						DxrSettings.Items.imageBaseUrl = WebvpnProxy.vpnPrefix["image.fduhole.com"]
+						DxrSettings.Prefs.authBaseUrl = WebvpnProxy.vpnPrefix["auth.fduhole.com"]
+						DxrSettings.Prefs.forumBaseUrl = WebvpnProxy.vpnPrefix["forum.fduhole.com"]
+						DxrSettings.Prefs.imageBaseUrl = WebvpnProxy.vpnPrefix["image.fduhole.com"]
 						true
 					}
 

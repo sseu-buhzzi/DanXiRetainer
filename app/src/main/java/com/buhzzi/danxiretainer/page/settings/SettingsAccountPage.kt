@@ -93,7 +93,7 @@ fun SettingsAccountPage() {
 				.fillMaxSize()
 				.verticalScroll(rememberScrollState()),
 		) {
-			val email by DxrSettings.Items.emailFlow.collectAsState(null)
+			val email by DxrSettings.Prefs.emailFlow.collectAsState(null)
 			val emailFormatMessage = stringResource(R.string.email_format_description)
 			InputListItem(
 				email ?: "",
@@ -103,7 +103,7 @@ fun SettingsAccountPage() {
 				Icons.Default.Email,
 			) { text ->
 				if (text.endsWith("@fudan.edu.cn") || text.endsWith("@m.fudan.edu.cn")) {
-					DxrSettings.Items.email = text
+					DxrSettings.Prefs.email = text
 					true
 				} else {
 					Toast.makeText(context, emailFormatMessage, Toast.LENGTH_SHORT).show()
@@ -111,7 +111,7 @@ fun SettingsAccountPage() {
 				}
 			}
 
-			val passwordCt by DxrSettings.Items.passwordCtFlow.collectAsState(null)
+			val passwordCt by DxrSettings.Prefs.passwordCtFlow.collectAsState(null)
 			InputListItem(
 				passwordCt?.let { androidKeyStoreDecrypt(it.toBytesBase64()).toStringUtf8() } ?: "",
 				stringResource(R.string.password_label),
@@ -119,7 +119,7 @@ fun SettingsAccountPage() {
 				stringResource(R.string.message_password),
 				Icons.Default.Password,
 			) { text ->
-				DxrSettings.Items.passwordCt = androidKeyStoreEncrypt(text.toBytesUtf8()).toStringBase64()
+				DxrSettings.Prefs.passwordCt = androidKeyStoreEncrypt(text.toBytesUtf8()).toStringBase64()
 				true
 			}
 
@@ -130,7 +130,7 @@ fun SettingsAccountPage() {
 			)
 
 			val jwtExpirationFormatter = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss") }
-			val accessJwt by DxrSettings.Items.accessJwtFlow.collectAsState(null)
+			val accessJwt by DxrSettings.Prefs.accessJwtFlow.collectAsState(null)
 			val accessJwtExpirationText = remember(accessJwt) {
 				accessJwt?.let { getJwtExpiration(it) }?.format(jwtExpirationFormatter)
 			}
@@ -146,11 +146,11 @@ fun SettingsAccountPage() {
 				},
 				Icons.Default.VpnKey,
 			) { text ->
-				DxrSettings.Items.accessJwt = text.trim()
+				DxrSettings.Prefs.accessJwt = text.trim()
 				true
 			}
 
-			val refreshJwt by DxrSettings.Items.refreshJwtFlow.collectAsState(null)
+			val refreshJwt by DxrSettings.Prefs.refreshJwtFlow.collectAsState(null)
 			val refreshJwtExpirationText = remember(refreshJwt) {
 				refreshJwt?.let { getJwtExpiration(it) }?.format(jwtExpirationFormatter)
 			}
@@ -170,7 +170,7 @@ fun SettingsAccountPage() {
 				},
 				Icons.Default.Autorenew,
 			) { text ->
-				DxrSettings.Items.refreshJwt = text.trim()
+				DxrSettings.Prefs.refreshJwt = text.trim()
 				true
 			}
 
@@ -293,7 +293,7 @@ fun SettingsAccountPage() {
 				stringResource(R.string.load_user_after_jwt_desc_label),
 				Icons.Default.PersonSearch,
 			) { checked ->
-				DxrSettings.Items.shouldLoadUserAfterJwt = checked
+				DxrSettings.Prefs.shouldLoadUserAfterJwt = checked
 			}
 		}
 	}
@@ -303,8 +303,8 @@ suspend fun handleJwtAndOptionallyFetchUserProfile(
 	jwToken: JwToken,
 	shouldLoadUser: Boolean,
 ) {
-	DxrSettings.Items.accessJwt = jwToken.access
-	DxrSettings.Items.refreshJwt = jwToken.refresh
+	DxrSettings.Prefs.accessJwt = jwToken.access
+	DxrSettings.Prefs.refreshJwt = jwToken.refresh
 	if (shouldLoadUser == true) {
 		val user = DxrForumApi.getUserProfile()
 		DxrSettings.Models.userProfile = user
