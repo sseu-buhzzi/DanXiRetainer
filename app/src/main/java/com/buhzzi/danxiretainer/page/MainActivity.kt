@@ -37,6 +37,7 @@ import com.buhzzi.danxiretainer.page.settings.SettingsGeneralPage
 import com.buhzzi.danxiretainer.page.settings.SettingsNetworkPage
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
+import com.buhzzi.danxiretainer.util.JavaScriptExecutor
 
 class MainActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
 
 		DxrSettings.init(this)
 		DxrRetention.init(this)
+		JavaScriptExecutor.init(this)
 
 		// val a = dxrJson.decodeFromString<List<OtHole>>(TEST_JSON_STRING)
 		println()

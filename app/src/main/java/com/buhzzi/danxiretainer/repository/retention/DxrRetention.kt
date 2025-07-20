@@ -444,7 +444,7 @@ object DxrRetention {
 		?.runCatching { firstFloorNotNull.floorIdNotNull .. lastFloorNotNull.floorIdNotNull }
 		?.getOrNull()
 
-	fun retainHole(userId: Long, hole: OtHole, sourceFunction: KFunction<*>) {
+	suspend fun retainHole(userId: Long, hole: OtHole, sourceFunction: KFunction<*>) {
 		val retentionDecider = DxrSettings.Models.retentionDeciderOrDefault
 
 		val json = encodeHoleRetainedJson(hole, userId) ?: return
@@ -464,7 +464,7 @@ object DxrRetention {
 		}
 	}
 
-	fun retainFloor(userId: Long, floor: OtFloor, sourceFunction: KFunction<*>) {
+	suspend fun retainFloor(userId: Long, floor: OtFloor, sourceFunction: KFunction<*>) {
 		val retentionDecider = DxrSettings.Models.retentionDeciderOrDefault
 
 		val json = encodeFloorRetainedJson(floor, userId) ?: return
@@ -484,7 +484,7 @@ object DxrRetention {
 		}
 	}
 
-	fun retainTag(userId: Long, tag: OtTag, sourceFunction: KFunction<*>) {
+	suspend fun retainTag(userId: Long, tag: OtTag, sourceFunction: KFunction<*>) {
 		val retentionDecider = DxrSettings.Models.retentionDeciderOrDefault
 
 		val json = encodeTagRetainedJson(tag) ?: return

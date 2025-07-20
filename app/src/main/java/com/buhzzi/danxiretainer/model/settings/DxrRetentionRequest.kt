@@ -1,5 +1,6 @@
 package com.buhzzi.danxiretainer.model.settings
 
+import com.buhzzi.danxiretainer.util.dxrJson
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -13,7 +14,7 @@ sealed class DxrRetentionRequest(
 	val retention: JsonElement,
 ) {
 	class UserDemand(path: Path, retention: JsonElement) : DxrRetentionRequest(path, retention) {
-		override val requestJson
+		override val json
 			get() = buildJsonObject {
 				put("type", TYPE)
 				put("time", timeJsonObject)
@@ -31,7 +32,7 @@ sealed class DxrRetentionRequest(
 		retention: JsonElement,
 		val function: KFunction<*>,
 	) : DxrRetentionRequest(path, retention) {
-		override val requestJson
+		override val json
 			get() = buildJsonObject {
 				put("type", TYPE)
 				put("time", timeJsonObject)
@@ -49,7 +50,7 @@ sealed class DxrRetentionRequest(
 		path: Path,
 		retention: JsonElement,
 	) : DxrRetentionRequest(path, retention) {
-		override val requestJson
+		override val json
 			get() = buildJsonObject {
 				put("type", TYPE)
 				put("time", timeJsonObject)
@@ -61,7 +62,8 @@ sealed class DxrRetentionRequest(
 		}
 	}
 
-	abstract val requestJson: JsonElement
+	abstract val json: JsonElement
+	val jsonString get() = dxrJson.encodeToString(json)
 
 	val time: OffsetDateTime = OffsetDateTime.now()
 	val timeJsonObject

@@ -2,20 +2,21 @@ package com.buhzzi.danxiretainer.model.settings
 
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.util.JavaScriptExecutor
-import com.buhzzi.danxiretainer.util.dxrJson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class DxrRetentionDecider(
 	val decideJavaScript: String,
 ) {
-	fun tryRetain(request: DxrRetentionRequest): Boolean {
+	suspend fun tryRetain(request: DxrRetentionRequest) = withContext(Dispatchers.IO) {
 		val decideResult = JavaScriptExecutor.execute(
-			"""
-				const request = ${dxrJson.encodeToString(request.requestJson)};
-				Boolean($decideJavaScript);
-			""".trimIndent(),
+			"(request => JSON.stringify($decideJavaScript))(${request.jsonString});",
 		)
-		decideResult == true || return false
-		DxrRetention.writeRetainedJson(request.path, request.retention)
-		return true
+		if (decideResult == "true") {
+			DxrRetention.writeRetainedJson(request.path, request.retention)
+			true
+		} else {
+			false
+		}
 	}
 }

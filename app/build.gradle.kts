@@ -41,8 +41,6 @@ android {
 }
 
 dependencies {
-	implementation(libs.duktape.android)
-
 	implementation(libs.coil.compose)
 
 	implementation(libs.ktor.client.core)
@@ -58,6 +56,7 @@ dependencies {
 	implementation(libs.androidx.media)
 	implementation(libs.androidx.navigation.compose)
 	implementation(libs.androidx.security.crypto)
+	implementation(libs.androidx.javascriptengine)
 
 	val composeBom = platform("androidx.compose:compose-bom:2025.05.01")
 	implementation(composeBom)

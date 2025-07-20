@@ -65,7 +65,7 @@ fun SettingsGeneralPage() {
 				DxrSettings.Models.cleanModeOrDefault,
 			)
 			ToggleListItem(
-				cleanMode == true,
+				cleanMode,
 				stringResource(R.string.clean_mode_label),
 				stringResource(R.string.clean_mode_description),
 				Icons.Default.AcUnit,
