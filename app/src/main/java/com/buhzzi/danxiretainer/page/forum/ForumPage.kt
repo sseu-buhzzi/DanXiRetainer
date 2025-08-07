@@ -3,6 +3,7 @@ package com.buhzzi.danxiretainer.page.forum
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -16,10 +17,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -31,10 +34,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import coil.compose.rememberAsyncImagePainter
 import com.buhzzi.danxiretainer.R
+import com.buhzzi.danxiretainer.model.forum.DxrFloorsFilterContext
+import com.buhzzi.danxiretainer.model.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
-import com.buhzzi.danxiretainer.page.LocalSnackbarController
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.page.showExceptionOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
@@ -45,9 +49,13 @@ import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefault
 import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
+import com.buhzzi.danxiretainer.util.LocalFilterContext
+import com.buhzzi.danxiretainer.util.LocalHoleSessionState
+import com.buhzzi.danxiretainer.util.LocalSessionState
+import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.util.dxrJson
-import com.buhzzi.danxiretainer.util.holesSessionStatePathOf
-import com.buhzzi.danxiretainer.util.sessionStateDirPathOf
+import com.buhzzi.danxiretainer.util.holeSessionStatePathOf
+import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringRfc3339
 import com.buhzzi.danxiretainer.util.updateWith
@@ -58,10 +66,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.OffsetDateTime
 
-val LocalSessionState = compositionLocalOf<DxrSessionState> {
-	error("LocalSessionState not provided")
-}
-
 @Composable
 fun ForumPage() {
 	val context = LocalContext.current
@@ -71,7 +75,7 @@ fun ForumPage() {
 	val userId = userProfile?.userId ?: return
 
 	val sessionStateNullable by produceState<DxrSessionState?>(null, userId) {
-		val sessionStateCurrentPath = context.sessionStateDirPathOf(userId)
+		val sessionStateCurrentPath = context.sessionStateCurrentPathOf(userId)
 		updateWith(listOf(sessionStateCurrentPath.toFile())) {
 			DxrRetention.loadSessionState(userId)
 		}
@@ -173,17 +177,60 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 			)
 		}
 
-		val sessionState = LocalSessionState.current
+		Column {
+			val context = LocalContext.current
+			val sessionState = LocalSessionState.current
 
-		val userProfileNullable by DxrSettings.Models.userProfileFlow.collectAsState(null)
-		val userProfile = userProfileNullable ?: return
-		val userId = userProfile.userId ?: return
+			val userProfileNullable by DxrSettings.Models.userProfileFlow.collectAsState(null)
+			val userProfile = userProfileNullable ?: return
+			val userId = userProfile.userId ?: return
 
-		val holeId = sessionState.holeId ?: run {
-			HolesPager(userId)
-			return
+			val holeId = sessionState.holeId ?: run {
+				var holesFilterContextNullable by remember { mutableStateOf<DxrHolesFilterContext?>(null) }
+				LaunchedEffect(userId) {
+					holesFilterContextNullable = DxrRetention.loadHolesFilterContext(userId)
+				}
+				DisposableEffect(userId) {
+					onDispose {
+						holesFilterContextNullable?.store()
+					}
+				}
+				val holesFilterContext = holesFilterContextNullable ?: return
+
+				CompositionLocalProvider(LocalFilterContext provides holesFilterContext) {
+					FiltersColumn()
+					HolesPager(userId)
+				}
+				return
+			}
+
+			val holeSessionStateNullable by produceState<DxrHoleSessionState?>(null, userId, holeId) {
+				val sessionStateCurrentPath = context.holeSessionStatePathOf(userId, holeId)
+				updateWith(listOf(sessionStateCurrentPath.toFile())) {
+					DxrRetention.loadHoleSessionState(userId, holeId)
+				}
+			}
+			val holeSessionState = holeSessionStateNullable ?: return
+
+			var floorsFilterContextNullable by remember { mutableStateOf<DxrFloorsFilterContext?>(null) }
+			LaunchedEffect(userId, holeId) {
+				floorsFilterContextNullable = DxrRetention.loadFloorsFilterContext(userId, holeId)
+			}
+			DisposableEffect(userId, holeId) {
+				onDispose {
+					floorsFilterContextNullable?.store()
+				}
+			}
+			val floorsFilterContext = floorsFilterContextNullable ?: return
+
+			CompositionLocalProvider(
+				LocalHoleSessionState provides holeSessionState,
+				LocalFilterContext provides floorsFilterContext,
+			) {
+				FiltersColumn()
+				FloorsPager(userId)
+			}
 		}
-		FloorsPager(userId, holeId)
 	}
 }
 
@@ -232,12 +279,14 @@ private fun HolesPager(userId: Long) {
 }
 
 @Composable
-private fun FloorsPager(userId: Long, holeId: Long) {
+private fun FloorsPager(userId: Long) {
 	val context = LocalContext.current
+	val sessionState = LocalSessionState.current
 	val snackbarController = LocalSnackbarController.current
 
+	val holeId = sessionState.holeId ?: return
 	val holeSessionStateNullable by produceState<DxrHoleSessionState?>(null, userId, holeId) {
-		val holeSessionStatePath = context.holesSessionStatePathOf(userId, holeId)
+		val holeSessionStatePath = context.holeSessionStatePathOf(userId, holeId)
 		updateWith(listOf(holeSessionStatePath.toFile())) {
 			DxrRetention.loadHoleSessionState(userId, holeId)
 		}

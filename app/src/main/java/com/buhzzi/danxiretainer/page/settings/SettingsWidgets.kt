@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.DxrDestination
-import com.buhzzi.danxiretainer.page.LocalNavController
+import com.buhzzi.danxiretainer.util.LocalNavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

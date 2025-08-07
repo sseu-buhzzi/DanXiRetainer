@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarVisuals
-import androidx.compose.runtime.compositionLocalOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,10 +38,6 @@ class SnackbarController(
 			snackbarHostState.showSnackbar(visuals)
 		}
 	}
-}
-
-val LocalSnackbarController = compositionLocalOf<SnackbarController> {
-	error("SnackbarController not provided")
 }
 
 suspend fun <R> runCatchingOnSnackbar(

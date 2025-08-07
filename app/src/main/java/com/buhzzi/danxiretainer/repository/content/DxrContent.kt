@@ -8,11 +8,14 @@ import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefault
 import com.buhzzi.danxiretainer.repository.settings.sortOrderOrDefault
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
+import dart.package0.dan_xi.model.forum.OtDivision
 import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
+import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.provider.SortOrder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import java.time.OffsetDateTime
 
@@ -51,6 +54,10 @@ object DxrContent {
 		val sessionState = DxrRetention.loadSessionState(userId)
 		var startTime = sessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
+		val holesFilterContext = DxrRetention.loadHolesFilterContext(userId)
+		// TODO user division and tag filter as API parameter
+		// TODO in multiple flows, everytime fetch the latest
+
 		val loadLength = 10
 		val sortOrder = DxrSettings.Models.sortOrderOrDefault
 
@@ -62,24 +69,26 @@ object DxrContent {
 				length = loadLength.toLong(),
 				sortOrder = sortOrder,
 			)
-			holes.forEach { hole ->
-				emit(hole)
-				runCatching {
-					DxrRetention.retainHole(userId, hole, DxrForumApi::loadHoles)
-				}
-				hole.tags?.forEach { tag ->
+			holes.asSequence()
+				.filter { hole -> holesFilterContext.predicate(hole) }
+				.forEach { hole ->
+					emit(hole)
 					runCatching {
-						DxrRetention.retainTag(userId, tag, DxrForumApi::loadHoles)
+						DxrRetention.retainHole(userId, hole, DxrForumApi::loadHoles)
 					}
-				}
-				hole.floors?.asList?.forEach { floor ->
-					floor ?: return@forEach
-					runCatching {
-						DxrRetention.retainFloor(userId, floor, DxrForumApi::loadHoles)
+					hole.tags?.forEach { tag ->
+						runCatching {
+							DxrRetention.retainTag(userId, tag, DxrForumApi::loadHoles)
+						}
 					}
+					hole.floors?.asList?.forEach { floor ->
+						floor ?: return@forEach
+						runCatching {
+							DxrRetention.retainFloor(userId, floor, DxrForumApi::loadHoles)
+						}
+					}
+					// optional TODO use `forumApiFloorsFlow()` to store full floors
 				}
-				// optional TODO use `forumApiFloorsFlow()` to store full floors
-			}
 			holes.size < loadLength && break
 			startTime = holes.last().getSortingDateTime(sortOrder)
 		}
@@ -89,11 +98,15 @@ object DxrContent {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
+		val holesFilterContext = DxrRetention.loadHolesFilterContext(userId)
+
 		val holesSequence = when (DxrSettings.Models.sortOrderOrDefault) {
 			SortOrder.LAST_REPLIED -> DxrRetention.loadHolesSequenceByUpdate(userId)
 			SortOrder.LAST_CREATED -> DxrRetention.loadHolesSequenceByCreation(userId)
 		}
-		holesSequence.asFlow()
+		holesSequence
+			.filter { hole -> holesFilterContext.predicate(hole) }
+			.asFlow()
 	}
 
 	fun floorsFlow(holeId: Long) = flow {
@@ -102,6 +115,8 @@ object DxrContent {
 
 		val holeSessionState = DxrRetention.loadHoleSessionState(userId, holeId)
 		val reversed = holeSessionState.reversed == true
+
+		val floorsFilterContext = DxrRetention.loadFloorsFilterContext(userId, holeId)
 
 		when (DxrSettings.Models.contentSourceOrDefault) {
 			DxrContentSource.FORUM_API -> if (reversed) {
@@ -115,7 +130,9 @@ object DxrContent {
 			} else {
 				retentionFloorsFlow(holeId)
 			}
-		}.collect(this)
+		}
+			.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
+			.collect(this)
 	}
 
 	fun forumApiFloorsFlow(holeId: Long) = flow {
@@ -189,5 +206,24 @@ object DxrContent {
 		floorsSequence.forEachIndexed { index, floor ->
 			emit(Triple(floor, hole, index))
 		}
+	}
+
+	/// Cached OTDivisions.
+	///
+	private var divisionsCache: List<OtDivision>? = null
+
+	suspend fun loadDivisions(): List<OtDivision> {
+		DxrForumApi.ensureAuth()
+		return DxrForumApi.loadDivisions().also { divisionsCache = it }
+	}
+
+	/// Cached OTTags.
+	private var tagsCache: List<OtTag>? = null
+
+	// TODO load from retention
+	suspend fun loadTags(usingCache: Boolean): List<OtTag> {
+		tagsCache?.takeIf { usingCache }?.let { return it }
+		DxrForumApi.ensureAuth()
+		return DxrForumApi.loadTags().also { tagsCache = it }
 	}
 }

@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
-import com.buhzzi.danxiretainer.page.LocalNavController
+import com.buhzzi.danxiretainer.util.LocalNavController
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfile
 import com.buhzzi.danxiretainer.repository.settings.userProfileFlow

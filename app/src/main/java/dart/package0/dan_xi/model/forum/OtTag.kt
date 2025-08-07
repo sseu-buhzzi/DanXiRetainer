@@ -44,7 +44,7 @@ data class OtTag(
 
 	override fun hashCode() = tagIdNotNull.hashCode()
 
-	fun getColor(systemInDarkTheme: Boolean) =
+	fun color(systemInDarkTheme: Boolean) =
 		name?.hashColor(systemInDarkTheme) ?: Color.Red
 
 	companion object {

@@ -21,12 +21,10 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -38,6 +36,8 @@ import com.buhzzi.danxiretainer.page.settings.SettingsNetworkPage
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.util.JavaScriptExecutor
+import com.buhzzi.danxiretainer.util.LocalNavController
+import com.buhzzi.danxiretainer.util.LocalSnackbarController
 
 class MainActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,10 +76,6 @@ fun DxrApp() {
 	) {
 		DxrRouter()
 	}
-}
-
-val LocalNavController = compositionLocalOf<NavController> {
-	error("No NavController provided")
 }
 
 @Composable
@@ -132,7 +128,7 @@ fun DxrScaffoldWrapper(
 
 enum class DxrDestination(
 	val route: String,
-	val content: @Composable () -> Unit
+	val content: @Composable () -> Unit,
 ) {
 	Forum("/forum", {
 		ForumPage()

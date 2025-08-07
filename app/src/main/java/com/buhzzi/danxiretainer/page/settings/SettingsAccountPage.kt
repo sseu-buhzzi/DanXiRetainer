@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.DxrDestination
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
-import com.buhzzi.danxiretainer.page.LocalSnackbarController
+import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings

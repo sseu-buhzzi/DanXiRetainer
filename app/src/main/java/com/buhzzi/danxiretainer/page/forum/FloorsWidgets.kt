@@ -33,9 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.buhzzi.danxiretainer.R
-import com.buhzzi.danxiretainer.page.LocalSnackbarController
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
+import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.util.dxrPrettyJson
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import dart.package0.dan_xi.model.forum.OtFloor

@@ -10,12 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -115,7 +115,7 @@ fun TagChip(
 ) {
 	val systemInDarkTheme = isSystemInDarkTheme()
 
-	val shape = RoundedCornerShape(2.dp)
+	val shape = ShapeDefaults.ExtraSmall
 	val modifier = Modifier
 		.padding(2.dp)
 		.run {
@@ -133,7 +133,7 @@ fun TagChip(
 	val (color, contentColor) = if (highlighted) {
 		Color.Transparent to Color.White
 	} else {
-		val effectiveColor = tag.getColor(systemInDarkTheme)
+		val effectiveColor = tag.color(systemInDarkTheme)
 		effectiveColor.copy(0.5F) to effectiveColor.withLightness { (_, _, lightness) ->
 			if (systemInDarkTheme) {
 				lightness + 0.125F
@@ -177,7 +177,7 @@ fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
 			Surface(
 				modifier = Modifier
 					.padding(2.dp),
-				shape = RoundedCornerShape(2.dp),
+				shape = ShapeDefaults.ExtraSmall,
 				color = anonynameColor,
 				// using `<= 0.5` instead of `< 0.5` to stay consistent with DanXi. Make them happy
 				contentColor = if (anonynameColor.luminance() <= 0.5) Color.White else Color.Black,

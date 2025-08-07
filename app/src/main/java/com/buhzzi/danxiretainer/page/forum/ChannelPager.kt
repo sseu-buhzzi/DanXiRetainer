@@ -37,12 +37,13 @@ import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefault
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefaultFlow
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.getOrElse
+import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.produceIn
 import kotlinx.coroutines.launch
 import java.util.Collections
 
@@ -331,7 +332,12 @@ private class ChannelPagerViewModel<T>(
 
 	// `produce` has default capacity of `Channel.RENDEZVOUS`, which is `0`
 	// `produceIn` will not always act like that, it may preserve a buffer
-	private val itemsChannel = itemsFlow.produceIn(viewModelScope)
+	@OptIn(ExperimentalCoroutinesApi::class)
+	private val itemsChannel = viewModelScope.produce {
+		itemsFlow.collect {
+			send(it)
+		}
+	}
 
 	val readonlyPages: List<List<T>> = Collections.unmodifiableList(cachedPages)
 	val readonlyItems = object : AbstractList<T>() {

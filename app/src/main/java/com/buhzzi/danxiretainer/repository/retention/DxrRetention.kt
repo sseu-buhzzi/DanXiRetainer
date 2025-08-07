@@ -2,6 +2,8 @@ package com.buhzzi.danxiretainer.repository.retention
 
 import android.app.Application
 import android.content.Context
+import com.buhzzi.danxiretainer.model.forum.DxrFloorsFilterContext
+import com.buhzzi.danxiretainer.model.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrRetentionRequest
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
@@ -14,9 +16,11 @@ import com.buhzzi.danxiretainer.util.dxrPrettyJson
 import com.buhzzi.danxiretainer.util.floorPathOf
 import com.buhzzi.danxiretainer.util.floorsIndicesPathOf
 import com.buhzzi.danxiretainer.util.holePathOf
+import com.buhzzi.danxiretainer.util.holeSessionStateFilterPathOf
+import com.buhzzi.danxiretainer.util.holeSessionStatePathOf
 import com.buhzzi.danxiretainer.util.holesIndicesPathOf
-import com.buhzzi.danxiretainer.util.holesSessionStatePathOf
 import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
+import com.buhzzi.danxiretainer.util.sessionStateFilterPathOf
 import com.buhzzi.danxiretainer.util.tagPathOf
 import com.buhzzi.danxiretainer.util.tagsDirPathOf
 import com.google.common.collect.Range
@@ -363,11 +367,11 @@ object DxrRetention {
 	}
 
 	fun storeHoleSessionState(userId: Long, holeId: Long, holeSessionState: DxrHoleSessionState) {
-		writeRetainedJson(app.holesSessionStatePathOf(userId, holeId), dxrJson.encodeToJsonElement(holeSessionState))
+		writeRetainedJson(app.holeSessionStatePathOf(userId, holeId), dxrJson.encodeToJsonElement(holeSessionState))
 	}
 
 	fun loadHoleSessionState(userId: Long, holeId: Long): DxrHoleSessionState {
-		val path = app.holesSessionStatePathOf(userId, holeId)
+		val path = app.holeSessionStatePathOf(userId, holeId)
 		if (path.notExists()) {
 			path.createParentDirectories().createFile()
 		}
@@ -378,6 +382,30 @@ object DxrRetention {
 	fun updateHoleSessionState(userId: Long, holeId: Long, update: DxrHoleSessionState.() -> DxrHoleSessionState) {
 		val holeSessionState = loadHoleSessionState(userId, holeId)
 		storeHoleSessionState(userId, holeId, holeSessionState.update())
+	}
+
+	fun loadHolesFilterContext(userId: Long): DxrHolesFilterContext {
+		val path = app.sessionStateFilterPathOf(userId)
+		return DxrHolesFilterContext(path)
+	}
+
+	fun loadFloorsFilterContext(userId: Long, holeId: Long): DxrFloorsFilterContext {
+		val path = app.holeSessionStateFilterPathOf(userId, holeId)
+		return DxrFloorsFilterContext(path)
+	}
+
+	/**
+	 * Helper function to constrain to the `JsonObject` type.
+	 */
+	fun storeFilterContextJson(path: Path, filterJson: JsonObject) {
+		writeRetainedJson(path, filterJson)
+	}
+
+	/**
+	 * Helper function to constrain to the `JsonObject` type.
+	 */
+	fun loadFilterContextJson(path: Path): JsonObject {
+		return readRetainedJson(path) as? JsonObject ?: JsonObject(emptyMap())
 	}
 
 	@OptIn(ExperimentalSerializationApi::class)
@@ -398,7 +426,7 @@ object DxrRetention {
 					dxrPrettyJson.decodeFromStream<JsonElement>(`in`)
 				}.getOrNull()
 			}
-			?: buildJsonObject { }
+			?: JsonObject(emptyMap())
 		return json
 	}
 

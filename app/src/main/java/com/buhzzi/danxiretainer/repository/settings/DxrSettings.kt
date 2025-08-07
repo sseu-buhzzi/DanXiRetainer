@@ -76,7 +76,7 @@ object DxrSettings {
 		dxrJson.decodeFromString<T>(this)
 	}?.getOrNull()
 
-	inline fun <reified T : Any> encodeModelJsonString(model: T?) = model?.let {
+	inline fun <reified T> encodeModelJsonString(model: T?) = model?.let {
 		dxrJson.encodeToString(it)
 	}
 
