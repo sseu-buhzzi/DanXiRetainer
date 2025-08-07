@@ -1,7 +1,10 @@
 package com.buhzzi.danxiretainer.repository.content
 
+import com.buhzzi.danxiretainer.model.forum.DxrFloorsFilterContext
+import com.buhzzi.danxiretainer.model.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
+import com.buhzzi.danxiretainer.repository.content.DxrContent.floorsFlow
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefault
@@ -42,19 +45,27 @@ object DxrContent {
 		}
 	}
 
-	fun holesFlow() = when (DxrSettings.Models.contentSourceOrDefault) {
-		DxrContentSource.FORUM_API -> forumApiHolesFlow()
-		DxrContentSource.RETENTION -> retentionHolesFlow()
+	/**
+	 * Need to pass in the [holesFilterContext] because this is a close-and-write-back model.
+	 * It fixes the problem that flows cannot read updated [DxrHolesFilterContext] on startup.
+	 * The same for [floorsFlow].
+	 */
+	fun holesFlow(
+		holesFilterContext: DxrHolesFilterContext,
+	) = when (DxrSettings.Models.contentSourceOrDefault) {
+		DxrContentSource.FORUM_API -> forumApiHolesFlow(holesFilterContext)
+		DxrContentSource.RETENTION -> retentionHolesFlow(holesFilterContext)
 	}
 
-	fun forumApiHolesFlow() = flow {
+	fun forumApiHolesFlow(
+		holesFilterContext: DxrHolesFilterContext,
+	) = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
 		val sessionState = DxrRetention.loadSessionState(userId)
 		var startTime = sessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
-		val holesFilterContext = DxrRetention.loadHolesFilterContext(userId)
 		// TODO user division and tag filter as API parameter
 		// TODO in multiple flows, everytime fetch the latest
 
@@ -70,7 +81,9 @@ object DxrContent {
 				sortOrder = sortOrder,
 			)
 			holes.asSequence()
-				.filter { hole -> holesFilterContext.predicate(hole) }
+				.filter { hole -> holesFilterContext.predicate(hole).also { result ->
+					println("#${hole.holeId} $result")
+				} }
 				.forEach { hole ->
 					emit(hole)
 					runCatching {
@@ -94,11 +107,11 @@ object DxrContent {
 		}
 	}
 
-	fun retentionHolesFlow() = run {
+	fun retentionHolesFlow(
+		holesFilterContext: DxrHolesFilterContext,
+	) = run {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
-
-		val holesFilterContext = DxrRetention.loadHolesFilterContext(userId)
 
 		val holesSequence = when (DxrSettings.Models.sortOrderOrDefault) {
 			SortOrder.LAST_REPLIED -> DxrRetention.loadHolesSequenceByUpdate(userId)
@@ -109,14 +122,15 @@ object DxrContent {
 			.asFlow()
 	}
 
-	fun floorsFlow(holeId: Long) = flow {
+	fun floorsFlow(
+		holeId: Long,
+		floorsFilterContext: DxrFloorsFilterContext,
+	) = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
 		val holeSessionState = DxrRetention.loadHoleSessionState(userId, holeId)
 		val reversed = holeSessionState.reversed == true
-
-		val floorsFilterContext = DxrRetention.loadFloorsFilterContext(userId, holeId)
 
 		when (DxrSettings.Models.contentSourceOrDefault) {
 			DxrContentSource.FORUM_API -> if (reversed) {

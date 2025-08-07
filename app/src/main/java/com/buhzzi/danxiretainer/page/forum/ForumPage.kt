@@ -239,13 +239,14 @@ private fun HolesPager(userId: Long) {
 	val snackbarController = LocalSnackbarController.current
 	val sessionState = LocalSessionState.current
 	val refreshTime = sessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
+	val holesFilterContext = LocalFilterContext.current as DxrHolesFilterContext
 
 	val contentSource by DxrSettings.Models.contentSourceOrDefaultFlow.collectAsState(
 		DxrSettings.Models.contentSourceOrDefault,
 	)
 
 	ChannelPager(
-		DxrContent.holesFlow()
+		DxrContent.holesFlow(holesFilterContext)
 			.catch { exception -> showExceptionOnSnackbar(snackbarController, exception) },
 		dxrJson.encodeToString(buildJsonObject {
 			put("fun", "HolesPager")
@@ -283,6 +284,7 @@ private fun FloorsPager(userId: Long) {
 	val context = LocalContext.current
 	val sessionState = LocalSessionState.current
 	val snackbarController = LocalSnackbarController.current
+	val floorsFilterContext = LocalFilterContext.current as DxrFloorsFilterContext
 
 	val holeId = sessionState.holeId ?: return
 	val holeSessionStateNullable by produceState<DxrHoleSessionState?>(null, userId, holeId) {
@@ -299,7 +301,7 @@ private fun FloorsPager(userId: Long) {
 	)
 
 	ChannelPager(
-		DxrContent.floorsFlow(holeId)
+		DxrContent.floorsFlow(holeId, floorsFilterContext)
 			.catch { exception -> showExceptionOnSnackbar(snackbarController, exception) },
 		dxrJson.encodeToString(buildJsonObject {
 			put("fun", "FloorsPager")
