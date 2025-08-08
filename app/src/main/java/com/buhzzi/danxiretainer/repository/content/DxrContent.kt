@@ -18,7 +18,6 @@ import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.provider.SortOrder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import java.time.OffsetDateTime
 
@@ -81,9 +80,11 @@ object DxrContent {
 				sortOrder = sortOrder,
 			)
 			holes.asSequence()
-				.filter { hole -> holesFilterContext.predicate(hole).also { result ->
-					println("#${hole.holeId} $result")
-				} }
+				.filter { hole ->
+					holesFilterContext.predicate(hole).also { result ->
+						println("#${hole.holeId} $result")
+					}
+				}
 				.forEach { hole ->
 					emit(hole)
 					runCatching {
@@ -113,11 +114,10 @@ object DxrContent {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
-		val holesSequence = when (DxrSettings.Models.sortOrderOrDefault) {
+		when (DxrSettings.Models.sortOrderOrDefault) {
 			SortOrder.LAST_REPLIED -> DxrRetention.loadHolesSequenceByUpdate(userId)
 			SortOrder.LAST_CREATED -> DxrRetention.loadHolesSequenceByCreation(userId)
 		}
-		holesSequence
 			.filter { hole -> holesFilterContext.predicate(hole) }
 			.asFlow()
 	}
@@ -134,22 +134,24 @@ object DxrContent {
 
 		when (DxrSettings.Models.contentSourceOrDefault) {
 			DxrContentSource.FORUM_API -> if (reversed) {
-				forumApiFloorsReversedFlow(holeId)
+				forumApiFloorsReversedFlow(holeId, floorsFilterContext)
 			} else {
-				forumApiFloorsFlow(holeId)
+				forumApiFloorsFlow(holeId, floorsFilterContext)
 			}
 
 			DxrContentSource.RETENTION -> if (reversed) {
-				retentionFloorsReversedFlow(holeId)
+				retentionFloorsReversedFlow(holeId, floorsFilterContext)
 			} else {
-				retentionFloorsFlow(holeId)
+				retentionFloorsFlow(holeId, floorsFilterContext)
 			}
 		}
-			.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
 			.collect(this)
 	}
 
-	fun forumApiFloorsFlow(holeId: Long) = flow {
+	fun forumApiFloorsFlow(
+		holeId: Long,
+		floorsFilterContext: DxrFloorsFilterContext,
+	) = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
@@ -166,28 +168,37 @@ object DxrContent {
 				startFloor = startFloorIndex.toLong(),
 				length = loadLength.toLong(),
 			)
-			floors.forEachIndexed { index, floor ->
-				emit(Triple(floor, hole, startFloorIndex + index))
-				runCatching {
-					DxrRetention.retainFloor(userId, floor, DxrForumApi::loadFloors)
+			floors.asSequence()
+				.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
+				.forEachIndexed { index, floor ->
+					emit(Triple(floor, hole, startFloorIndex + index))
+					runCatching {
+						DxrRetention.retainFloor(userId, floor, DxrForumApi::loadFloors)
+					}
 				}
-			}
 			startFloorIndex += floors.size
 		} while (floors.size >= loadLength)
 	}
 
-	fun retentionFloorsFlow(holeId: Long) = flow {
+	fun retentionFloorsFlow(
+		holeId: Long,
+		floorsFilterContext: DxrFloorsFilterContext,
+	) = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
 		val hole = loadHole(holeId)
-		val floorsSequence = DxrRetention.loadFloorsSequence(userId, holeId)
-		floorsSequence.forEachIndexed { index, floor ->
-			emit(Triple(floor, hole, index))
-		}
+		DxrRetention.loadFloorsSequence(userId, holeId)
+			.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
+			.forEachIndexed { index, floor ->
+				emit(Triple(floor, hole, index))
+			}
 	}
 
-	fun forumApiFloorsReversedFlow(holeId: Long): Flow<Triple<OtFloor, OtHole, Int>> {
+	fun forumApiFloorsReversedFlow(
+		holeId: Long,
+		floorsFilterContext: DxrFloorsFilterContext,
+	): Flow<Triple<OtFloor, OtHole, Int>> {
 		return flow {
 			DxrForumApi.ensureAuth()
 			val hole = DxrForumApi.loadHoleById(holeId)
@@ -203,23 +214,29 @@ object DxrContent {
 					startFloor = startFloorIndex.toLong(),
 					length = (endFloorIndex - startFloorIndex).toLong(),
 				).asReversed()
-				floors.forEachIndexed { index, floor ->
-					emit(Triple(floor, hole, endFloorIndex - index - 1))
-				}
+				floors.asSequence()
+					.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
+					.forEachIndexed { index, floor ->
+						emit(Triple(floor, hole, endFloorIndex - index - 1))
+					}
 				endFloorIndex = startFloorIndex
 			} while (endFloorIndex > 0)
 		}
 	}
 
-	fun retentionFloorsReversedFlow(holeId: Long) = flow {
+	fun retentionFloorsReversedFlow(
+		holeId: Long,
+		floorsFilterContext: DxrFloorsFilterContext,
+	) = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
 		val hole = loadHole(holeId)
-		val floorsSequence = DxrRetention.loadFloorsReversedSequence(userId, holeId)
-		floorsSequence.forEachIndexed { index, floor ->
-			emit(Triple(floor, hole, index))
-		}
+		DxrRetention.loadFloorsReversedSequence(userId, holeId)
+			.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
+			.forEachIndexed { index, floor ->
+				emit(Triple(floor, hole, index))
+			}
 	}
 
 	/// Cached OTDivisions.
