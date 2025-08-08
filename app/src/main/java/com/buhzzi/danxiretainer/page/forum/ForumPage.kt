@@ -34,8 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import coil.compose.rememberAsyncImagePainter
 import com.buhzzi.danxiretainer.R
-import com.buhzzi.danxiretainer.model.forum.DxrFloorsFilterContext
-import com.buhzzi.danxiretainer.model.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper

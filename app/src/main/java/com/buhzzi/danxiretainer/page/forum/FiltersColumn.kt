@@ -31,8 +31,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.forum.DxrFilter
+import com.buhzzi.danxiretainer.model.forum.DxrFilterContext
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
+import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.util.LocalFilterContext
 import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.util.dxrJson
@@ -46,6 +48,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
+import java.nio.file.Path
 
 @Composable
 fun FiltersColumn() {
@@ -93,7 +96,29 @@ fun FiltersColumn() {
 	}
 }
 
-class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division") {
+class DxrHolesFilterContext(path: Path) : DxrFilterContext(
+	path,
+	DxrRetention.loadFilterContextJson(path).let { initialJson ->
+		listOf(
+			DxrDivisionFilter(initialJson),
+			DxrTagFilter(initialJson),
+		)
+	},
+)
+
+class DxrFloorsFilterContext(path: Path) : DxrFilterContext(
+	path,
+	DxrRetention.loadFilterContextJson(path).let { initialJson ->
+		/**
+		 * [initialJson] can be reused to create filters
+		 */
+		listOf(
+			DxrEvalFilter(initialJson),
+		)
+	}
+)
+
+private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division") {
 	override val json
 		get() = buildJsonArray {
 			selections.sorted().forEach { add(it) }
@@ -158,7 +183,7 @@ class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division") {
 	}
 }
 
-class DxrTagFilter(initialJson: JsonObject) : DxrFilter("tag") {
+private class DxrTagFilter(initialJson: JsonObject) : DxrFilter("tag") {
 	override val json
 		get() = buildJsonArray {
 			tagLabels.sorted().forEach { add(it) }
@@ -191,7 +216,7 @@ class DxrTagFilter(initialJson: JsonObject) : DxrFilter("tag") {
 	}
 }
 
-class DxrEvalFilter(initialJson: JsonObject) : DxrFilter("eval") {
+private class DxrEvalFilter(initialJson: JsonObject) : DxrFilter("eval") {
 	override val json get() = JsonNull
 
 	init {

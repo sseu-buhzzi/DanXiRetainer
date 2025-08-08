@@ -2,11 +2,11 @@ package com.buhzzi.danxiretainer.repository.retention
 
 import android.app.Application
 import android.content.Context
-import com.buhzzi.danxiretainer.model.forum.DxrFloorsFilterContext
-import com.buhzzi.danxiretainer.model.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrRetentionRequest
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
+import com.buhzzi.danxiretainer.page.forum.DxrFloorsFilterContext
+import com.buhzzi.danxiretainer.page.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.retentionDeciderOrDefault

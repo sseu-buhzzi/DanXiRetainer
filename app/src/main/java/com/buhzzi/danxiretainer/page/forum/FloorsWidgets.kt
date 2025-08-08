@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.buhzzi.danxiretainer.R
-import com.buhzzi.danxiretainer.model.forum.DxrFloorsFilterContext
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.util.LocalFilterContext

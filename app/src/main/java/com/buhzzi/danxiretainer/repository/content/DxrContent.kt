@@ -1,8 +1,8 @@
 package com.buhzzi.danxiretainer.repository.content
 
-import com.buhzzi.danxiretainer.model.forum.DxrFloorsFilterContext
-import com.buhzzi.danxiretainer.model.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
+import com.buhzzi.danxiretainer.page.forum.DxrFloorsFilterContext
+import com.buhzzi.danxiretainer.page.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.content.DxrContent.floorsFlow
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
