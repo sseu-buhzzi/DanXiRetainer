@@ -35,7 +35,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
-import com.buhzzi.danxiretainer.util.LocalFilterContext
+import com.buhzzi.danxiretainer.repository.retention.DxrRetention
+import com.buhzzi.danxiretainer.repository.settings.DxrSettings
+import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.util.dxrPrettyJson
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
@@ -182,12 +184,13 @@ private sealed class FloorsBottomSheetEvent {
 			) {
 				FloorCopyTimeItem(R.string.floor_time_created, hole.timeCreated?.toDateTimeRfc3339())
 				FloorCopyTimeItem(R.string.floor_time_updated, hole.timeUpdated?.toDateTimeRfc3339())
-				// optional TODO hide if not deleted
+				// optional TODO hide it if not deleted
 				FloorCopyTimeItem(R.string.floor_time_deleted, hole.timeDeleted?.toDateTimeRfc3339())
 				HoleCopyJsonItem(hole)
 				HoleCopyIndexItem(hole)
 				HoleShareAsTextItem(hole)
 			}
+			println("HoleActions::BottomSheet end")
 		}
 	}
 
@@ -339,7 +342,11 @@ private fun FloorCopyIndexItem(floor: OtFloor) {
 private fun HoleShareAsTextItem(hole: OtHole) {
 	val clipboard = LocalClipboard.current
 	val snackbarController = LocalSnackbarController.current
-	val floorsFilterContext = LocalFilterContext.current as DxrFloorsFilterContext
+	val userProfile = DxrSettings.Models.userProfileNotNull
+	val userId = userProfile.userIdNotNull
+	val floorsFilterContext = DxrRetention.loadFloorsFilterContext(
+		userId, hole.holeIdNotNull,
+	)
 	val scope = rememberCoroutineScope()
 	val postTimeFormatter = remember { DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm") }
 	ClickCatchingActionBottomSheetItem(
