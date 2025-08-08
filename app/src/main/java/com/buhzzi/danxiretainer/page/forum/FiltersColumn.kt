@@ -17,6 +17,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +40,7 @@ import com.buhzzi.danxiretainer.util.LocalFilterContext
 import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.util.dxrJson
 import dart.package0.dan_xi.model.forum.OtDivision
+import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -102,6 +104,7 @@ class DxrHolesFilterContext(path: Path) : DxrFilterContext(
 		listOf(
 			DxrDivisionFilter(initialJson),
 			DxrTagFilter(initialJson),
+			DxrContentFilter(initialJson),
 		)
 	},
 )
@@ -109,10 +112,8 @@ class DxrHolesFilterContext(path: Path) : DxrFilterContext(
 class DxrFloorsFilterContext(path: Path) : DxrFilterContext(
 	path,
 	DxrRetention.loadFilterContextJson(path).let { initialJson ->
-		/**
-		 * [initialJson] can be reused to create filters
-		 */
 		listOf(
+			DxrContentFilter(initialJson),
 			DxrEvalFilter(initialJson),
 		)
 	}
@@ -124,11 +125,13 @@ private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division")
 			selections.sorted().forEach { add(it) }
 		}
 
-	private val selections = mutableStateSetOf<Int>().apply {
-		(initialJson[key] as? JsonArray)
-			?.mapNotNull { (it as? JsonPrimitive)?.intOrNull }
-			?.let { addAll(it) }
-			?.let { active = true }
+	private val selections = (initialJson[key] as? JsonArray)
+		?.mapNotNull { (it as? JsonPrimitive)?.intOrNull }
+		?.toTypedArray()
+		.let { mutableStateSetOf(*it ?: emptyArray()) }
+
+	init {
+		active = selections.isNotEmpty()
 	}
 
 	@Composable
@@ -176,10 +179,9 @@ private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division")
 		}
 	}
 
-	override fun <T> predicate(item: T): Boolean {
-		// TODO disable it when using ad hoc logic in forum API
-		val hole = item as? OtHole ?: return false
-		return hole.divisionId?.toInt() in selections
+	override fun <T> predicate(item: T) = when (item) {
+		is OtHole -> item.divisionId?.toInt() in selections
+		else -> false
 	}
 }
 
@@ -189,11 +191,13 @@ private class DxrTagFilter(initialJson: JsonObject) : DxrFilter("tag") {
 			tagLabels.sorted().forEach { add(it) }
 		}
 
-	private val tagLabels = mutableStateSetOf<String>().apply {
-		(initialJson[key] as? JsonArray)
-			?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
-			?.let { addAll(it) }
-			?.let { active = true }
+	private val tagLabels = (initialJson[key] as? JsonArray)
+		?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+		?.toTypedArray()
+		.let { mutableStateSetOf(*it ?: emptyArray()) }
+
+	init {
+		active = tagLabels.isNotEmpty()
 	}
 
 	@Composable
@@ -210,9 +214,47 @@ private class DxrTagFilter(initialJson: JsonObject) : DxrFilter("tag") {
 		) { tagLabel -> tagLabels.add(tagLabel) }
 	}
 
-	override fun <T> predicate(item: T): Boolean {
-		val hole = item as? OtHole ?: return false
-		return hole.tags?.find { tag -> tag.name in tagLabels } != null
+	override fun <T> predicate(item: T) = when (item) {
+		is OtHole -> item.tags?.find { tag -> tag.name in tagLabels } != null
+		else -> false
+	}
+}
+
+private class DxrContentFilter(initialJson: JsonObject) : DxrFilter("content") {
+	override val json
+		get() = JsonPrimitive(regex?.pattern)
+
+	private var regex by (initialJson[key] as? JsonPrimitive)
+		?.contentOrNull
+		?.toRegex()
+		.let { mutableStateOf(it) }
+
+	init {
+		active = regex != null
+	}
+
+	@Composable
+	override fun ToggleChipContent() {
+		Text(stringResource(R.string.filters_content))
+	}
+
+	@Composable
+	override fun Content() {
+		TextField(
+			regex?.pattern ?: "",
+			{ regex = it.takeIf { it.isNotEmpty() }?.toRegex() },
+			modifier = Modifier
+				.fillMaxWidth(),
+			label = {
+				Text(stringResource(R.string.filters_content_regex))
+			},
+		)
+	}
+
+	override fun <T> predicate(item: T) = when (item) {
+		is OtHole -> item.floors?.firstFloor?.content?.let { regex?.find(it) } != null
+		is OtFloor -> item.content?.let { regex?.find(it) } != null
+		else -> false
 	}
 }
 
@@ -233,10 +275,9 @@ private class DxrEvalFilter(initialJson: JsonObject) : DxrFilter("eval") {
 		// TODO("Not yet implemented")
 	}
 
-	override fun <T> predicate(item: T): Boolean {
+	override fun <T> predicate(item: T) =
 		// TODO("Not yet implemented")
-		return true
-	}
+		true
 
 	override fun toggleActive() {}
 }
