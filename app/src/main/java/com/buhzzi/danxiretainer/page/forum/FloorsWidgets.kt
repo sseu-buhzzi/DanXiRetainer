@@ -327,10 +327,7 @@ private fun FloorCopyIndexItem(floor: OtFloor) {
 	ClickCatchingActionBottomSheetItem(
 		{
 			clipboard.setClipEntry(
-				ClipData.newPlainText(
-					null,
-					"##${floor.floorId}",
-				).toClipEntry(),
+				ClipData.newPlainText(null, "##${floor.floorId}").toClipEntry(),
 			)
 		},
 	) {
@@ -353,18 +350,16 @@ private fun HoleShareAsTextItem(hole: OtHole) {
 		{
 			scope.launch {
 				runCatchingOnSnackbar(snackbarController) {
+					val sharedText = buildList {
+						DxrContent.floorsFlow(
+							hole.holeIdNotNull,
+							floorsFilterContext,
+						).collect { (floor, _, floorIndex) ->
+							add(renderFloorAsText(floor, floorIndex + 1, postTimeFormatter))
+						}
+					}.joinToString("\n\n")
 					clipboard.setClipEntry(
-						ClipData.newPlainText(
-							null,
-							buildList {
-								DxrContent.floorsFlow(
-									hole.holeIdNotNull,
-									floorsFilterContext,
-								).collect { (floor, _, floorIndex) ->
-									add(renderFloorAsText(floor, floorIndex + 1, postTimeFormatter))
-								}
-							}.joinToString("\n\n"),
-						).toClipEntry(),
+						ClipData.newPlainText(null, sharedText).toClipEntry(),
 					)
 				}
 			}
