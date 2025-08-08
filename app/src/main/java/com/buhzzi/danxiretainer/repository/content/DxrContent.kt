@@ -16,9 +16,16 @@ import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.provider.SortOrder
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import java.time.OffsetDateTime
 
 object DxrContent {
@@ -52,11 +59,56 @@ object DxrContent {
 	fun holesFlow(
 		holesFilterContext: DxrHolesFilterContext,
 	) = when (DxrSettings.Models.contentSourceOrDefault) {
-		DxrContentSource.FORUM_API -> forumApiHolesFlow(holesFilterContext)
+		DxrContentSource.FORUM_API -> forumApiAdHocHolesFlow(holesFilterContext)
 		DxrContentSource.RETENTION -> retentionHolesFlow(holesFilterContext)
 	}
 
+	fun forumApiAdHocHolesFlow(
+		holesFilterContext: DxrHolesFilterContext,
+	): Flow<OtHole> = flow {
+		coroutineScope {
+			val holesFilterContextJson = holesFilterContext.json
+			val divisionIds = (holesFilterContextJson["division"] as? JsonArray)
+				?.mapNotNull { (it as? JsonPrimitive)?.intOrNull }
+				?.takeIf { it.isNotEmpty() }
+				?: listOf(null)
+			val tagLabels = (holesFilterContextJson["tag"] as? JsonArray)
+				?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+				?.takeIf { it.isNotEmpty() }
+				?: listOf(null)
+			val sortOrder = DxrSettings.Models.sortOrderOrDefault
+			val holesChannels = divisionIds.flatMap { divisionId ->
+				tagLabels.map { tagLabel ->
+					@OptIn(ExperimentalCoroutinesApi::class)
+					produce {
+						forumApiHolesFlow(divisionId, tagLabel, holesFilterContext).collect { hole ->
+							send(hole)
+						}
+					}
+				}
+			}
+			try {
+				val holesBuffer = holesChannels.map { channel ->
+					channel.receiveCatching().getOrNull()
+				}.toMutableList()
+				while (true) {
+					val (newestIndex, newestHole) = holesBuffer.asSequence()
+						.withIndex()
+						.mapNotNull { (index, hole) -> hole?.let { IndexedValue(index, hole) } }
+						.maxByOrNull { (_, hole) -> hole.getSortingDateTime(sortOrder) }
+						?: break
+					emit(newestHole)
+					holesBuffer[newestIndex] = holesChannels[newestIndex].receiveCatching().getOrNull()
+				}
+			} finally {
+				holesChannels.forEach { channel -> channel.cancel() }
+			}
+		}
+	}
+
 	fun forumApiHolesFlow(
+		divisionId: Int?,
+		tagLabel: String?,
 		holesFilterContext: DxrHolesFilterContext,
 	) = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
@@ -65,9 +117,6 @@ object DxrContent {
 		val sessionState = DxrRetention.loadSessionState(userId)
 		var startTime = sessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 
-		// TODO user division and tag filter as API parameter
-		// TODO in multiple flows, everytime fetch the latest
-
 		val loadLength = 10
 		val sortOrder = DxrSettings.Models.sortOrderOrDefault
 
@@ -75,8 +124,9 @@ object DxrContent {
 			DxrForumApi.ensureAuth()
 			val holes = DxrForumApi.loadHoles(
 				startTime,
-				null,
+				divisionId?.toLong(),
 				length = loadLength.toLong(),
+				tag = tagLabel,
 				sortOrder = sortOrder,
 			)
 			holes.asSequence()

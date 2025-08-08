@@ -332,12 +332,13 @@ private class ChannelPagerViewModel<T>(
 
 	// `produce` has default capacity of `Channel.RENDEZVOUS`, which is `0`
 	// `produceIn` will not always act like that, it may preserve a buffer
-	@OptIn(ExperimentalCoroutinesApi::class)
-	private val itemsChannel = viewModelScope.produce {
-		itemsFlow.collect {
-			send(it)
+	private val itemsChannel =
+		@OptIn(ExperimentalCoroutinesApi::class)
+		viewModelScope.produce {
+			itemsFlow.collect {
+				send(it)
+			}
 		}
-	}
 
 	val readonlyPages: List<List<T>> = Collections.unmodifiableList(cachedPages)
 	val readonlyItems = object : AbstractList<T>() {
