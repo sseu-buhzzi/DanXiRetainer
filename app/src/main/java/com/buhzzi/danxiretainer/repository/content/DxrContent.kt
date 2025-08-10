@@ -294,6 +294,7 @@ object DxrContent {
 	private var divisionsCache: List<OtDivision>? = null
 
 	suspend fun loadDivisions(): List<OtDivision> {
+		divisionsCache?.let { return it }
 		DxrForumApi.ensureAuth()
 		return DxrForumApi.loadDivisions().also { divisionsCache = it }
 	}
