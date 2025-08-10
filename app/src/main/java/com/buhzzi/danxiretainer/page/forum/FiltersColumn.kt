@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.FilterAltOff
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,21 +60,27 @@ fun FiltersColumn() {
 
 	println("filterJson: ${dxrJson.encodeToString(filterContext.json)}")
 
-	var allFiltersShown by remember { mutableStateOf(true) }
-
 	Column {
 		Row(
 			verticalAlignment = Alignment.CenterVertically,
 		) {
+			val allHidden = filterContext.filters.all { filter -> !filter.active || filter.hidden }
 			IconButton(
-				{ allFiltersShown = !allFiltersShown },
-			) {
-				if (allFiltersShown) {
-					Icon(Icons.Default.FilterAlt, null)
+				{
+					filterContext.filters.forEach { filter ->
+						filter.hidden = filter.active && !allHidden
+					}
+				},
+				content = if (allHidden) {
+					{
+						Icon(Icons.Default.FilterAltOff, null)
+					}
 				} else {
-					Icon(Icons.Default.FilterAltOff, null)
-				}
-			}
+					{
+						Icon(Icons.Default.FilterAlt, null)
+					}
+				},
+			)
 			LazyRow(
 				modifier = Modifier
 					.fillMaxWidth(),
@@ -82,17 +90,35 @@ fun FiltersColumn() {
 				items(filterContext.filters) { filter ->
 					FilterChip(
 						filter.active,
-						{ filter.toggleActive() },
+						if (filter.hidden) {
+							{ filter.hidden = false }
+						} else {
+							{ filter.active = !filter.active }
+						},
 						{
 							filter.ToggleChipContent()
-						}
+						},
+						leadingIcon = if (filter.hidden) {
+							{
+								Icon(Icons.Default.VisibilityOff, null)
+							}
+						} else {
+							null
+						},
 					)
 				}
 			}
 		}
 		filterContext.filters.forEach { filter ->
-			AnimatedVisibility(allFiltersShown && filter.active) {
-				filter.Content()
+			AnimatedVisibility(filter.active && !filter.hidden) {
+				Row {
+					IconButton(
+						{ filter.hidden = true },
+					) {
+						Icon(Icons.Default.Visibility, null)
+					}
+					filter.Content()
+				}
 			}
 		}
 	}
@@ -278,6 +304,4 @@ private class DxrEvalFilter(initialJson: JsonObject) : DxrFilter("eval") {
 	override fun <T> predicate(item: T) =
 		// TODO("Not yet implemented")
 		true
-
-	override fun toggleActive() {}
 }

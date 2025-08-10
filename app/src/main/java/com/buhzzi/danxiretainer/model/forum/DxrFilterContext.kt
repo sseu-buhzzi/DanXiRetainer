@@ -34,12 +34,8 @@ abstract class DxrFilter(
 ) {
 	abstract val json: JsonElement
 
-	private var activeBack by mutableStateOf(false)
-	open var active
-		get() = activeBack
-		protected set(value) {
-			activeBack = value
-		}
+	var active by mutableStateOf(false)
+	var hidden by mutableStateOf(false)
 
 	@Composable
 	abstract fun ToggleChipContent()
@@ -48,8 +44,4 @@ abstract class DxrFilter(
 	abstract fun Content()
 
 	abstract fun <T> predicate(item: T): Boolean
-
-	open fun toggleActive() {
-		active = !active
-	}
 }
