@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -64,6 +65,38 @@ fun FiltersColumn() {
 		Row(
 			verticalAlignment = Alignment.CenterVertically,
 		) {
+			LazyRow(
+				modifier = Modifier
+					.weight(1F)
+					.padding(horizontal = 8.dp),
+				horizontalArrangement = Arrangement.spacedBy(8.dp),
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				items(filterContext.filters) { filter ->
+					FilterChip(
+						filter.active,
+						{ filter.active = !filter.active },
+						{
+							filter.ToggleChipContent()
+						},
+					)
+					AnimatedVisibility(filter.active) {
+						FilterChip(
+							!filter.hidden,
+							{ filter.hidden = !filter.hidden },
+							if (filter.hidden) {
+								{
+									Icon(Icons.Default.VisibilityOff, null)
+								}
+							} else {
+								{
+									Icon(Icons.Default.Visibility, null)
+								}
+							},
+						)
+					}
+				}
+			}
 			val allHidden = filterContext.filters.all { filter -> !filter.active || filter.hidden }
 			IconButton(
 				{
@@ -81,44 +114,10 @@ fun FiltersColumn() {
 					}
 				},
 			)
-			LazyRow(
-				modifier = Modifier
-					.fillMaxWidth(),
-				horizontalArrangement = Arrangement.spacedBy(8.dp),
-				verticalAlignment = Alignment.CenterVertically,
-			) {
-				items(filterContext.filters) { filter ->
-					FilterChip(
-						filter.active,
-						if (filter.hidden) {
-							{ filter.hidden = false }
-						} else {
-							{ filter.active = !filter.active }
-						},
-						{
-							filter.ToggleChipContent()
-						},
-						leadingIcon = if (filter.hidden) {
-							{
-								Icon(Icons.Default.VisibilityOff, null)
-							}
-						} else {
-							null
-						},
-					)
-				}
-			}
 		}
 		filterContext.filters.forEach { filter ->
 			AnimatedVisibility(filter.active && !filter.hidden) {
-				Row {
-					IconButton(
-						{ filter.hidden = true },
-					) {
-						Icon(Icons.Default.Visibility, null)
-					}
-					filter.Content()
-				}
+				filter.Content()
 			}
 		}
 	}
@@ -286,10 +285,6 @@ private class DxrContentFilter(initialJson: JsonObject) : DxrFilter("content") {
 
 private class DxrEvalFilter(initialJson: JsonObject) : DxrFilter("eval") {
 	override val json get() = JsonNull
-
-	init {
-		active = true
-	}
 
 	@Composable
 	override fun ToggleChipContent() {
