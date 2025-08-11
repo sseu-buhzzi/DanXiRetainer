@@ -190,7 +190,6 @@ private sealed class FloorsBottomSheetEvent {
 				HoleCopyIndexItem(hole)
 				HoleShareAsTextItem(hole)
 			}
-			println("HoleActions::BottomSheet end")
 		}
 	}
 

@@ -47,9 +47,6 @@ class MainActivity : ComponentActivity() {
 		DxrRetention.init(this)
 		JavaScriptExecutor.init(this)
 
-		// val a = dxrJson.decodeFromString<List<OtHole>>(TEST_JSON_STRING)
-		println()
-
 		setContent {
 			DxrApp()
 		}

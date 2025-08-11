@@ -130,11 +130,7 @@ object DxrContent {
 				sortOrder = sortOrder,
 			)
 			holes.asSequence()
-				.filter { hole ->
-					holesFilterContext.predicate(hole).also { result ->
-						println("#${hole.holeId} $result")
-					}
-				}
+				.filter { hole -> holesFilterContext.predicate(hole) }
 				.forEach { hole ->
 					emit(hole)
 					runCatching {

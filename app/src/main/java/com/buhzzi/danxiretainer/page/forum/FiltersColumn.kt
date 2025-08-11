@@ -41,7 +41,6 @@ import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.util.LocalFilterContext
 import com.buhzzi.danxiretainer.util.LocalSnackbarController
-import com.buhzzi.danxiretainer.util.dxrJson
 import dart.package0.dan_xi.model.forum.OtDivision
 import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
@@ -58,8 +57,6 @@ import java.nio.file.Path
 @Composable
 fun FiltersColumn() {
 	val filterContext = LocalFilterContext.current
-
-	println("filterJson: ${dxrJson.encodeToString(filterContext.json)}")
 
 	Column {
 		Row(
