@@ -111,12 +111,14 @@ private fun <T> HorizontalScrollPagerContent(
 	val pagerState = rememberPagerState(initialPageIndex) {
 		pagerViewModel.readonlyPages.size + if (pagerViewModel.ended) 0 else 1
 	}
-	val lazyListStates = remember(pagerViewModel, pagerState.pageCount) {
-		List(pagerState.pageCount) { pageIndex ->
-			if (pageIndex == initialItemIndex) LazyListState(
-				initialItemIndexInPage,
-				initialItemScrollOffset,
-			) else LazyListState()
+	val lazyListStates: List<LazyListState> = remember(pagerViewModel, pagerState.pageCount) {
+		object : ArrayList<LazyListState>() {
+			override operator fun get(index: Int): LazyListState {
+				while (size <= index) {
+					add(LazyListState())
+				}
+				return super[index]
+			}
 		}
 	}
 
