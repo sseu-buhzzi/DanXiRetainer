@@ -71,7 +71,7 @@ object DxrContent {
 			val divisionIds = (holesFilterContextJson["division"] as? JsonArray)
 				?.mapNotNull { (it as? JsonPrimitive)?.intOrNull }
 				?.takeIf { it.isNotEmpty() }
-				?: listOf(null)
+				?: listOf(0)
 			val tagLabels = (holesFilterContextJson["tag"] as? JsonArray)
 				?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
 				?.takeIf { it.isNotEmpty() }
