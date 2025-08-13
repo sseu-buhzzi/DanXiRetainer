@@ -237,7 +237,11 @@ private class DxrTagFilter(initialJson: JsonObject) : DxrFilter("tag") {
 	}
 
 	override fun <T> predicate(item: T) = when (item) {
-		is OtHole -> item.tags?.find { tag -> tag.name in tagLabels } != null
+		is OtHole -> item.tags
+			?.mapNotNull { tag -> tag.name }
+			?.containsAll(tagLabels)
+			.let { it == true }
+
 		else -> false
 	}
 }
