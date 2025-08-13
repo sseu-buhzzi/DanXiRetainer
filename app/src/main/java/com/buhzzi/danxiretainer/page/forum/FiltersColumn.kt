@@ -129,7 +129,13 @@ class DxrHolesFilterContext(path: Path) : DxrFilterContext(
 			DxrContentFilter(initialJson),
 		)
 	},
-)
+) {
+	fun addTag(tagLabel: String) {
+		// guaranteed not null
+		val tagFilter = filters.find { filter -> filter.key == "tag" } as DxrTagFilter
+		tagFilter.addTag(tagLabel)
+	}
+}
 
 class DxrFloorsFilterContext(path: Path) : DxrFilterContext(
 	path,
@@ -237,8 +243,17 @@ private class DxrTagFilter(initialJson: JsonObject) : DxrFilter("tag") {
 	}
 
 	override fun <T> predicate(item: T) = when (item) {
-		is OtHole -> item.tags?.find { tag -> tag.name in tagLabels } != null
+		is OtHole -> item.tags
+			?.mapNotNull { tag -> tag.name }
+			?.containsAll(tagLabels)
+			.let { it == true }
+
 		else -> false
+	}
+
+	fun addTag(tagLabel: String) {
+		active = true
+		tagLabels.add(tagLabel)
 	}
 }
 

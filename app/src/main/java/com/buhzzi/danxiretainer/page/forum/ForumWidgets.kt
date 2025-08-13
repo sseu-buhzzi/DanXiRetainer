@@ -20,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -32,12 +33,20 @@ import androidx.compose.ui.unit.sp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.retension.RetentionPageContent
 import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
+import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.page.settings.SettingsPageContent
 import com.buhzzi.danxiretainer.page.settings.SettingsPageTopBar
+import com.buhzzi.danxiretainer.repository.retention.DxrRetention
+import com.buhzzi.danxiretainer.repository.settings.DxrSettings
+import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
+import com.buhzzi.danxiretainer.util.LocalFilterContext
+import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.util.hashColor
 import dart.package0.dan_xi.util.withLightness
 import dart.package0.flutter.src.material.Colors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 enum class ForumPages(
 	val icon: @Composable () -> Unit,
@@ -113,7 +122,12 @@ fun TagChip(
 	tag: OtTag,
 	highlighted: Boolean = false,
 ) {
+	val snackbarController = LocalSnackbarController.current
+	val holesFilterContext = LocalFilterContext.current as? DxrHolesFilterContext
+
 	val systemInDarkTheme = isSystemInDarkTheme()
+
+	val scope = rememberCoroutineScope()
 
 	val shape = ShapeDefaults.ExtraSmall
 	val modifier = Modifier
@@ -128,7 +142,14 @@ fun TagChip(
 			}
 		}
 		.clickable {
-			// TODO 將tag加入篩選器
+			scope.launch(Dispatchers.IO) {
+				runCatchingOnSnackbar(snackbarController) {
+					val filterContext = holesFilterContext
+						?: DxrRetention.loadHolesFilterContext(DxrSettings.Models.userProfileNotNull.userIdNotNull)
+					filterContext.addTag(tag.nameNotNull)
+					filterContext.store()
+				}
+			}
 		}
 	val (color, contentColor) = if (highlighted) {
 		Color.Transparent to Color.White
