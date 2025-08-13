@@ -32,6 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.rememberAsyncImagePainter
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
@@ -177,6 +180,7 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 
 		Column {
 			val context = LocalContext.current
+			val lifecycleOwner = LocalLifecycleOwner.current
 			val sessionState = LocalSessionState.current
 
 			val userProfileNullable by DxrSettings.Models.userProfileFlow.collectAsState(null)
@@ -188,8 +192,18 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 				LaunchedEffect(userId) {
 					holesFilterContextNullable = DxrRetention.loadHolesFilterContext(userId)
 				}
-				DisposableEffect(userId) {
+				DisposableEffect(userId, lifecycleOwner) {
+					val observer = LifecycleEventObserver { _, event ->
+						if (
+							event == Lifecycle.Event.ON_PAUSE ||
+							event == Lifecycle.Event.ON_STOP
+						) {
+							holesFilterContextNullable?.store()
+						}
+					}
+					lifecycleOwner.lifecycle.addObserver(observer)
 					onDispose {
+						lifecycleOwner.lifecycle.removeObserver(observer)
 						holesFilterContextNullable?.store()
 					}
 				}
@@ -214,8 +228,18 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 			LaunchedEffect(userId, holeId) {
 				floorsFilterContextNullable = DxrRetention.loadFloorsFilterContext(userId, holeId)
 			}
-			DisposableEffect(userId, holeId) {
+			DisposableEffect(userId, holeId, lifecycleOwner) {
+				val observer = LifecycleEventObserver { _, event ->
+					if (
+						event == Lifecycle.Event.ON_PAUSE ||
+						event == Lifecycle.Event.ON_STOP
+					) {
+						floorsFilterContextNullable?.store()
+					}
+				}
+				lifecycleOwner.lifecycle.addObserver(observer)
 				onDispose {
+					lifecycleOwner.lifecycle.removeObserver(observer)
 					floorsFilterContextNullable?.store()
 				}
 			}
