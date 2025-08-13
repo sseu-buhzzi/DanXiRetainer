@@ -170,6 +170,7 @@ private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division")
 	@Composable
 	override fun Content() {
 		val snackbarController = LocalSnackbarController.current
+		val filterContext = LocalFilterContext.current
 
 		Row(
 			modifier = Modifier
@@ -190,7 +191,9 @@ private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division")
 				FilterChip(
 					divisionId in selections,
 					{
-						selections.remove(divisionId) || selections.add(divisionId)
+						if (selections.remove(divisionId) || selections.add(divisionId)) {
+							filterContext.store()
+						}
 					},
 					{
 						Text(division.name ?: "?")
@@ -235,11 +238,16 @@ private class DxrTagFilter(initialJson: JsonObject) : DxrFilter("tag") {
 
 	@Composable
 	override fun Content() {
+		val filterContext = LocalFilterContext.current
 		TagsSelector(
 			tagLabels,
 			false,
 			{ tagLabel -> tagLabels.remove(tagLabel) },
-		) { tagLabel -> tagLabels.add(tagLabel) }
+		) { tagLabel ->
+			if (tagLabels.add(tagLabel)) {
+				filterContext.store()
+			}
+		}
 	}
 
 	override fun <T> predicate(item: T) = when (item) {
@@ -277,9 +285,13 @@ private class DxrContentFilter(initialJson: JsonObject) : DxrFilter("content") {
 
 	@Composable
 	override fun Content() {
+		val filterContext = LocalFilterContext.current
 		TextField(
 			regex?.pattern ?: "",
-			{ regex = it.takeIf { it.isNotEmpty() }?.toRegex() },
+			{
+				regex = it.takeIf { it.isNotEmpty() }?.toRegex()
+				filterContext.store()
+			},
 			modifier = Modifier
 				.fillMaxWidth(),
 			label = {
