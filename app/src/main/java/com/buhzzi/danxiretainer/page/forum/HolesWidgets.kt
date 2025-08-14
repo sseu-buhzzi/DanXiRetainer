@@ -117,7 +117,10 @@ fun HoleCard(hole: OtHole) {
 				horizontalArrangement = Arrangement.SpaceBetween,
 				verticalAlignment = Alignment.CenterVertically,
 			) {
-				AnonynameRow(firstFloor, hole, 0)
+				AnonynameRow(
+					firstFloor, hole, 0,
+					modifier = Modifier.weight(1F),
+				)
 				HoleActionsRow { bottomSheetEvent = HolesBottomSheetEvent.HoleActions(hole) }
 			}
 			Text(

@@ -5,10 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forum
@@ -27,12 +24,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.buhzzi.danxiretainer.R
@@ -190,59 +190,88 @@ fun AnonynameRow(
 	floor: OtFloor,
 	hole: OtHole,
 	floorIndex: Int,
+	modifier: Modifier = Modifier,
 ) {
-	Row(
-		modifier = Modifier
-			.height(IntrinsicSize.Min)
+	Layout(
+		modifier = modifier
 			.padding(4.dp),
-		horizontalArrangement = Arrangement.spacedBy(4.dp),
-	) {
-		val systemInDarkTheme = isSystemInDarkTheme()
-		val anonyname = floor.anonyname ?: "?"
-		val anonynameColor = anonyname.hashColor(systemInDarkTheme) ?: Color.Red
-		VerticalDivider(
-			modifier = Modifier
-				.padding(4.dp),
-			thickness = 4.dp,
-			color = anonynameColor,
-		)
-		if (floor.anonyname?.equals(hole.floors?.firstFloor?.anonyname) == true) {
-			// TODO 可選項LZ・DZ・或OP
-			AnonynameDecorationChip("LZ", anonynameColor)
-		}
-		Text(
-			anonyname,
-			color = anonynameColor,
-			fontWeight = FontWeight.Bold,
-		)
-		if (floor.deleted == true) {
-			AnonynameDecorationChip(stringResource(R.string.floor_deleted), MaterialTheme.colorScheme.primary)
-		}
-		if (floor.specialTag?.isNotEmpty() == true) {
-			AnonynameDecorationChip(floor.specialTag, Color.Red)
-		}
-		// We will only show the hidden tag if this hole is hidden
-		// and this floor is the first floor.
-		if (floorIndex == 0 && hole.hidden == true) {
-			AnonynameDecorationChip(stringResource(R.string.hole_hidden), Color.Red)
-		}
-		// Ditto.
-		if (floorIndex == 0 && hole.isForceDeleted) {
-			AnonynameDecorationChip(stringResource(R.string.hole_deleted), Color.Red)
-		}
-		// Show locked tag if the hole is locked and this is the first floor
-		if (floorIndex == 0 && hole.locked == true) {
-			AnonynameDecorationChip(stringResource(R.string.hole_locked), MaterialTheme.colorScheme.primary)
-		}
-		var isPinned by remember { mutableStateOf(false) }
-		LaunchedEffect(Unit) {
-			isPinned = DxrContent.loadDivisions().any { division ->
-				division.pinned?.any { it == hole } == true
+		content = {
+			val systemInDarkTheme = isSystemInDarkTheme()
+			val anonyname = floor.anonyname ?: "?"
+			val anonynameColor = anonyname.hashColor(systemInDarkTheme) ?: Color.Red
+			VerticalDivider(
+				modifier = Modifier
+					.padding(4.dp),
+				thickness = 4.dp,
+				color = anonynameColor,
+			)
+			FlowRow(
+				horizontalArrangement = Arrangement.spacedBy(4.dp),
+				itemVerticalAlignment = Alignment.CenterVertically,
+			) {
+				if (floor.anonyname?.equals(hole.floors?.firstFloor?.anonyname) == true) {
+					// TODO 可選項LZ・DZ・或OP
+					AnonynameDecorationChip("LZ", anonynameColor)
+				}
+				Text(
+					anonyname,
+					color = anonynameColor,
+					fontWeight = FontWeight.Bold,
+				)
+				if (floor.deleted == true) {
+					AnonynameDecorationChip(stringResource(R.string.floor_deleted), MaterialTheme.colorScheme.primary)
+				}
+				if (floor.specialTag?.isNotEmpty() == true) {
+					AnonynameDecorationChip(floor.specialTag, Color.Red)
+				}
+				// We will only show the hidden tag if this hole is hidden
+				// and this floor is the first floor.
+				if (floorIndex == 0 && hole.hidden == true) {
+					AnonynameDecorationChip(stringResource(R.string.hole_hidden), Color.Red)
+				}
+				// Ditto.
+				if (floorIndex == 0 && hole.isForceDeleted) {
+					AnonynameDecorationChip(stringResource(R.string.hole_deleted), Color.Red)
+				}
+				// Show locked tag if the hole is locked and this is the first floor
+				if (floorIndex == 0 && hole.locked == true) {
+					AnonynameDecorationChip(stringResource(R.string.hole_locked), MaterialTheme.colorScheme.primary)
+				}
+				var isPinned by remember { mutableStateOf(false) }
+				LaunchedEffect(Unit) {
+					isPinned = DxrContent.loadDivisions().any { division ->
+						division.pinned?.any { it == hole } == true
+					}
+				}
+				// Show pinned tag if this hole is in the pinned list and this is the first floor
+				if (floorIndex == 0 && isPinned) {
+					AnonynameDecorationChip(stringResource(R.string.hole_pinned), MaterialTheme.colorScheme.primary)
+				}
 			}
-		}
-		// Show pinned tag if this hole is in the pinned list and this is the first floor
-		if (floorIndex == 0 && isPinned) {
-			AnonynameDecorationChip(stringResource(R.string.hole_pinned), MaterialTheme.colorScheme.primary)
+		},
+	) { measurables, constraints ->
+		println("measurables: ${measurables.map { "$it" }}")
+		println("constraints: $constraints")
+		val width = constraints.minWidth
+		val dividerWidth = measurables[0].minIntrinsicWidth(0)
+		val rowWidth = width - dividerWidth
+		// `Measurable` using `minIntrinsicHeight` or `maxIntrinsicHeight` won't take the last row in `FlowRow` in count
+		val rowPlaceable = measurables[1].measure(
+			Constraints(
+				minWidth = rowWidth,
+				maxWidth = rowWidth,
+			)
+		)
+		val height = rowPlaceable.height
+		val dividerPlaceable = measurables[0].measure(
+			Constraints(
+				minHeight = height,
+				maxHeight = height,
+			)
+		)
+		layout(width, height) {
+			dividerPlaceable.placeRelative(0, 0)
+			rowPlaceable.placeRelative(dividerWidth, 0)
 		}
 	}
 }
