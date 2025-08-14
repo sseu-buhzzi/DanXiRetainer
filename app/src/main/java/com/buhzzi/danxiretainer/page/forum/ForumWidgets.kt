@@ -250,8 +250,6 @@ fun AnonynameRow(
 			}
 		},
 	) { measurables, constraints ->
-		println("measurables: ${measurables.map { "$it" }}")
-		println("constraints: $constraints")
 		val width = constraints.minWidth
 		val dividerWidth = measurables[0].minIntrinsicWidth(0)
 		val rowWidth = width - dividerWidth
