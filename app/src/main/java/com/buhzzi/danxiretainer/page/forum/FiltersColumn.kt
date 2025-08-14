@@ -189,9 +189,7 @@ private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division")
 				val divisionId = division.divisionId?.toInt() ?: return@forEach
 				FilterChip(
 					divisionId in selections,
-					{
-						selections.remove(divisionId) || selections.add(divisionId)
-					},
+					{ selections.remove(divisionId) || selections.add(divisionId) },
 					{
 						Text(division.name ?: "?")
 					},
@@ -279,7 +277,9 @@ private class DxrContentFilter(initialJson: JsonObject) : DxrFilter("content") {
 	override fun Content() {
 		TextField(
 			regex?.pattern ?: "",
-			{ regex = it.takeIf { it.isNotEmpty() }?.toRegex() },
+			{
+				regex = it.takeIf { it.isNotEmpty() }?.toRegex()
+			},
 			modifier = Modifier
 				.fillMaxWidth(),
 			label = {

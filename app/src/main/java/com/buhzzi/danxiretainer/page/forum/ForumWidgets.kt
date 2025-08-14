@@ -147,7 +147,7 @@ fun TagChip(
 					val filterContext = holesFilterContext
 						?: DxrRetention.loadHolesFilterContext(DxrSettings.Models.userProfileNotNull.userIdNotNull)
 					filterContext.addTag(tag.nameNotNull)
-					filterContext.store()
+					holesFilterContext ?: filterContext.store()
 				}
 			}
 		}
