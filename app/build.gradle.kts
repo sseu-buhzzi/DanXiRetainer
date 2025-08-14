@@ -52,6 +52,10 @@ dependencies {
 
 	implementation(libs.guava)
 
+	implementation(libs.richtext.commonmark)
+	implementation(libs.richtext.markdown)
+	implementation(libs.richtext.ui.material3)
+
 	implementation(libs.androidx.datastore.preferences)
 	implementation(libs.androidx.media)
 	implementation(libs.androidx.navigation.compose)

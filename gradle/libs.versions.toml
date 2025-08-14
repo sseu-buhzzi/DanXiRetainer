@@ -19,6 +19,7 @@ material = "1.12.0"
 media = "1.7.0"
 navigationCompose = "2.9.2"
 material3 = "1.4.0-alpha18"
+richtext = "1.0.0-alpha03"
 securityCrypto = "1.0.0"
 
 [libraries]
@@ -53,6 +54,9 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+richtext-commonmark = { module = "com.halilibo.compose-richtext:richtext-commonmark", version.ref = "richtext" }
+richtext-markdown = { module = "com.halilibo.compose-richtext:richtext-markdown", version.ref = "richtext" }
+richtext-ui-material3 = { module = "com.halilibo.compose-richtext:richtext-ui-material3", version.ref = "richtext" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -41,6 +41,8 @@ import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.LocalFilterContext
 import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import com.halilibo.richtext.commonmark.Markdown
+import com.halilibo.richtext.ui.material3.RichText
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.util.hashColor
 import dart.package0.dan_xi.util.withLightness
@@ -222,3 +224,9 @@ fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
 	}
 }
 
+@Composable
+fun FloorContentRenderer(content: String) {
+	RichText {
+		Markdown(content)
+	}
+}
