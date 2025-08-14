@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.buhzzi.danxiretainer.R
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
@@ -42,6 +41,7 @@ import com.buhzzi.danxiretainer.repository.settings.floorsReversed
 import com.buhzzi.danxiretainer.repository.settings.floorsReversedOrDefault
 import com.buhzzi.danxiretainer.repository.settings.floorsReversedOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
+import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringRfc3339
 import dart.package0.dan_xi.model.forum.OtHole
@@ -117,7 +117,7 @@ fun HoleCard(hole: OtHole) {
 				horizontalArrangement = Arrangement.SpaceBetween,
 				verticalAlignment = Alignment.CenterVertically,
 			) {
-				AnonynameRow(firstFloor.anonyname ?: "?", true)
+				AnonynameRow(firstFloor, hole, 0)
 				HoleActionsRow { bottomSheetEvent = HolesBottomSheetEvent.HoleActions(hole) }
 			}
 			Text(

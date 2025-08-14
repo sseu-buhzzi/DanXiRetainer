@@ -15,13 +15,18 @@ import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -36,11 +41,14 @@ import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.page.settings.SettingsPageContent
 import com.buhzzi.danxiretainer.page.settings.SettingsPageTopBar
+import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.LocalFilterContext
 import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import dart.package0.dan_xi.model.forum.OtFloor
+import dart.package0.dan_xi.model.forum.OtHole
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.util.hashColor
 import dart.package0.dan_xi.util.withLightness
@@ -178,15 +186,19 @@ fun TagChip(
 }
 
 @Composable
-fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
+fun AnonynameRow(
+	floor: OtFloor,
+	hole: OtHole,
+	floorIndex: Int,
+) {
 	Row(
 		modifier = Modifier
 			.height(IntrinsicSize.Min)
 			.padding(4.dp),
 		horizontalArrangement = Arrangement.spacedBy(4.dp),
-		verticalAlignment = Alignment.CenterVertically,
 	) {
 		val systemInDarkTheme = isSystemInDarkTheme()
+		val anonyname = floor.anonyname ?: "?"
 		val anonynameColor = anonyname.hashColor(systemInDarkTheme) ?: Color.Red
 		VerticalDivider(
 			modifier = Modifier
@@ -194,31 +206,64 @@ fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
 			thickness = 4.dp,
 			color = anonynameColor,
 		)
-		if (posterOriginal) {
-			Surface(
-				modifier = Modifier
-					.padding(2.dp),
-				shape = ShapeDefaults.ExtraSmall,
-				color = anonynameColor,
-				// using `<= 0.5` instead of `< 0.5` to stay consistent with DanXi. Make them happy
-				contentColor = if (anonynameColor.luminance() <= 0.5) Color.White else Color.Black,
-			) {
-				Text(
-					// TODO 可選項LZ・DZ・或OP
-					"LZ",
-					modifier = Modifier
-						.padding(4.dp, 0.dp),
-					fontSize = 14.sp,
-					fontWeight = FontWeight.Bold,
-					lineHeight = 16.sp,
-				)
-			}
+		if (floor.anonyname?.equals(hole.floors?.firstFloor?.anonyname) == true) {
+			// TODO 可選項LZ・DZ・或OP
+			AnonynameDecorationChip("LZ", anonynameColor)
 		}
 		Text(
 			anonyname,
 			color = anonynameColor,
 			fontWeight = FontWeight.Bold,
 		)
+		if (floor.deleted == true) {
+			AnonynameDecorationChip(stringResource(R.string.floor_deleted), MaterialTheme.colorScheme.primary)
+		}
+		if (floor.specialTag?.isNotEmpty() == true) {
+			AnonynameDecorationChip(floor.specialTag, Color.Red)
+		}
+		// We will only show the hidden tag if this hole is hidden
+		// and this floor is the first floor.
+		if (floorIndex == 0 && hole.hidden == true) {
+			AnonynameDecorationChip(stringResource(R.string.hole_hidden), Color.Red)
+		}
+		// Ditto.
+		if (floorIndex == 0 && hole.isForceDeleted) {
+			AnonynameDecorationChip(stringResource(R.string.hole_deleted), Color.Red)
+		}
+		// Show locked tag if the hole is locked and this is the first floor
+		if (floorIndex == 0 && hole.locked == true) {
+			AnonynameDecorationChip(stringResource(R.string.hole_locked), MaterialTheme.colorScheme.primary)
+		}
+		var isPinned by remember { mutableStateOf(false) }
+		LaunchedEffect(Unit) {
+			isPinned = DxrContent.loadDivisions().any { division ->
+				division.pinned?.any { it == hole } == true
+			}
+		}
+		// Show pinned tag if this hole is in the pinned list and this is the first floor
+		if (floorIndex == 0 && isPinned) {
+			AnonynameDecorationChip(stringResource(R.string.hole_pinned), MaterialTheme.colorScheme.primary)
+		}
 	}
 }
 
+@Composable
+private fun AnonynameDecorationChip(label: String, color: Color) {
+	Surface(
+		modifier = Modifier
+			.padding(2.dp),
+		shape = ShapeDefaults.ExtraSmall,
+		color = color,
+		// using `<= 0.5` instead of `< 0.5` to stay consistent with DanXi. Make them happy
+		contentColor = if (color.luminance() <= 0.5) Color.White else Color.Black,
+	) {
+		Text(
+			label,
+			modifier = Modifier
+				.padding(4.dp, 0.dp),
+			fontSize = 14.sp,
+			fontWeight = FontWeight.Bold,
+			lineHeight = 16.sp,
+		)
+	}
+}
