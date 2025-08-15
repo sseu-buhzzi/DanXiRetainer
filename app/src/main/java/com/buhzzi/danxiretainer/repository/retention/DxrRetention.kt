@@ -7,10 +7,8 @@ import com.buhzzi.danxiretainer.model.settings.DxrRetentionRequest
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.forum.DxrFloorsFilterContext
 import com.buhzzi.danxiretainer.page.forum.DxrHolesFilterContext
-import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.retentionDeciderOrDefault
-import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.dxrJson
 import com.buhzzi.danxiretainer.util.dxrPrettyJson
 import com.buhzzi.danxiretainer.util.floorPathOf
@@ -22,7 +20,6 @@ import com.buhzzi.danxiretainer.util.holesIndicesPathOf
 import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
 import com.buhzzi.danxiretainer.util.sessionStateFilterPathOf
 import com.buhzzi.danxiretainer.util.tagPathOf
-import com.buhzzi.danxiretainer.util.tagsDirPathOf
 import com.google.common.collect.Range
 import com.google.common.collect.RangeSet
 import com.google.common.collect.TreeRangeSet
@@ -30,7 +27,6 @@ import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtFloors
 import dart.package0.dan_xi.model.forum.OtHole
 import dart.package0.dan_xi.model.forum.OtTag
-import dart.package0.dan_xi.provider.SortOrder
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -45,8 +41,6 @@ import kotlinx.serialization.json.putJsonArray
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.nio.file.Path
-import java.time.OffsetDateTime
-import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
 import kotlin.io.path.createParentDirectories
 import kotlin.io.path.exists
@@ -62,81 +56,6 @@ object DxrRetention {
 
 	fun init(context: Context) {
 		app = context.applicationContext as Application
-	}
-
-	suspend fun storeForExample() {
-		DxrForumApi.ensureAuth()
-
-		// TODO 各調用參數
-		val holesCountPerLoad = 10
-		val floorsCountPerLoad = 50
-		val holes = DxrForumApi.loadHoles(
-			OffsetDateTime.now(),
-			null,
-			length = holesCountPerLoad.toLong(),
-			tag = null,
-			sortOrder = SortOrder.LAST_REPLIED,
-		)
-		val shouldUsePrefetch = true
-		val floors = if (shouldUsePrefetch) {
-			holes.flatMap { hole ->
-				buildList {
-					hole.floors?.run {
-						firstFloor?.let { add(it) }
-						lastFloor?.let { add(it) }
-					}
-				}
-			}
-		} else {
-			holes.flatMap { hole ->
-				buildList {
-					var floorsLoaded: List<OtFloor>
-					do {
-						floorsLoaded = DxrForumApi.loadFloors(
-							hole,
-							size.toLong(),
-							floorsCountPerLoad.toLong(),
-						)
-						addAll(floorsLoaded)
-					} while (floorsLoaded.size == floorsCountPerLoad)
-				}
-			}
-		}
-
-		val userId = DxrSettings.Models.userProfileNotNull.userIdNotNull
-		storeHolesAndUpdateIndices(userId, holes)
-		storeFloorsAndUpdateIndices(userId, floors)
-		app.tagsDirPathOf(userId).createDirectories()
-		holes.asSequence()
-			.flatMap { it.tags ?: emptyList() }
-			.distinct()
-			.forEach { storeTag(userId, it) }
-	}
-
-	fun storeHolesAndUpdateIndices(userId: Long, holes: List<OtHole>) {
-		val indicesPath = app.holesIndicesPathOf(userId)
-		loadIndices(indicesPath).apply {
-			holes.forEach { hole ->
-				storeHole(userId, hole)
-				add(hole.holeIdNotNull.toInt().let { Range.closedOpen(it, it + 1) })
-			}
-		}.let { storeIndices(indicesPath, it) }
-	}
-
-	fun storeFloorsAndUpdateIndices(userId: Long, floors: List<OtFloor>) {
-		val indicesPath = app.floorsIndicesPathOf(userId)
-		loadIndices(indicesPath).apply {
-			floors.forEach { floor ->
-				storeFloor(userId, floor)
-				add(floor.floorIdNotNull.toInt().let { Range.closedOpen(it, it + 1) })
-			}
-		}.let { storeIndices(indicesPath, it) }
-	}
-
-	fun storeHole(userId: Long, hole: OtHole) {
-		val holeId = hole.holeId ?: return
-		val json = encodeHoleRetainedJson(hole, userId) ?: return
-		writeRetainedJson(app.holePathOf(userId, holeId), json)
 	}
 
 	@OptIn(ExperimentalSerializationApi::class)

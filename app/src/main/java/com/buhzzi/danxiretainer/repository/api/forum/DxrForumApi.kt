@@ -1,22 +1,14 @@
 package com.buhzzi.danxiretainer.repository.api.forum
 
 import android.util.Log
-import com.buhzzi.danxiretainer.page.settings.handleJwtAndOptionallyFetchUserProfile
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.accessJwt
 import com.buhzzi.danxiretainer.repository.settings.authBaseUrlOrDefault
-import com.buhzzi.danxiretainer.repository.settings.email
 import com.buhzzi.danxiretainer.repository.settings.forumBaseUrlOrDefault
 import com.buhzzi.danxiretainer.repository.settings.httpProxy
 import com.buhzzi.danxiretainer.repository.settings.imageBaseUrlOrDefault
-import com.buhzzi.danxiretainer.repository.settings.passwordCt
-import com.buhzzi.danxiretainer.repository.settings.refreshJwt
-import com.buhzzi.danxiretainer.util.androidKeyStoreDecrypt
 import com.buhzzi.danxiretainer.util.dxrJson
-import com.buhzzi.danxiretainer.util.judgeJwtValid
-import com.buhzzi.danxiretainer.util.toBytesBase64
 import com.buhzzi.danxiretainer.util.toStringRfc3339
-import com.buhzzi.danxiretainer.util.toStringUtf8
 import dart.package0.dan_xi.common.Constant
 import dart.package0.dan_xi.model.forum.JwToken
 import dart.package0.dan_xi.model.forum.OtAudit
@@ -214,23 +206,6 @@ object DxrForumApi {
 	fun authRefresh(refreshJwt: String): JwToken {
 		return post(url("$baseAuthUrl/refresh"), JsonObject(emptyMap())) {
 			add(HttpHeaders.Authorization, "Bearer $refreshJwt")
-		}
-	}
-
-	fun ensureAuth() {
-		val accessJwt = DxrSettings.Prefs.accessJwt
-		val refreshJwt = DxrSettings.Prefs.refreshJwt
-
-		if (accessJwt?.let { judgeJwtValid(it) } != true) {
-			val jwToken = if (refreshJwt?.let { judgeJwtValid(it) } == true) {
-				authRefresh(refreshJwt)
-			} else {
-				authLogIn(
-					checkNotNull(DxrSettings.Prefs.email),
-					androidKeyStoreDecrypt(checkNotNull(DxrSettings.Prefs.passwordCt).toBytesBase64()).toStringUtf8(),
-				)
-			}
-			handleJwtAndOptionallyFetchUserProfile(jwToken, true)
 		}
 	}
 

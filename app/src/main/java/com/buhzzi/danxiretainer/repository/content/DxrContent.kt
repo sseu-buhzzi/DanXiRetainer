@@ -3,25 +3,38 @@ package com.buhzzi.danxiretainer.repository.content
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
 import com.buhzzi.danxiretainer.page.forum.DxrFloorsFilterContext
 import com.buhzzi.danxiretainer.page.forum.DxrHolesFilterContext
+import com.buhzzi.danxiretainer.page.settings.handleJwtAndOptionallyFetchUserProfile
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
+import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi.authLogIn
+import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi.authRefresh
 import com.buhzzi.danxiretainer.repository.content.DxrContent.floorsFlow
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
+import com.buhzzi.danxiretainer.repository.settings.accessJwt
 import com.buhzzi.danxiretainer.repository.settings.contentSourceOrDefault
+import com.buhzzi.danxiretainer.repository.settings.email
+import com.buhzzi.danxiretainer.repository.settings.passwordCt
+import com.buhzzi.danxiretainer.repository.settings.refreshJwt
 import com.buhzzi.danxiretainer.repository.settings.sortOrderOrDefault
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
+import com.buhzzi.danxiretainer.util.androidKeyStoreDecrypt
+import com.buhzzi.danxiretainer.util.judgeJwtValid
+import com.buhzzi.danxiretainer.util.toBytesBase64
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
+import com.buhzzi.danxiretainer.util.toStringUtf8
 import dart.package0.dan_xi.model.forum.OtDivision
-import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.provider.SortOrder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -29,25 +42,46 @@ import kotlinx.serialization.json.intOrNull
 import java.time.OffsetDateTime
 
 object DxrContent {
-	suspend fun loadHole(holeId: Long) = when (DxrSettings.Models.contentSourceOrDefault) {
-		DxrContentSource.FORUM_API -> DxrForumApi.loadHoleById(holeId)
-		DxrContentSource.RETENTION -> {
-			val userProfile = DxrSettings.Models.userProfileNotNull
-			val userId = userProfile.userIdNotNull
+	fun ensureAuth() {
+		val accessJwt = DxrSettings.Prefs.accessJwt
+		val refreshJwt = DxrSettings.Prefs.refreshJwt
 
-			val hole = DxrRetention.loadHole(userId, holeId)
-			checkNotNull(hole)
+		if (accessJwt?.let { judgeJwtValid(it) } != true) {
+			val jwToken = if (refreshJwt?.let { judgeJwtValid(it) } == true) {
+				authRefresh(refreshJwt)
+			} else {
+				authLogIn(
+					checkNotNull(DxrSettings.Prefs.email),
+					androidKeyStoreDecrypt(checkNotNull(DxrSettings.Prefs.passwordCt).toBytesBase64()).toStringUtf8(),
+				)
+			}
+			handleJwtAndOptionallyFetchUserProfile(jwToken, true)
 		}
 	}
 
-	suspend fun loadFloor(floorId: Long) = when (DxrSettings.Models.contentSourceOrDefault) {
-		DxrContentSource.FORUM_API -> DxrForumApi.loadFloorById(floorId)
-		DxrContentSource.RETENTION -> {
-			val userProfile = DxrSettings.Models.userProfileNotNull
-			val userId = userProfile.userIdNotNull
+	suspend fun loadHole(holeId: Long) = withContext(Dispatchers.IO) {
+		when (DxrSettings.Models.contentSourceOrDefault) {
+			DxrContentSource.FORUM_API -> DxrForumApi.loadHoleById(holeId)
+			DxrContentSource.RETENTION -> {
+				val userProfile = DxrSettings.Models.userProfileNotNull
+				val userId = userProfile.userIdNotNull
 
-			val floor = DxrRetention.loadFloor(userId, floorId)
-			checkNotNull(floor)
+				val hole = DxrRetention.loadHole(userId, holeId)
+				checkNotNull(hole)
+			}
+		}
+	}
+
+	suspend fun loadFloor(floorId: Long) = withContext(Dispatchers.IO) {
+		when (DxrSettings.Models.contentSourceOrDefault) {
+			DxrContentSource.FORUM_API -> DxrForumApi.loadFloorById(floorId)
+			DxrContentSource.RETENTION -> {
+				val userProfile = DxrSettings.Models.userProfileNotNull
+				val userId = userProfile.userIdNotNull
+
+				val floor = DxrRetention.loadFloor(userId, floorId)
+				checkNotNull(floor)
+			}
 		}
 	}
 
@@ -121,7 +155,7 @@ object DxrContent {
 		val sortOrder = DxrSettings.Models.sortOrderOrDefault
 
 		while (true) {
-			DxrForumApi.ensureAuth()
+			ensureAuth()
 			val holes = DxrForumApi.loadHoles(
 				startTime,
 				divisionId?.toLong(),
@@ -152,7 +186,7 @@ object DxrContent {
 			holes.size < loadLength && break
 			startTime = holes.last().getSortingDateTime(sortOrder)
 		}
-	}
+	}.flowOn(Dispatchers.IO)
 
 	fun retentionHolesFlow(
 		holesFilterContext: DxrHolesFilterContext,
@@ -166,6 +200,7 @@ object DxrContent {
 		}
 			.filter { hole -> holesFilterContext.predicate(hole) }
 			.asFlow()
+			.flowOn(Dispatchers.IO)
 	}
 
 	fun floorsFlow(
@@ -201,14 +236,14 @@ object DxrContent {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
-		DxrForumApi.ensureAuth()
+		ensureAuth()
 		val hole = DxrForumApi.loadHoleById(holeId)
 
 		var startFloorIndex = 0
 		val loadLength = 50
 
 		do {
-			DxrForumApi.ensureAuth()
+			ensureAuth()
 			val floors = DxrForumApi.loadFloors(
 				hole,
 				startFloor = startFloorIndex.toLong(),
@@ -224,7 +259,7 @@ object DxrContent {
 				}
 			startFloorIndex += floors.size
 		} while (floors.size >= loadLength)
-	}
+	}.flowOn(Dispatchers.IO)
 
 	fun retentionFloorsFlow(
 		holeId: Long,
@@ -233,42 +268,40 @@ object DxrContent {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
-		val hole = loadHole(holeId)
+		val hole = checkNotNull(DxrRetention.loadHole(userId, holeId))
 		DxrRetention.loadFloorsSequence(userId, holeId)
 			.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
 			.forEachIndexed { index, floor ->
 				emit(Triple(floor, hole, index))
 			}
-	}
+	}.flowOn(Dispatchers.IO)
 
 	fun forumApiFloorsReversedFlow(
 		holeId: Long,
 		floorsFilterContext: DxrFloorsFilterContext,
-	): Flow<Triple<OtFloor, OtHole, Int>> {
-		return flow {
-			DxrForumApi.ensureAuth()
-			val hole = DxrForumApi.loadHoleById(holeId)
+	) = flow {
+		ensureAuth()
+		val hole = DxrForumApi.loadHoleById(holeId)
 
-			var endFloorIndex = hole.floorsCount.toInt()
-			val loadLength = 50
+		var endFloorIndex = hole.floorsCount.toInt()
+		val loadLength = 50
 
-			do {
-				DxrForumApi.ensureAuth()
-				val startFloorIndex = (endFloorIndex - loadLength).coerceAtLeast(0)
-				val floors = DxrForumApi.loadFloors(
-					hole,
-					startFloor = startFloorIndex.toLong(),
-					length = (endFloorIndex - startFloorIndex).toLong(),
-				).asReversed()
-				floors.asSequence()
-					.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
-					.forEachIndexed { index, floor ->
-						emit(Triple(floor, hole, endFloorIndex - index - 1))
-					}
-				endFloorIndex = startFloorIndex
-			} while (endFloorIndex > 0)
-		}
-	}
+		do {
+			ensureAuth()
+			val startFloorIndex = (endFloorIndex - loadLength).coerceAtLeast(0)
+			val floors = DxrForumApi.loadFloors(
+				hole,
+				startFloor = startFloorIndex.toLong(),
+				length = (endFloorIndex - startFloorIndex).toLong(),
+			).asReversed()
+			floors.asSequence()
+				.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
+				.forEachIndexed { index, floor ->
+					emit(Triple(floor, hole, endFloorIndex - index - 1))
+				}
+			endFloorIndex = startFloorIndex
+		} while (endFloorIndex > 0)
+	}.flowOn(Dispatchers.IO)
 
 	fun retentionFloorsReversedFlow(
 		holeId: Long,
@@ -277,31 +310,33 @@ object DxrContent {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
-		val hole = loadHole(holeId)
+		val hole = checkNotNull(DxrRetention.loadHole(userId, holeId))
 		DxrRetention.loadFloorsReversedSequence(userId, holeId)
 			.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
 			.forEachIndexed { index, floor ->
 				emit(Triple(floor, hole, index))
 			}
-	}
+	}.flowOn(Dispatchers.IO)
 
 	/// Cached OTDivisions.
 	///
 	private var divisionsCache: List<OtDivision>? = null
 
-	suspend fun loadDivisions(): List<OtDivision> {
-		divisionsCache?.let { return it }
-		DxrForumApi.ensureAuth()
-		return DxrForumApi.loadDivisions().also { divisionsCache = it }
+	suspend fun loadDivisions() = withContext(Dispatchers.IO) {
+		divisionsCache ?: run {
+			ensureAuth()
+			DxrForumApi.loadDivisions().also { divisionsCache = it }
+		}
 	}
 
 	/// Cached OTTags.
 	private var tagsCache: List<OtTag>? = null
 
 	// TODO load from retention
-	suspend fun loadTags(usingCache: Boolean): List<OtTag> {
-		tagsCache?.takeIf { usingCache }?.let { return it }
-		DxrForumApi.ensureAuth()
-		return DxrForumApi.loadTags().also { tagsCache = it }
+	suspend fun loadTags(usingCache: Boolean) = withContext(Dispatchers.IO) {
+		tagsCache?.takeIf { usingCache } ?: run {
+			ensureAuth()
+			DxrForumApi.loadTags().also { tagsCache = it }
+		}
 	}
 }
