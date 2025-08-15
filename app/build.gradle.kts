@@ -41,6 +41,9 @@ android {
 }
 
 dependencies {
+	implementation(libs.markwon.core)
+	implementation(libs.markwon.image.coil)
+
 	implementation(libs.coil.compose)
 
 	implementation(libs.okhttp3.okhttp)
@@ -49,10 +52,6 @@ dependencies {
 	implementation(libs.ktor.serialization.kotlinx.json)
 
 	implementation(libs.guava)
-
-	implementation(libs.richtext.commonmark)
-	implementation(libs.richtext.markdown)
-	implementation(libs.richtext.ui.material3)
 
 	implementation(libs.androidx.datastore.preferences)
 	implementation(libs.androidx.media)

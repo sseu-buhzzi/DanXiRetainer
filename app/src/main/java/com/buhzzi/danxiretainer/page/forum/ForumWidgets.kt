@@ -1,5 +1,6 @@
 package com.buhzzi.danxiretainer.page.forum
 
+import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -30,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.retension.RetentionPageContent
 import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
@@ -41,8 +43,7 @@ import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.LocalFilterContext
 import com.buhzzi.danxiretainer.util.LocalSnackbarController
-import com.halilibo.richtext.commonmark.Markdown
-import com.halilibo.richtext.ui.material3.RichText
+import com.buhzzi.danxiretainer.util.MarkwonProvider
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.util.hashColor
 import dart.package0.dan_xi.util.withLightness
@@ -226,7 +227,11 @@ fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
 
 @Composable
 fun FloorContentRenderer(content: String) {
-	RichText {
-		Markdown(content)
-	}
+	AndroidView(
+		{ context ->
+			TextView(context).also { view ->
+				MarkwonProvider(context).setMarkdown(view, content)
+			}
+		},
+	)
 }
