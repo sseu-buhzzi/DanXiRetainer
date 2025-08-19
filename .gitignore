@@ -14,6 +14,8 @@
 .cxx
 local.properties
 
+/.idea/codeStyles/codeStyleConfig.xml
+/.idea/codeStyles/Project.xml
 /.idea/deploymentTargetSelector.xml
 /.idea/deviceManager.xml
 /.idea/inspectionProfiles/

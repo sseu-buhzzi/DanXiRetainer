@@ -41,8 +41,7 @@ android {
 }
 
 dependencies {
-	implementation(libs.markwon.core)
-	implementation(libs.markwon.image.coil)
+	implementation(libs.compose.markdown)
 
 	implementation(libs.coil.compose)
 

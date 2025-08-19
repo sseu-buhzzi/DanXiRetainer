@@ -1,6 +1,5 @@
 package com.buhzzi.danxiretainer.page.forum
 
-import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -27,27 +26,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
+import coil.ImageLoader
+import coil.decode.ImageDecoderDecoder
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.retension.RetentionPageContent
 import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.page.settings.SettingsPageContent
 import com.buhzzi.danxiretainer.page.settings.SettingsPageTopBar
+import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.LocalFilterContext
 import com.buhzzi.danxiretainer.util.LocalSnackbarController
-import com.buhzzi.danxiretainer.util.MarkwonProvider
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.util.hashColor
 import dart.package0.dan_xi.util.withLightness
 import dart.package0.flutter.src.material.Colors
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -227,11 +229,12 @@ fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
 
 @Composable
 fun FloorContentRenderer(content: String) {
-	AndroidView(
-		{ context ->
-			TextView(context).also { view ->
-				MarkwonProvider(context).setMarkdown(view, content)
-			}
-		},
+	val context = LocalContext.current
+	MarkdownText(
+		content,
+		imageLoader = ImageLoader.Builder(context)
+			.components { add(ImageDecoderDecoder.Factory()) }
+			.okHttpClient(DxrForumApi.client)
+			.build(),
 	)
 }
