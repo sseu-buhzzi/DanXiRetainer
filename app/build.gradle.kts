@@ -41,6 +41,7 @@ android {
 }
 
 dependencies {
+	implementation(libs.commonmark)
 	implementation(libs.compose.markdown)
 
 	implementation(libs.coil.compose)

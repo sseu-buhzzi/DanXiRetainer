@@ -20,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,9 @@ import dart.package0.flutter.src.material.Colors
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.commonmark.node.AbstractVisitor
+import org.commonmark.node.Image
+import org.commonmark.parser.Parser
 
 enum class ForumPages(
 	val icon: @Composable () -> Unit,
@@ -230,8 +234,22 @@ fun AnonynameRow(anonyname: String, posterOriginal: Boolean) {
 @Composable
 fun FloorContentRenderer(content: String) {
 	val context = LocalContext.current
+
+	val parsedContent = remember(content) {
+		val parser = Parser.builder().build()
+		val document = parser.parse(content)
+		document.accept(object : AbstractVisitor() {
+			override fun visit(image: Image?) {
+				super.visit(image)
+
+				println("visit image: ${image?.let { "![${image.title}](${image.destination})" }}")
+			}
+		})
+		// TODO prefetch images and rebuild content
+		content
+	}
 	MarkdownText(
-		content,
+		parsedContent,
 		imageLoader = ImageLoader.Builder(context)
 			.components { add(ImageDecoderDecoder.Factory()) }
 			.okHttpClient(DxrForumApi.client)
