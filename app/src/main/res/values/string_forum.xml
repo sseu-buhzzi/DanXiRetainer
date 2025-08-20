@@ -10,6 +10,11 @@
 	<string name="human_duration_days_label">%d天前</string>
 	<string name="modified_label">已修改</string>
 	<string name="modified_times_label">已修改%d次</string>
+	<string name="floor_deleted">已刪除</string>
+	<string name="hole_hidden">已隱藏</string>
+	<string name="hole_deleted">已刪除</string>
+	<string name="hole_locked">已鎖定</string>
+	<string name="hole_pinned">置頂</string>
 
 	<string name="floors_order_label">樓層排序方向</string>
 	<string name="open_in_normal_order_at_beginning_label">以正序載入至首樓</string>

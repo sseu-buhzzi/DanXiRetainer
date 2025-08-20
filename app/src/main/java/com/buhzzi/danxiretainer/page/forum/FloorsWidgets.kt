@@ -120,8 +120,9 @@ fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
 				verticalAlignment = Alignment.Companion.CenterVertically,
 			) {
 				AnonynameRow(
-					floor.anonyname ?: "?",
-					floor.anonyname == hole.floors?.firstFloor?.anonyname,
+					floor, hole, floorIndex,
+					modifier = Modifier
+						.weight(1F),
 				)
 				FloorActionsRow(floor) { bottomSheetEvent = FloorsBottomSheetEvent.FloorActions(floor, floorIndex) }
 			}

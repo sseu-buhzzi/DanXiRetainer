@@ -61,13 +61,15 @@ data class OtHole(
 	override fun toString() =
 		"OTHole{id: $holeId, divisionId: $divisionId, timeUpdated: $timeUpdated, timeCreated: $timeCreated, timeDeleted: $timeDeleted, tags: $tags, view: $view, reply: $reply, floors: $floors, hidden: $hidden, locked: $locked}"
 
-	val isFolded get() = tags?.any { element ->
-		element.name?.startsWith("*") == true
-	}
+	val isFolded
+		get() = tags?.any { element ->
+			element.name?.startsWith("*") == true
+		}
 
-	val isForceDeleted get() = runCatching {
-		timeDeleted?.toDateTimeRfc3339()
-	}.exceptionOrNull() == null
+	val isForceDeleted
+		get() = runCatching {
+			timeDeleted?.toDateTimeRfc3339()
+		}.exceptionOrNull() != null
 
 	override fun hashCode() = checkNotNull(holeId).hashCode()
 
