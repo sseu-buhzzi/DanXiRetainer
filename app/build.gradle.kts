@@ -22,6 +22,7 @@ android {
 	buildTypes {
 		release {
 			isMinifyEnabled = true
+			isShrinkResources = true
 			proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
 		}
 	}
@@ -33,16 +34,14 @@ android {
 		jvmTarget = "11"
 	}
 
-	android {
-		buildFeatures {
-			compose = true
-		}
+	buildFeatures {
+		compose = true
 	}
 }
 
 dependencies {
-	implementation(libs.commonmark)
-	implementation(libs.compose.markdown)
+	implementation(libs.flexmark)
+	implementation(project(":markdowntext"))
 
 	implementation(libs.coil.compose)
 

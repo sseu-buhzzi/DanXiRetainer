@@ -1,5 +1,8 @@
 import java.net.URI
 
+include(":markdowntext")
+
+
 pluginManagement {
 	repositories {
 		google {
@@ -24,4 +27,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "DanXiRetainer"
 include(":app")
- 
+include(":markdowntext")

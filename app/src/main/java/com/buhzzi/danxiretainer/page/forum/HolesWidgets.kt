@@ -120,7 +120,7 @@ fun HoleCard(hole: OtHole) {
 				AnonynameRow(firstFloor.anonyname ?: "?", true)
 				HoleActionsRow { bottomSheetEvent = HolesBottomSheetEvent.HoleActions(hole) }
 			}
-			FloorContentRenderer(
+			MarkdownContentRenderer(
 				firstFloor.filteredContentNotNull,
 			)
 			if (lastFloor != firstFloor) {
