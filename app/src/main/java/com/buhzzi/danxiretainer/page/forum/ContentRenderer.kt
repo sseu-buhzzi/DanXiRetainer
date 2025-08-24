@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
+import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
@@ -67,6 +68,10 @@ fun MarkdownContentRenderer(content: String) {
 			parsedContent,
 			modifier = Modifier
 				.fillMaxWidth(),
+			imageRequestBuilder = {
+				placeholder(R.drawable.markdown_image_loading)
+				error(R.drawable.markdown_image_failed_to_load)
+			},
 			// optional TODO make height configurable in settings
 			imageHeight = 512,
 		)
