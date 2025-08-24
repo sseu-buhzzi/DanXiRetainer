@@ -1,6 +1,8 @@
 package com.buhzzi.danxiretainer.util
 
 import android.content.Context
+import android.net.Uri
+import io.ktor.util.sha1
 import java.nio.file.Path
 import kotlin.io.path.div
 
@@ -65,3 +67,14 @@ fun Context.holeSessionStatePathOf(userId: Long, holeId: Long) =
 
 fun Context.holeSessionStateFilterPathOf(userId: Long, holeId: Long) =
 	holesSessionStatesDirPathOf(userId) / "$holeId-filter.txt"
+
+fun Context.httpResourcesDirPathOf(userId: Long) =
+	userDirPathOf(userId) / "http_resources"
+
+fun Context.httpResourcePathOf(userId: Long, uri: Uri) = uri.scheme
+	.takeIf { it == "http" || it == "https" }
+	?.let { scheme ->
+		httpResourcesDirPathOf(userId) / scheme /
+			uri.encodedSchemeSpecificPart.trimStart('/') /
+			sha1(uri.schemeSpecificPart.toByteArray()).toHexString()
+	}

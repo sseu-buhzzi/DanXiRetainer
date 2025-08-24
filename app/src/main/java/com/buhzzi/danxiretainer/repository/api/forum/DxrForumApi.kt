@@ -1,22 +1,14 @@
 package com.buhzzi.danxiretainer.repository.api.forum
 
 import android.util.Log
-import com.buhzzi.danxiretainer.page.settings.handleJwtAndOptionallyFetchUserProfile
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.accessJwt
 import com.buhzzi.danxiretainer.repository.settings.authBaseUrlOrDefault
-import com.buhzzi.danxiretainer.repository.settings.email
 import com.buhzzi.danxiretainer.repository.settings.forumBaseUrlOrDefault
 import com.buhzzi.danxiretainer.repository.settings.httpProxy
 import com.buhzzi.danxiretainer.repository.settings.imageBaseUrlOrDefault
-import com.buhzzi.danxiretainer.repository.settings.passwordCt
-import com.buhzzi.danxiretainer.repository.settings.refreshJwt
-import com.buhzzi.danxiretainer.util.androidKeyStoreDecrypt
 import com.buhzzi.danxiretainer.util.dxrJson
-import com.buhzzi.danxiretainer.util.judgeJwtValid
-import com.buhzzi.danxiretainer.util.toBytesBase64
 import com.buhzzi.danxiretainer.util.toStringRfc3339
-import com.buhzzi.danxiretainer.util.toStringUtf8
 import dart.package0.dan_xi.common.Constant
 import dart.package0.dan_xi.model.forum.JwToken
 import dart.package0.dan_xi.model.forum.OtAudit
@@ -35,38 +27,29 @@ import dart.package0.dan_xi.page.KEY_NO_TAG
 import dart.package0.dan_xi.provider.SortOrder
 import dart.package0.dan_xi.repository.forum.PushNotificationServiceType
 import dart.package0.dan_xi.repository.forum.SetStatusMode
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.engine.ProxyBuilder
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.engine.http
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.request.delete
-import io.ktor.client.request.forms.MultiPartFormDataContent
-import io.ktor.client.request.forms.formData
-import io.ktor.client.request.get
-import io.ktor.client.request.patch
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
-import io.ktor.http.contentType
-import io.ktor.http.isSuccess
-import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import okhttp3.Headers
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody
+import okhttp3.logging.HttpLoggingInterceptor
 import java.io.File
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -75,760 +58,625 @@ object DxrForumApi {
 	private val baseUrl get() = DxrSettings.Models.forumBaseUrlOrDefault
 	private val baseImageUrl get() = DxrSettings.Models.imageBaseUrlOrDefault
 
-	private lateinit var client: HttpClient
+	private val applicationJsonMediaType = "application/json".toMediaType()
+
+	lateinit var client: OkHttpClient
+		private set
 
 	init {
 		updateClient()
 	}
 
 	fun updateClient() {
-		client = HttpClient(CIO) {
-			install(ContentNegotiation) {
-				json(dxrJson)
-			}
-			install(Logging) {
-				level = LogLevel.ALL
-				logger = object : Logger {
-					override fun log(message: String) {
-						Log.d("CIO", message)
+		client = OkHttpClient.Builder()
+			.proxy(DxrSettings.Models.httpProxy?.takeIf { it.enabled == true }?.runCatching {
+				Proxy(Proxy.Type.HTTP, InetSocketAddress(hostNotNull, portNotNull))
+			}?.getOrNull())
+			.addInterceptor(HttpLoggingInterceptor { message ->
+				Log.d("OkHttp", message)
+			}.setLevel(HttpLoggingInterceptor.Level.BODY))
+			.addInterceptor { chain ->
+				val originalRequest = chain.request()
+				val request = DxrSettings.Prefs.accessJwt
+					?.takeIf { originalRequest.header(HttpHeaders.Authorization) == null }
+					?.let { accessJwt ->
+						originalRequest.newBuilder()
+							.addHeader(HttpHeaders.Authorization, "Bearer $accessJwt")
+							.build()
 					}
-				}
+					?: originalRequest
+				chain.proceed(request)
 			}
-			engine {
-				DxrSettings.Models.httpProxy?.takeIf { it.enabled == true }?.runCatching {
-					proxy = ProxyBuilder.http("http://$hostNotNull:$portNotNull")
-				}
-			}
-			defaultRequest {
-				DxrSettings.Prefs.accessJwt?.let { accessJwt ->
-					if (HttpHeaders.Authorization !in headers) {
-						headers[HttpHeaders.Authorization] = "Bearer $accessJwt"
-					}
-				}
-			}
+			.build()
+	}
+
+	private class QueryParametersBuilder(base: String) {
+		val builder = base.toHttpUrl().newBuilder()
+		fun add(name: String, value: String?) {
+			builder.addQueryParameter(name, value)
 		}
 	}
 
-	private suspend fun HttpResponse.checkStatus() {
-		if (!status.isSuccess()) {
-			throw RuntimeException(bodyAsText())
+	private inline fun <reified T> get(
+		url: HttpUrl,
+		crossinline headersBuilder: Headers.Builder.() -> Unit = { },
+	) = request(url) { headersBuilder() }
+		.get()
+		.response<T>()
+
+	private fun getWithCode(
+		url: HttpUrl,
+		headersBuilder: Headers.Builder.() -> Unit = { },
+	) = request(url) { headersBuilder() }
+		.get()
+		.responseCode()
+
+	private inline fun <reified T> post(
+		url: HttpUrl,
+		body: JsonElement,
+		crossinline headersBuilder: Headers.Builder.() -> Unit = { },
+	) = request(url) { headersBuilder() }
+		.post(body.encodeBody())
+		.response<T>()
+
+	private fun postWithCode(
+		url: HttpUrl,
+		body: JsonElement,
+		headersBuilder: Headers.Builder.() -> Unit = { },
+	) = request(url) { headersBuilder() }
+		.post(body.encodeBody())
+		.responseCode()
+
+	private inline fun <reified T> patch(
+		url: HttpUrl,
+		body: JsonElement,
+		crossinline headersBuilder: Headers.Builder.() -> Unit = { },
+	) = request(url) { headersBuilder() }
+		.patch(body.encodeBody())
+		.response<T>()
+
+	private fun patchWithCode(
+		url: HttpUrl,
+		body: JsonElement,
+		headersBuilder: Headers.Builder.() -> Unit = { },
+	) = request(url) { headersBuilder() }
+		.patch(body.encodeBody())
+		.responseCode()
+
+	private inline fun <reified T> delete(
+		url: HttpUrl,
+		body: JsonElement,
+		crossinline headersBuilder: Headers.Builder.() -> Unit = { },
+	) = request(url) { headersBuilder() }
+		.delete(body.encodeBody())
+		.response<T>()
+
+	private fun deleteWithCode(
+		url: HttpUrl,
+		body: JsonElement,
+		headersBuilder: Headers.Builder.() -> Unit = { },
+	) = request(url) { headersBuilder() }
+		.delete(body.encodeBody())
+		.responseCode()
+
+	private fun url(base: String, queryParametersBuilder: QueryParametersBuilder.() -> Unit = { }) =
+		QueryParametersBuilder(base).run {
+			queryParametersBuilder()
+			builder.build()
 		}
+
+	private fun request(url: HttpUrl, headersBuilder: Headers.Builder.() -> Unit = { }) = Request.Builder()
+		.url(url)
+		.headers(Headers.Builder().run {
+			headersBuilder()
+			build()
+		})
+
+	private inline fun <reified T> Request.Builder.response() = client.newCall(build())
+		.execute()
+		.checkStatus()
+		.body
+		.decodeBody<T>()
+
+	private fun Request.Builder.responseCode() = client.newCall(build())
+		.execute()
+		.checkStatus()
+		.code
+
+	private inline fun <reified T> T.encodeBody() =
+		dxrJson.encodeToString(this).toRequestBody(applicationJsonMediaType)
+
+	private inline fun <reified T> ResponseBody.decodeBody() =
+		dxrJson.decodeFromString<T>(string())
+
+	private fun Response.checkStatus() = apply {
+		isSuccessful || throw RuntimeException(body.string())
 	}
 
 	private fun OffsetDateTime.toForumString() =
 		withOffsetSameInstant(ZoneOffset.ofHours(8)).toStringRfc3339()
 
-	suspend fun authLogIn(email: String, password: String): JwToken {
-		val rsp = client.post("$baseAuthUrl/login") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("email", email)
-				put("password", password)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.body()
+	fun authLogIn(email: String, password: String): JwToken {
+		return post("$baseAuthUrl/login".toHttpUrl(), buildJsonObject {
+			put("email", email)
+			put("password", password)
+		})
 	}
 
-	suspend fun authRefresh(refreshJwt: String): JwToken {
-		val rsp = client.post("$baseAuthUrl/refresh") {
-			headers[HttpHeaders.Authorization] = "Bearer $refreshJwt"
-		}
-		rsp.checkStatus()
-		return rsp.body()
-	}
-
-	suspend fun ensureAuth() {
-		val accessJwt = DxrSettings.Prefs.accessJwt
-		val refreshJwt = DxrSettings.Prefs.refreshJwt
-
-		if (accessJwt?.let { judgeJwtValid(it) } != true) {
-			val jwToken = if (refreshJwt?.let { judgeJwtValid(it) } == true) {
-				authRefresh(refreshJwt)
-			} else {
-				authLogIn(
-					checkNotNull(DxrSettings.Prefs.email),
-					androidKeyStoreDecrypt(checkNotNull(DxrSettings.Prefs.passwordCt).toBytesBase64()).toStringUtf8(),
-				)
-			}
-			handleJwtAndOptionallyFetchUserProfile(jwToken, true)
+	fun authRefresh(refreshJwt: String): JwToken {
+		return post(url("$baseAuthUrl/refresh"), JsonObject(emptyMap())) {
+			add(HttpHeaders.Authorization, "Bearer $refreshJwt")
 		}
 	}
 
-	suspend fun loadDivisions(): List<OtDivision> {
-		val rsp = client.get("$baseUrl/divisions")
-		rsp.checkStatus()
-		return rsp.body()
+	fun loadDivisions(): List<OtDivision> {
+		return get(url("$baseUrl/divisions"))
 	}
 
-	suspend fun loadSpecificDivision(divisionId: Long): OtDivision {
-		val rsp = client.get("$baseUrl/divisions/$divisionId")
-		rsp.checkStatus()
-		return rsp.body()
+	fun loadSpecificDivision(divisionId: Long): OtDivision {
+		return get(url("$baseUrl/divisions/$divisionId"))
 	}
 
-	suspend fun loadHoles(
+	fun loadHoles(
 		startTime: OffsetDateTime,
 		divisionId: Long?,
 		length: Long = Constant.POST_COUNT_PER_PAGE,
 		tag: String? = null,
 		sortOrder: SortOrder = SortOrder.LAST_REPLIED,
 	): List<OtHole> {
-		val rsp = client.get("$baseUrl/holes") {
-			url {
-				parameters["start_time"] = startTime.toForumString()
-				parameters["division_id"] = (divisionId ?: 0).toString() // 0 = don't filter by division
-				parameters["length"] = length.toString()
-				parameters["tag"] = tag ?: ""
-				parameters["order"] = sortOrder.internalString
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+		return get(url("$baseUrl/holes") {
+			add("start_time", startTime.toForumString())
+			add("division_id", (divisionId ?: 0).toString()) // 0 = don't filter by division
+			add("length", length.toString())
+			add("tag", tag ?: "")
+			add("order", sortOrder.internalString)
+		})
 	}
 
-	suspend fun loadUserHoles(
+	fun loadUserHoles(
 		startTime: OffsetDateTime,
 		length: Long = Constant.POST_COUNT_PER_PAGE,
 		sortOrder: SortOrder = SortOrder.LAST_REPLIED,
 	): List<OtHole> {
-		val rsp = client.get("$baseUrl/users/me/holes") {
-			url {
-				parameters["offsets"] = startTime.toForumString()
-				parameters["size"] = length.toString()
-				parameters["order"] = sortOrder.internalString
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+		return get(url("$baseUrl/users/me/holes") {
+			add("offsets", startTime.toForumString())
+			add("size", length.toString())
+			add("order", sortOrder.internalString)
+		})
 	}
 
 	// NEVER USED
-	suspend fun loadHoleById(holeId: Long): OtHole {
-		val rsp = client.get("$baseUrl/holes/$holeId")
-		rsp.checkStatus()
-		return rsp.body()
+	fun loadHoleById(holeId: Long): OtHole {
+		return get(url("$baseUrl/holes/$holeId"))
 	}
 
-	suspend fun loadFloorById(floorId: Long): OtFloor {
-		val rsp = client.get("$baseUrl/floors/$floorId")
-		rsp.checkStatus()
-		return rsp.body()
+	fun loadFloorById(floorId: Long): OtFloor {
+		return get(url("$baseUrl/floors/$floorId"))
 	}
 
-	suspend fun loadFloors(
+	fun loadFloors(
 		post: OtHole,
 		startFloor: Long = 0,
 		length: Long = Constant.POST_COUNT_PER_PAGE,
 	): List<OtFloor> {
-		val rsp = client.get("$baseUrl/floors") {
-			url {
-				parameters["start_floor"] = startFloor.toString()
-				parameters["hole_id"] = post.holeId.toString()
-				parameters["length"] = length.toString()
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+		return get(url("$baseUrl/floors") {
+			add("start_floor", startFloor.toString())
+			add("hole_id", post.holeId.toString())
+			add("length", length.toString())
+		})
 	}
 
-	suspend fun loadUserFloors(
+	fun loadUserFloors(
 		startFloor: Long = 0,
 		length: Long = Constant.POST_COUNT_PER_PAGE,
 	): List<OtFloor> {
-		val rsp = client.get("$baseUrl/users/me/floors") {
-			url {
-				parameters["offset"] = startFloor.toString()
-				parameters["size"] = length.toString()
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+		return get(url("$baseUrl/users/me/floors") {
+			add("offset", startFloor.toString())
+			add("size", length.toString())
+		})
 	}
 
-	suspend fun loadSearchResults(
+	fun loadSearchResults(
 		searchString: String?,
 		startFloor: Long? = null,
 		accurate: Boolean = false,
 		length: Long = Constant.POST_COUNT_PER_PAGE,
 		dateRange: Pair<OffsetDateTime?, OffsetDateTime?> = null to null,
 	): List<OtFloor> {
-		val rsp = client.get("$baseUrl/floors/search") {
-			url {
-				parameters["offset"] = startFloor?.toString() ?: ""
-				parameters["search"] = searchString ?: ""
-				parameters["size"] = length.toString()
-				parameters["accurate"] = accurate.toString()
-				dateRange.first?.let {
-					parameters["start_time"] = it.toEpochSecond().toString()
-				}
-				dateRange.second?.let {
-					parameters["end_time"] = it.toEpochSecond().toString()
-				}
+		return get(url("$baseUrl/floors/search") {
+			add("offset", startFloor?.toString() ?: "")
+			add("search", searchString ?: "")
+			add("size", length.toString())
+			add("accurate", accurate.toString())
+			dateRange.first?.let {
+				add("start_time", it.toEpochSecond().toString())
 			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+			dateRange.second?.let {
+				add("end_time", it.toEpochSecond().toString())
+			}
+		})
 	}
 
-	suspend fun loadTags(): List<OtTag> {
-		val rsp = client.get("$baseUrl/tags")
-		rsp.checkStatus()
-		return rsp.body()
+	fun loadTags(): List<OtTag> {
+		return get(url("$baseUrl/tags"))
 	}
 
-	suspend fun newHole(
+	fun newHole(
 		divisionId: Long,
 		content: String,
 		tags: List<OtTag>? = null,
 	): Int {
 		val tags = tags?.takeIf { it.isNotEmpty() } ?: listOf(OtTag(0, 0, KEY_NO_TAG))
 		// Suppose user is logged in. He should be.
-		val rsp = client.post("$baseUrl/holes") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("division_id", divisionId)
-				put("content", content)
-				put("tags", dxrJson.encodeToJsonElement(tags))
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return postWithCode(url("$baseUrl/holes"), buildJsonObject {
+			put("division_id", divisionId)
+			put("content", content)
+			put("tags", dxrJson.encodeToJsonElement(tags))
+		})
 	}
 
-	suspend fun uploadImage(file: File): String? {
-		val rsp = client.post("$baseImageUrl/json") {
-			setBody(MultiPartFormDataContent(formData {
-				append(
-					"source",
-					file.readBytes(),
-					Headers.Companion.build {
-						this[HttpHeaders.ContentDisposition] = "form-data; name=\"source\"; filename=\"${file.name}\""
-					}
-				)
-			}))
-		}
-		rsp.checkStatus()
-		return checkNotNull(rsp.body<JsonObject>()["image"]).jsonObject["display_url"]?.let { dxrJson.decodeFromJsonElement(it) }
+	fun uploadImage(file: File): String? {
+		val body = MultipartBody.Builder()
+			.setType(MultipartBody.FORM)
+			.addFormDataPart("source", file.name, file.asRequestBody())
+			.build()
+		return request(url("$baseImageUrl/json"))
+			.post(body)
+			.response<JsonObject>()
+			.run { checkNotNull(this["image"]) }
+			.jsonObject["display_url"]
+			?.let { dxrJson.decodeFromJsonElement(it) }
 	}
 
-	suspend fun newFloor(
+	fun newFloor(
 		discussionId: Long?,
 		content: String,
 	): Int {
-		val rsp = client.post("$baseUrl/floors") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("content", content)
-				put("hole_id", discussionId)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return postWithCode(url("$baseUrl/floors"), buildJsonObject {
+			put("content", content)
+			put("hole_id", discussionId)
+		})
 	}
 
-	suspend fun likeFloor(
+	fun likeFloor(
 		floorId: Long,
 		like: Long,
 	): OtFloor {
-		val rsp = client.post("$baseUrl/floors/$floorId/like/$like")
-		rsp.checkStatus()
-		return rsp.body()
+		return post(url("$baseUrl/floors/$floorId/like/$like"), JsonObject(emptyMap()))
 	}
 
-	suspend fun reportPost(
+	fun reportPost(
 		postId: Long?,
 		reason: String,
 	): Int {
-		val rsp = client.post("$baseUrl/reports") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("floor_id", postId)
-				put("reason", reason)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return postWithCode(url("$baseUrl/reports"), buildJsonObject {
+			put("floor_id", postId)
+			put("reason", reason)
+		})
 	}
 
-	suspend fun getUserProfile(): OtUser {
-		val rsp = client.get("$baseUrl/users/me")
-		rsp.checkStatus()
-		return rsp.body()
+	fun getUserProfile(): OtUser {
+		return get(url("$baseUrl/users/me"))
 	}
 
-	suspend fun updateUserProfile(userInfo: OtUser): OtUser {
-		val rsp = client.patch("$baseUrl/users/${userInfo.userId}/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(userInfo)
-		}
-		rsp.checkStatus()
-		return rsp.body()
+	fun updateUserProfile(userInfo: OtUser): OtUser {
+		return patch(url("$baseUrl/users/${userInfo.userId}/_webvpn"), dxrJson.encodeToJsonElement(userInfo))
 	}
 
-	suspend fun updateHoleViewCount(holeId: Long) {
-		val rsp = client.patch("$baseUrl/holes/$holeId")
-		return rsp.checkStatus()
+	fun updateHoleViewCount(holeId: Long) {
+		return patch(url("$baseUrl/holes/$holeId"), JsonObject(emptyMap()))
 	}
 
-	suspend fun loadMessages(
+	fun loadMessages(
 		unreadOnly: Boolean = false,
 		startTime: OffsetDateTime? = null,
 	): List<OtMessage> {
-		val rsp = client.get("$baseUrl/messages") {
-			url {
-				parameters["not_read"] = unreadOnly.toString()
-				parameters["start_time"] = startTime?.toForumString() ?: ""
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+		return get(url("$baseUrl/messages") {
+			add("not_read", unreadOnly.toString())
+			add("start_time", startTime?.toForumString() ?: "")
+		})
 	}
 
-	suspend fun modifyMessage(message: OtMessage) {
-		val rsp = client.delete("$baseUrl/messages/${message.messageId}") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("has_read", message.hasRead)
-			})
-		}
-		rsp.checkStatus()
+	fun modifyMessage(message: OtMessage) {
+		deleteWithCode(url("$baseUrl/messages/${message.messageId}"), buildJsonObject {
+			put("has_read", message.hasRead)
+		})
 	}
 
-	suspend fun clearMessages() {
-		val rsp = client.patch("$baseUrl/messages/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("clear_all", true)
-			})
-		}
-		rsp.checkStatus()
+	fun clearMessages() {
+		patchWithCode(url("$baseUrl/messages/_webvpn"), buildJsonObject {
+			put("clear_all", true)
+		})
 	}
 
-	suspend fun getFavoriteHoleId(): List<Long>? {
-		val rsp = client.get("$baseUrl/user/favorites") {
-			url {
-				parameters["plain"] = true.toString()
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body<JsonObject>()["data"]?.let { dxrJson.decodeFromJsonElement(it) }
+	fun getFavoriteHoleId(): List<Long>? {
+		return get<JsonObject>(url("$baseUrl/user/favorites") {
+			add("plain", true.toString())
+		})["data"]?.let { dxrJson.decodeFromJsonElement(it) }
 	}
 
-	suspend fun getSubscribedHoleId(): List<Long>? {
-		val rsp = client.get("$baseUrl/users/subscriptions") {
-			url {
-				parameters["plain"] = true.toString()
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body<JsonObject>()["data"]?.let { dxrJson.decodeFromJsonElement(it) }
+	fun getSubscribedHoleId(): List<Long>? {
+		return get<JsonObject>(url("$baseUrl/users/subscriptions") {
+			add("plain", true.toString())
+		})["data"]?.let { dxrJson.decodeFromJsonElement(it) }
 	}
 
-	suspend fun getFavoriteHoles(
+	fun getFavoriteHoles(
 		length: Long = Constant.POST_COUNT_PER_PAGE,
 		prefetchLength: Long = Constant.POST_COUNT_PER_PAGE,
 	): List<OtHole> {
-		val rsp = client.get("$baseUrl/user/favorites") {
-			url {
-				parameters["length"] = length.toString()
-				parameters["prefetch_length"] = prefetchLength.toString()
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+		return get(url("$baseUrl/user/favorites") {
+			add("length", length.toString())
+			add("prefetch_length", prefetchLength.toString())
+		})
 	}
 
-	suspend fun getSubscribedHoles(
+	fun getSubscribedHoles(
 		length: Long = Constant.POST_COUNT_PER_PAGE,
 		prefetchLength: Long = Constant.POST_COUNT_PER_PAGE,
 	): List<OtHole> {
-		val rsp = client.get("$baseUrl/users/subscriptions") {
-			url {
-				parameters["length"] = length.toString()
-				parameters["prefetch_length"] = prefetchLength.toString()
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+		return get(url("$baseUrl/users/subscriptions") {
+			add("length", length.toString())
+			add("prefetch_length", prefetchLength.toString())
+		})
 	}
 
-	suspend fun setFavorite(
+	fun setFavorite(
 		mode: SetStatusMode,
 		holeId: Long?,
 	) {
-		val rsp = when (mode) {
-			SetStatusMode.ADD -> client.post("$baseUrl/user/favorites") {
-				contentType(ContentType.Application.Json)
-				setBody(buildJsonObject {
-					put("hole_id", holeId)
-				})
-			}
+		when (mode) {
+			SetStatusMode.ADD -> postWithCode(url("$baseUrl/user/favorites"), buildJsonObject {
+				put("hole_id", holeId)
+			})
 
-			SetStatusMode.DELETE -> client.delete("$baseUrl/user/favorites") {
-				contentType(ContentType.Application.Json)
-				setBody(buildJsonObject {
-					put("hole_id", holeId)
-				})
-			}
+			SetStatusMode.DELETE -> deleteWithCode(url("$baseUrl/user/favorites"), buildJsonObject {
+				put("hole_id", holeId)
+			})
 		}
-		rsp.checkStatus()
 	}
 
-	suspend fun setSubscription(
+	fun setSubscription(
 		mode: SetStatusMode,
 		holeId: Long?,
 	) {
-		val rsp = when (mode) {
-			SetStatusMode.ADD -> client.post("$baseUrl/users/subscriptions") {
-				contentType(ContentType.Application.Json)
-				setBody(buildJsonObject {
-					put("hole_id", holeId)
-				})
-			}
+		when (mode) {
+			SetStatusMode.ADD -> postWithCode(url("$baseUrl/users/subscriptions"), buildJsonObject {
+				put("hole_id", holeId)
+			})
 
-			SetStatusMode.DELETE -> client.delete("$baseUrl/users/subscriptions") {
-				contentType(ContentType.Application.Json)
-				setBody(buildJsonObject {
-					put("hole_id", holeId)
-				})
-			}
+			SetStatusMode.DELETE -> deleteWithCode(url("$baseUrl/users/subscriptions"), buildJsonObject {
+				put("hole_id", holeId)
+			})
 		}
-		rsp.checkStatus()
 	}
 
 	/// Modify a floor
-	suspend fun modifyFloor(
+	fun modifyFloor(
 		content: String,
 		floorId: Long?,
 	): Int {
-		val rsp = client.patch("$baseUrl/floors/$floorId/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("content", content)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return patchWithCode(url("$baseUrl/floors/$floorId/_webvpn"), buildJsonObject {
+			put("content", content)
+		})
 	}
 
 	/// Delete a floor
-	suspend fun deleteFloor(floorId: Long?): Int {
-		val rsp = client.delete("$baseUrl/floors/$floorId")
-		rsp.checkStatus()
-		return rsp.status.value
+	fun deleteFloor(floorId: Long?): Int {
+		return deleteWithCode(url("$baseUrl/floors/$floorId"), JsonObject(emptyMap()))
 	}
 
 	/// Get user's punishment history
-	suspend fun getPunishmentHistory(): List<OtPunishment> {
-		val rsp = client.get("$baseUrl/users/me/punishments")
-		rsp.checkStatus()
-		return rsp.body()
+	fun getPunishmentHistory(): List<OtPunishment> {
+		return get(url("$baseUrl/users/me/punishments"))
 	}
 
 	/// Get user silence status by floor ID
 	/// Returns a map where keys are division IDs and values silence end times
-	suspend fun adminGetUserSilenceByFloorId(floorId: Long): Map<String, String> {
-		val rsp = client.get("$baseUrl/floors/$floorId/user_silence")
-		rsp.checkStatus()
-		return rsp.body()
+	fun adminGetUserSilenceByFloorId(floorId: Long): Map<String, String> {
+		return get(url("$baseUrl/floors/$floorId/user_silence"))
 	}
 
 	/// Admin API below
-	suspend fun adminGetReports(
+	fun adminGetReports(
 		startReport: Long,
 		length: Long = 10,
 	): List<OtReport> {
-		val rsp = client.get("$baseUrl/reports") {
-			url {
-				parameters["offset"] = startReport.toString()
-				parameters["size"] = length.toString()
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+		return get(url("$baseUrl/reports") {
+			add("offset", startReport.toString())
+			add("size", length.toString())
+		})
 	}
 
-	suspend fun adminGetAuditFloors(
+	fun adminGetAuditFloors(
 		startTime: OffsetDateTime,
 		open: Boolean,
 		length: Long = 10,
 	): List<OtAudit> {
-		val rsp = client.get("$baseUrl/floors/_sensitive") {
-			url {
-				parameters["offset"] = startTime.toForumString()
-				parameters["size"] = length.toString()
-				parameters["all"] = false.toString()
-				parameters["open"] = open.toString()
-				parameters["order_by"] = "time_created"
-			}
-		}
-		rsp.checkStatus()
-		return rsp.body()
+		return get(url("$baseUrl/floors/_sensitive") {
+			add("offset", startTime.toForumString())
+			add("size", length.toString())
+			add("all", false.toString())
+			add("open", open.toString())
+			add("order_by", "time_created")
+		})
 	}
 
-	suspend fun adminSetAuditFloor(
+	fun adminSetAuditFloor(
 		floorId: Long,
 		isActualSensitive: Boolean,
 	): Int {
-		val rsp = client.patch("$baseUrl/floors/$floorId/_sensitive/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("is_actual_sensitive", isActualSensitive)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return patchWithCode(url("$baseUrl/floors/$floorId/_sensitive/_webvpn"), buildJsonObject {
+			put("is_actual_sensitive", isActualSensitive)
+		})
 	}
 
-	suspend fun adminDeleteFloor(
+	fun adminDeleteFloor(
 		floorId: Long?,
 		deleteReason: String?,
 	): Int {
-		val rsp = client.delete("$baseUrl/floors/$floorId") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				deleteReason?.let { put("delete_reason", it) }
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return deleteWithCode(url("$baseUrl/floors/$floorId"), buildJsonObject {
+			deleteReason?.let { put("delete_reason", it) }
+		})
 	}
 
-	suspend fun adminForceDeleteHole(holeId: Long): Int {
-		val rsp = client.delete("$baseUrl/holes/$holeId/_force")
-		rsp.checkStatus()
-		return rsp.status.value
+	fun adminForceDeleteHole(holeId: Long): Int {
+		return deleteWithCode(url("$baseUrl/holes/$holeId/_force"), JsonObject(emptyMap()))
 	}
 
-	suspend fun getHistory(floorId: Long?): List<OtHistory> {
-		val rsp = client.get("$baseUrl/floors/$floorId/history")
-		rsp.checkStatus()
-		return rsp.body()
+	fun getHistory(floorId: Long?): List<OtHistory> {
+		return get(url("$baseUrl/floors/$floorId/history"))
 	}
 
-	suspend fun adminDeleteHole(holeId: Long?): Int {
-		val rsp = client.delete("$baseUrl/holes/$holeId")
-		rsp.checkStatus()
-		return rsp.status.value
+	fun adminDeleteHole(holeId: Long?): Int {
+		return deleteWithCode(url("$baseUrl/holes/$holeId"), JsonObject(emptyMap()))
 	}
 
-	suspend fun adminLockHole(
+	fun adminLockHole(
 		holeId: Long?,
 		lock: Boolean,
 	): Int {
-		val rsp = client.patch("$baseUrl/holes/$holeId/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("lock", lock)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return patchWithCode(url("$baseUrl/holes/$holeId/_webvpn"), buildJsonObject {
+			put("lock", lock)
+		})
 	}
 
-	suspend fun adminUndeleteHole(holeId: Long?): Int {
-		val rsp = client.patch("$baseUrl/holes/$holeId/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("unhidden", true)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+	fun adminUndeleteHole(holeId: Long?): Int {
+		return patchWithCode(url("$baseUrl/holes/$holeId/_webvpn"), buildJsonObject {
+			put("unhidden", true)
+		})
 	}
 
 	@Deprecated(
 		"Use adminAddPenaltyDays instead",
 		ReplaceWith("adminAddPenaltyDays(floorId, penaltyDays)"),
 	)
-	suspend fun adminAddPenalty(
+	fun adminAddPenalty(
 		floorId: Long?,
 		penaltyLevel: Long,
 	): Int {
-		val rsp = client.post("$baseUrl/penalty/$floorId") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("penalty_level", penaltyLevel)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return postWithCode(url("$baseUrl/penalty/$floorId"), buildJsonObject {
+			put("penalty_level", penaltyLevel)
+		})
 	}
 
-	suspend fun adminAddPenaltyDays(
+	fun adminAddPenaltyDays(
 		floorId: Long?,
 		penaltyDays: Long,
 	): Int {
-		val rsp = client.post("$baseUrl/penalty/$floorId") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("days", penaltyDays)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return postWithCode(url("$baseUrl/penalty/$floorId"), buildJsonObject {
+			put("days", penaltyDays)
+		})
 	}
 
-	suspend fun adminModifyDivision(
+	fun adminModifyDivision(
 		id: Long,
 		name: String?,
 		description: String?,
 		pinned: List<Long>?,
 	): Int {
-		val rsp = client.patch("$baseUrl/divisions/$id/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				name?.let { put("name", it) }
-				description?.let { put("description", it) }
-				pinned?.let { put("pinned", dxrJson.encodeToJsonElement(it)) }
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return patchWithCode(url("$baseUrl/divisions/$id/_webvpn"), buildJsonObject {
+			name?.let { put("name", it) }
+			description?.let { put("description", it) }
+			pinned?.let { put("pinned", dxrJson.encodeToJsonElement(it)) }
+		})
 	}
 
-	suspend fun adminAddSpecialTag(
+	fun adminAddSpecialTag(
 		tag: String,
 		floorId: Long?,
 	): Int {
-		val rsp = client.patch("$baseUrl/floors/$floorId/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("special_tag", tag)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return patchWithCode(url("$baseUrl/floors/$floorId/_webvpn"), buildJsonObject {
+			put("special_tag", tag)
+		})
 	}
 
-	suspend fun adminUpdateTagAndDivision(
+	fun adminUpdateTagAndDivision(
 		tag: List<OtTag>,
 		holeId: Long?,
 		divisionId: Long?,
 	): Int {
-		val rsp = client.patch("$baseUrl/holes/$holeId/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("tags", dxrJson.encodeToJsonElement(tag))
-				put("division_id", divisionId)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return patchWithCode(url("$baseUrl/holes/$holeId/_webvpn"), buildJsonObject {
+			put("tags", dxrJson.encodeToJsonElement(tag))
+			put("division_id", divisionId)
+		})
 	}
 
-	suspend fun adminFoldFloor(
+	fun adminFoldFloor(
 		fold: List<String>,
 		floorId: Long?,
 	): Int {
-		val rsp = client.patch("$baseUrl/floors/$floorId/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("fold", dxrJson.encodeToJsonElement(fold))
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return patchWithCode(url("$baseUrl/floors/$floorId/_webvpn"), buildJsonObject {
+			put("fold", dxrJson.encodeToJsonElement(fold))
+		})
 	}
 
-	suspend fun adminChangePassword(
+	fun adminChangePassword(
 		email: String,
 		password: String,
 	): Int {
-		val rsp = client.patch("$baseUrl/register") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("email", email)
-				put("password", password)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return patchWithCode(url("$baseUrl/register"), buildJsonObject {
+			put("email", email)
+			put("password", password)
+		})
 	}
 
-	suspend fun adminSendMessage(
+	fun adminSendMessage(
 		message: String,
 		ids: List<Long>,
 	): Int {
-		val rsp = client.post("$baseUrl/messages") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("content", message)
-				put("recipients", dxrJson.encodeToJsonElement(ids))
-			})
-		}
-		rsp.checkStatus()
-		return rsp.status.value
+		return postWithCode(url("$baseUrl/messages"), buildJsonObject {
+			put("content", message)
+			put("recipients", dxrJson.encodeToJsonElement(ids))
+		})
 	}
 
-	suspend fun adminSetReportDealt(reportId: Long): Int {
-		val rsp = client.delete("$baseUrl/reports/$reportId")
-		rsp.checkStatus()
-		return rsp.status.value
+	fun adminSetReportDealt(reportId: Long): Int {
+		return deleteWithCode(url("$baseUrl/reports/$reportId"), JsonObject(emptyMap()))
 	}
 
-	suspend fun adminGetPunishmentHistory(floorId: Long): List<String> {
-		val rsp = client.get("$baseUrl/floors/$floorId/punishment")
-		rsp.checkStatus()
-		return rsp.body()
+	fun adminGetPunishmentHistory(floorId: Long): List<String> {
+		return get(url("$baseUrl/floors/$floorId/punishment"))
 	}
 
 	/// Upload or update Push Notification token to server
-	suspend fun updatePushNotificationToken(
+	fun updatePushNotificationToken(
 		token: String,
 		id: String,
 		service: PushNotificationServiceType,
 	) {
-		val rsp = client.patch("$baseUrl/users/push-tokens/_webvpn") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("service", service.toStringRepresentation())
-				put("device_id", id)
-				put("token", token)
-			})
-		}
-		rsp.checkStatus()
+		patchWithCode(url("$baseUrl/users/push-tokens/_webvpn"), buildJsonObject {
+			put("service", service.toStringRepresentation())
+			put("device_id", id)
+			put("token", token)
+		})
 	}
 
-	suspend fun deletePushNotificationToken(deviceId: String) {
-		val rsp = client.delete("$baseUrl/users/push-tokens") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("device_id", deviceId)
-			})
-		}
-		rsp.checkStatus()
+	fun deletePushNotificationToken(deviceId: String) {
+		deleteWithCode(url("$baseUrl/users/push-tokens"), buildJsonObject {
+			put("device_id", deviceId)
+		})
 	}
 
-	suspend fun deleteAllPushNotificationToken(): Int {
-		val rsp = client.delete("$baseUrl/users/push-tokens/_all")
-		rsp.checkStatus()
-		return rsp.status.value
+	fun deleteAllPushNotificationToken(): Int {
+		return deleteWithCode(url("$baseUrl/users/push-tokens/_all"), JsonObject(emptyMap()))
 	}
 
-	suspend fun getPostRegisterQuestions(): Pair<List<QuizQuestion>?, Int> {
-		val rsp = client.get("$baseAuthUrl/register/questions")
-		rsp.checkStatus()
-		return rsp.body<JsonObject>().run {
+	fun getPostRegisterQuestions(): Pair<List<QuizQuestion>?, Int> {
+		return get<JsonObject>(url("$baseAuthUrl/register/questions")).run {
 			this["questions"]?.let { dxrJson.decodeFromJsonElement<List<QuizQuestion>>(it) } to
 				checkNotNull(this["version"]).let { dxrJson.decodeFromJsonElement(it) }
 		}
 	}
 
-	suspend fun submitAnswers(
+	fun submitAnswers(
 		answers: List<QuizAnswer>,
 		version: Long,
 	): List<Long>? {
-		val rsp = client.post("$baseAuthUrl/register/questions/_answer") {
-			contentType(ContentType.Application.Json)
-			setBody(buildJsonObject {
-				put("answers", dxrJson.encodeToJsonElement(answers))
-				put("version", version)
-			})
-		}
-		rsp.checkStatus()
-		return rsp.body<JsonObject>().run {
+		return post<JsonObject>(url("$baseAuthUrl/register/questions/_answer"), buildJsonObject {
+			put("answers", dxrJson.encodeToJsonElement(answers))
+			put("version", version)
+		}).run {
 			if (this["correct"]?.let { dxrJson.decodeFromJsonElement<Boolean>(it) } == true) {
 				listOf()
 			} else {

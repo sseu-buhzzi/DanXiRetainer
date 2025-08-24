@@ -123,7 +123,7 @@ fun HoleCard(hole: OtHole) {
 				)
 				HoleActionsRow { bottomSheetEvent = HolesBottomSheetEvent.HoleActions(hole) }
 			}
-			Text(
+			MarkdownContentRenderer(
 				firstFloor.filteredContentNotNull,
 			)
 			if (lastFloor != firstFloor) {

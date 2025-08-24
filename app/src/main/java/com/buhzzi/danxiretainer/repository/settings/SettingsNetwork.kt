@@ -3,9 +3,9 @@ package com.buhzzi.danxiretainer.repository.settings
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.buhzzi.danxiretainer.model.settings.DxrHttpProxy
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.ItemDelegate
-import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Prefs
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Keys
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Models
+import com.buhzzi.danxiretainer.repository.settings.DxrSettings.Prefs
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.decodeModelJsonString
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.encodeModelJsonString
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings.getFlow

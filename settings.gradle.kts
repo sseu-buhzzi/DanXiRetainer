@@ -1,3 +1,8 @@
+import java.net.URI
+
+include(":markdowntext")
+
+
 pluginManagement {
 	repositories {
 		google {
@@ -16,9 +21,10 @@ dependencyResolutionManagement {
 	repositories {
 		google()
 		mavenCentral()
+		maven { url = URI("https://jitpack.io") }
 	}
 }
 
 rootProject.name = "DanXiRetainer"
 include(":app")
- 
+include(":markdowntext")

@@ -22,6 +22,7 @@ android {
 	buildTypes {
 		release {
 			isMinifyEnabled = true
+			isShrinkResources = true
 			proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
 		}
 	}
@@ -33,22 +34,22 @@ android {
 		jvmTarget = "11"
 	}
 
-	android {
-		buildFeatures {
-			compose = true
-		}
+	buildFeatures {
+		compose = true
 	}
 }
 
 dependencies {
+	implementation(libs.flexmark)
+	implementation(libs.markwon.core)
+	implementation(project(":markdowntext"))
+
 	implementation(libs.coil.compose)
 
-	implementation(libs.ktor.client.core)
-	implementation(libs.ktor.client.cio)
-	implementation(libs.ktor.client.content.negotiation)
+	implementation(libs.okhttp3.okhttp)
+	implementation(libs.okhttp3.logging.interceptor)
+
 	implementation(libs.ktor.serialization.kotlinx.json)
-	implementation(libs.ktor.client.auth)
-	implementation(libs.ktor.client.logging)
 
 	implementation(libs.guava)
 

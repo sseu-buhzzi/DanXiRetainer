@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.sp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.DxrDestination
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
@@ -62,6 +61,7 @@ import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwt
 import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwtOrDefault
 import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwtOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.userProfile
+import com.buhzzi.danxiretainer.util.LocalSnackbarController
 import com.buhzzi.danxiretainer.util.androidKeyStoreDecrypt
 import com.buhzzi.danxiretainer.util.androidKeyStoreEncrypt
 import com.buhzzi.danxiretainer.util.getJwtExpiration
@@ -299,14 +299,13 @@ fun SettingsAccountPage() {
 	}
 }
 
-suspend fun handleJwtAndOptionallyFetchUserProfile(
+fun handleJwtAndOptionallyFetchUserProfile(
 	jwToken: JwToken,
 	shouldLoadUser: Boolean,
 ) {
 	DxrSettings.Prefs.accessJwt = jwToken.access
 	DxrSettings.Prefs.refreshJwt = jwToken.refresh
-	if (shouldLoadUser == true) {
-		val user = DxrForumApi.getUserProfile()
-		DxrSettings.Models.userProfile = user
+	if (shouldLoadUser) {
+		DxrSettings.Models.userProfile = DxrForumApi.getUserProfile()
 	}
 }

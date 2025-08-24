@@ -1,0 +1,3 @@
+[submodule "markdowntext"]
+	path = markdowntext
+	url = ../compose-markdown

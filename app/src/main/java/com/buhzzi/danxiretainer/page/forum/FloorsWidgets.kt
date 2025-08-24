@@ -127,7 +127,7 @@ fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
 				FloorActionsRow(floor) { bottomSheetEvent = FloorsBottomSheetEvent.FloorActions(floor, floorIndex) }
 			}
 			// TODO Markdown and mentions
-			Text(
+			MarkdownContentRenderer(
 				floor.filteredContentNotNull,
 			)
 			Row(
