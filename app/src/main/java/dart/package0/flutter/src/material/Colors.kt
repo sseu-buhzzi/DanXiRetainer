@@ -286,7 +286,7 @@ class MaterialAccentColor(
 ///  * Cookbook: [Use themes to share colors and font styles](https://docs.flutter.dev/cookbook/design/themes)
 object Colors {
 	/// Completely invisible.
-	val transparent = Color(0x00000000);
+	val transparent = Color(0x00000000)
 
 	/// Completely opaque black.
 	///
@@ -298,7 +298,7 @@ object Colors {
 	///    are variants on this color but with different opacities.
 	///  * [white], a solid white color.
 	///  * [transparent], a fully-transparent color.
-	val black = Color(0xFF000000);
+	val black = Color(0xFF000000)
 
 	/// Black with 87% opacity.
 	///
@@ -313,7 +313,7 @@ object Colors {
 	///    rather than hard-coding colors in your build methods.
 	///  * [black], [black54], [black45], [black38], [black26], [black12], which
 	///    are variants on this color but with different opacities.
-	val black87 = Color(0xDD000000);
+	val black87 = Color(0xDD000000)
 
 	/// Black with 54% opacity.
 	///
@@ -329,7 +329,7 @@ object Colors {
 	///    rather than hard-coding colors in your build methods.
 	///  * [black], [black87], [black45], [black38], [black26], [black12], which
 	///    are variants on this color but with different opacities.
-	val black54 = Color(0x8A000000);
+	val black54 = Color(0x8A000000)
 
 	/// Black with 45% opacity.
 	///
@@ -339,7 +339,7 @@ object Colors {
 	///
 	///  * [black], [black87], [black54], [black38], [black26], [black12], which
 	///    are variants on this color but with different opacities.
-	val black45 = Color(0x73000000);
+	val black45 = Color(0x73000000)
 
 	/// Black with 38% opacity.
 	///
@@ -353,7 +353,7 @@ object Colors {
 	///
 	///  * [black], [black87], [black54], [black45], [black26], [black12], which
 	///    are variants on this color but with different opacities.
-	val black38 = Color(0x61000000);
+	val black38 = Color(0x61000000)
 
 	/// Black with 26% opacity.
 	///
@@ -368,7 +368,7 @@ object Colors {
 	///    rather than hard-coding colors in your build methods.
 	///  * [black], [black87], [black54], [black45], [black38], [black12], which
 	///    are variants on this color but with different opacities.
-	val black26 = Color(0x42000000);
+	val black26 = Color(0x42000000)
 
 	/// Black with 12% opacity.
 	///
@@ -380,7 +380,7 @@ object Colors {
 	///
 	///  * [black], [black87], [black54], [black45], [black38], [black26], which
 	///    are variants on this color but with different opacities.
-	val black12 = Color(0x1F000000);
+	val black12 = Color(0x1F000000)
 
 	/// Completely opaque white.
 	///
@@ -399,7 +399,7 @@ object Colors {
 	///    opacities.
 	///  * [black], a solid black color.
 	///  * [transparent], a fully-transparent color.
-	val white = Color(0xFFFFFFFF);
+	val white = Color(0xFFFFFFFF)
 
 	/// White with 70% opacity.
 	///
@@ -415,7 +415,7 @@ object Colors {
 	///  * [white], [white60], [white54], [white38], [white30], [white12],
 	///    [white10], which are variants on this color but with different
 	///    opacities.
-	val white70 = Color(0xB3FFFFFF);
+	val white70 = Color(0xB3FFFFFF)
 
 	/// White with 60% opacity.
 	///
@@ -431,7 +431,7 @@ object Colors {
 	///    rather than hard-coding colors in your build methods.
 	///  * [white], [white54], [white30], [white38], [white12], [white10], which
 	///    are variants on this color but with different opacities.
-	val white60 = Color(0x99FFFFFF);
+	val white60 = Color(0x99FFFFFF)
 
 	/// White with 54% opacity.
 	///
@@ -443,7 +443,7 @@ object Colors {
 	///    rather than hard-coding colors in your build methods.
 	///  * [white], [white60], [white38], [white30], [white12], [white10], which
 	///    are variants on this color but with different opacities.
-	val white54 = Color(0x8AFFFFFF);
+	val white54 = Color(0x8AFFFFFF)
 
 	/// White with 38% opacity.
 	///
@@ -459,7 +459,7 @@ object Colors {
 	///  * [white], [white60], [white54], [white70], [white30], [white12],
 	///    [white10], which are variants on this color but with different
 	///    opacities.
-	val white38 = Color(0x62FFFFFF);
+	val white38 = Color(0x62FFFFFF)
 
 	/// White with 30% opacity.
 	///
@@ -472,7 +472,7 @@ object Colors {
 	///  * [white], [white60], [white54], [white70], [white38], [white12],
 	///    [white10], which are variants on this color but with different
 	///    opacities.
-	val white30 = Color(0x4DFFFFFF);
+	val white30 = Color(0x4DFFFFFF)
 
 	/// White with 24% opacity.
 	///
@@ -485,7 +485,7 @@ object Colors {
 	///  * [white], [white60], [white54], [white70], [white38], [white30],
 	///    [white10], which are variants on this color
 	///    but with different opacities.
-	val white24 = Color(0x3DFFFFFF);
+	val white24 = Color(0x3DFFFFFF)
 
 	/// White with 12% opacity.
 	///
@@ -498,7 +498,7 @@ object Colors {
 	///  * [white], [white60], [white54], [white70], [white38], [white30],
 	///    [white10], which are variants on this color but with different
 	///    opacities.
-	val white12 = Color(0x1FFFFFFF);
+	val white12 = Color(0x1FFFFFFF)
 
 	/// White with 10% opacity.
 	///
@@ -510,7 +510,7 @@ object Colors {
 	///    [white12], which are variants on this color
 	///    but with different opacities.
 	///  * [transparent], a fully-transparent color, not far from this one.
-	val white10 = Color(0x1AFFFFFF);
+	val white10 = Color(0x1AFFFFFF)
 
 	/// The red primary color and swatch.
 	///
@@ -550,8 +550,8 @@ object Colors {
 		700 to Color(0xFFD32F2F),
 		800 to Color(0xFFC62828),
 		900 to Color(0xFFB71C1C),
-	));
-	const val RED_PRIMARY_VALUE = 0xFFF44336;
+	))
+	const val RED_PRIMARY_VALUE = 0xFFF44336
 
 	/// The red accent swatch.
 	///
@@ -585,8 +585,8 @@ object Colors {
 		200 to Color(RED_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFFFF1744),
 		700 to Color(0xFFD50000),
-	));
-	const val RED_ACCENT_PRIMARY_VALUE = 0xFFFF5252;
+	))
+	const val RED_ACCENT_PRIMARY_VALUE = 0xFFFF5252
 
 	/// The pink primary color and swatch.
 	///
@@ -626,8 +626,8 @@ object Colors {
 		700 to Color(0xFFC2185B),
 		800 to Color(0xFFAD1457),
 		900 to Color(0xFF880E4F),
-	));
-	const val PINK_PRIMARY_VALUE = 0xFFE91E63;
+	))
+	const val PINK_PRIMARY_VALUE = 0xFFE91E63
 
 	/// The pink accent color swatch.
 	///
@@ -662,8 +662,8 @@ object Colors {
 		200 to Color(PINK_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFFF50057),
 		700 to Color(0xFFC51162),
-	));
-	const val PINK_ACCENT_PRIMARY_VALUE = 0xFFFF4081;
+	))
+	const val PINK_ACCENT_PRIMARY_VALUE = 0xFFFF4081
 
 	/// The purple primary color and swatch.
 	///
@@ -703,8 +703,8 @@ object Colors {
 		700 to Color(0xFF7B1FA2),
 		800 to Color(0xFF6A1B9A),
 		900 to Color(0xFF4A148C),
-	));
-	const val PURPLE_PRIMARY_VALUE = 0xFF9C27B0;
+	))
+	const val PURPLE_PRIMARY_VALUE = 0xFF9C27B0
 
 	/// The purple accent color and swatch.
 	///
@@ -739,8 +739,8 @@ object Colors {
 		200 to Color(PURPLE_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFFD500F9),
 		700 to Color(0xFFAA00FF),
-	));
-	const val PURPLE_ACCENT_PRIMARY_VALUE = 0xFFE040FB;
+	))
+	const val PURPLE_ACCENT_PRIMARY_VALUE = 0xFFE040FB
 
 	/// The deep purple primary color and swatch.
 	///
@@ -780,8 +780,8 @@ object Colors {
 		700 to Color(0xFF512DA8),
 		800 to Color(0xFF4527A0),
 		900 to Color(0xFF311B92),
-	));
-	const val DEEP_PURPLE_PRIMARY_VALUE = 0xFF673AB7;
+	))
+	const val DEEP_PURPLE_PRIMARY_VALUE = 0xFF673AB7
 
 	/// The deep purple accent color and swatch.
 	///
@@ -816,8 +816,8 @@ object Colors {
 		200 to Color(DEEP_PURPLE_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFF651FFF),
 		700 to Color(0xFF6200EA),
-	));
-	const val DEEP_PURPLE_ACCENT_PRIMARY_VALUE = 0xFF7C4DFF;
+	))
+	const val DEEP_PURPLE_ACCENT_PRIMARY_VALUE = 0xFF7C4DFF
 
 	/// The indigo primary color and swatch.
 	///
@@ -857,8 +857,8 @@ object Colors {
 		700 to Color(0xFF303F9F),
 		800 to Color(0xFF283593),
 		900 to Color(0xFF1A237E),
-	));
-	const val INDIGO_PRIMARY_VALUE = 0xFF3F51B5;
+	))
+	const val INDIGO_PRIMARY_VALUE = 0xFF3F51B5
 
 	/// The indigo accent color and swatch.
 	///
@@ -893,8 +893,8 @@ object Colors {
 		200 to Color(INDIGO_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFF3D5AFE),
 		700 to Color(0xFF304FFE),
-	));
-	const val INDIGO_ACCENT_PRIMARY_VALUE = 0xFF536DFE;
+	))
+	const val INDIGO_ACCENT_PRIMARY_VALUE = 0xFF536DFE
 
 	/// The blue primary color and swatch.
 	///
@@ -936,8 +936,8 @@ object Colors {
 		700 to Color(0xFF1976D2),
 		800 to Color(0xFF1565C0),
 		900 to Color(0xFF0D47A1),
-	));
-	const val BLUE_PRIMARY_VALUE = 0xFF2196F3;
+	))
+	const val BLUE_PRIMARY_VALUE = 0xFF2196F3
 
 	/// The blue accent color and swatch.
 	///
@@ -972,8 +972,8 @@ object Colors {
 		200 to Color(BLUE_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFF2979FF),
 		700 to Color(0xFF2962FF),
-	));
-	const val BLUE_ACCENT_PRIMARY_VALUE = 0xFF448AFF;
+	))
+	const val BLUE_ACCENT_PRIMARY_VALUE = 0xFF448AFF
 
 	/// The light blue primary color and swatch.
 	///
@@ -1013,8 +1013,8 @@ object Colors {
 		700 to Color(0xFF0288D1),
 		800 to Color(0xFF0277BD),
 		900 to Color(0xFF01579B),
-	));
-	const val LIGHT_BLUE_PRIMARY_VALUE = 0xFF03A9F4;
+	))
+	const val LIGHT_BLUE_PRIMARY_VALUE = 0xFF03A9F4
 
 	/// The light blue accent swatch.
 	///
@@ -1049,8 +1049,8 @@ object Colors {
 		200 to Color(LIGHT_BLUE_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFF00B0FF),
 		700 to Color(0xFF0091EA),
-	));
-	const val LIGHT_BLUE_ACCENT_PRIMARY_VALUE = 0xFF40C4FF;
+	))
+	const val LIGHT_BLUE_ACCENT_PRIMARY_VALUE = 0xFF40C4FF
 
 	/// The cyan primary color and swatch.
 	///
@@ -1092,8 +1092,8 @@ object Colors {
 		700 to Color(0xFF0097A7),
 		800 to Color(0xFF00838F),
 		900 to Color(0xFF006064),
-	));
-	const val CYAN_PRIMARY_VALUE = 0xFF00BCD4;
+	))
+	const val CYAN_PRIMARY_VALUE = 0xFF00BCD4
 
 	/// The cyan accent color and swatch.
 	///
@@ -1128,8 +1128,8 @@ object Colors {
 		200 to Color(CYAN_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFF00E5FF),
 		700 to Color(0xFF00B8D4),
-	));
-	const val CYAN_ACCENT_PRIMARY_VALUE = 0xFF18FFFF;
+	))
+	const val CYAN_ACCENT_PRIMARY_VALUE = 0xFF18FFFF
 
 	/// The teal primary color and swatch.
 	///
@@ -1169,8 +1169,8 @@ object Colors {
 		700 to Color(0xFF00796B),
 		800 to Color(0xFF00695C),
 		900 to Color(0xFF004D40),
-	));
-	const val TEAL_PRIMARY_VALUE = 0xFF009688;
+	))
+	const val TEAL_PRIMARY_VALUE = 0xFF009688
 
 	/// The teal accent color and swatch.
 	///
@@ -1205,8 +1205,8 @@ object Colors {
 		200 to Color(TEAL_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFF1DE9B6),
 		700 to Color(0xFF00BFA5),
-	));
-	const val TEAL_ACCENT_PRIMARY_VALUE = 0xFF64FFDA;
+	))
+	const val TEAL_ACCENT_PRIMARY_VALUE = 0xFF64FFDA
 
 	/// The green primary color and swatch.
 	///
@@ -1249,8 +1249,8 @@ object Colors {
 		700 to Color(0xFF388E3C),
 		800 to Color(0xFF2E7D32),
 		900 to Color(0xFF1B5E20),
-	));
-	const val GREEN_PRIMARY_VALUE = 0xFF4CAF50;
+	))
+	const val GREEN_PRIMARY_VALUE = 0xFF4CAF50
 
 	/// The green accent color and swatch.
 	///
@@ -1288,8 +1288,8 @@ object Colors {
 		200 to Color(GREEN_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFF00E676),
 		700 to Color(0xFF00C853),
-	));
-	const val GREEN_ACCENT_PRIMARY_VALUE = 0xFF69F0AE;
+	))
+	const val GREEN_ACCENT_PRIMARY_VALUE = 0xFF69F0AE
 
 	/// The light green primary color and swatch.
 	///
@@ -1329,8 +1329,8 @@ object Colors {
 		700 to Color(0xFF689F38),
 		800 to Color(0xFF558B2F),
 		900 to Color(0xFF33691E),
-	));
-	const val LIGHT_GREEN_PRIMARY_VALUE = 0xFF8BC34A;
+	))
+	const val LIGHT_GREEN_PRIMARY_VALUE = 0xFF8BC34A
 
 	/// The light green accent color and swatch.
 	///
@@ -1365,8 +1365,8 @@ object Colors {
 		200 to Color(LIGHT_GREEN_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFF76FF03),
 		700 to Color(0xFF64DD17),
-	));
-	const val LIGHT_GREEN_ACCENT_PRIMARY_VALUE = 0xFFB2FF59;
+	))
+	const val LIGHT_GREEN_ACCENT_PRIMARY_VALUE = 0xFFB2FF59
 
 	/// The lime primary color and swatch.
 	///
@@ -1406,8 +1406,8 @@ object Colors {
 		700 to Color(0xFFAFB42B),
 		800 to Color(0xFF9E9D24),
 		900 to Color(0xFF827717),
-	));
-	const val LIME_PRIMARY_VALUE = 0xFFCDDC39;
+	))
+	const val LIME_PRIMARY_VALUE = 0xFFCDDC39
 
 	/// The lime accent primary color and swatch.
 	///
@@ -1442,8 +1442,8 @@ object Colors {
 		200 to Color(LIME_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFFC6FF00),
 		700 to Color(0xFFAEEA00),
-	));
-	const val LIME_ACCENT_PRIMARY_VALUE = 0xFFEEFF41;
+	))
+	const val LIME_ACCENT_PRIMARY_VALUE = 0xFFEEFF41
 
 	/// The yellow primary color and swatch.
 	///
@@ -1483,8 +1483,8 @@ object Colors {
 		700 to Color(0xFFFBC02D),
 		800 to Color(0xFFF9A825),
 		900 to Color(0xFFF57F17),
-	));
-	const val YELLOW_PRIMARY_VALUE = 0xFFFFEB3B;
+	))
+	const val YELLOW_PRIMARY_VALUE = 0xFFFFEB3B
 
 	/// The yellow accent color and swatch.
 	///
@@ -1519,8 +1519,8 @@ object Colors {
 		200 to Color(YELLOW_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFFFFEA00),
 		700 to Color(0xFFFFD600),
-	));
-	const val YELLOW_ACCENT_PRIMARY_VALUE = 0xFFFFFF00;
+	))
+	const val YELLOW_ACCENT_PRIMARY_VALUE = 0xFFFFFF00
 
 	/// The amber primary color and swatch.
 	///
@@ -1560,8 +1560,8 @@ object Colors {
 		700 to Color(0xFFFFA000),
 		800 to Color(0xFFFF8F00),
 		900 to Color(0xFFFF6F00),
-	));
-	const val AMBER_PRIMARY_VALUE = 0xFFFFC107;
+	))
+	const val AMBER_PRIMARY_VALUE = 0xFFFFC107
 
 	/// The amber accent color and swatch.
 	///
@@ -1596,8 +1596,8 @@ object Colors {
 		200 to Color(AMBER_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFFFFC400),
 		700 to Color(0xFFFFAB00),
-	));
-	const val AMBER_ACCENT_PRIMARY_VALUE = 0xFFFFD740;
+	))
+	const val AMBER_ACCENT_PRIMARY_VALUE = 0xFFFFD740
 
 	/// The orange primary color and swatch.
 	///
@@ -1639,8 +1639,8 @@ object Colors {
 		700 to Color(0xFFF57C00),
 		800 to Color(0xFFEF6C00),
 		900 to Color(0xFFE65100),
-	));
-	const val ORANGE_PRIMARY_VALUE = 0xFFFF9800;
+	))
+	const val ORANGE_PRIMARY_VALUE = 0xFFFF9800
 
 	/// The orange accent color and swatch.
 	///
@@ -1675,8 +1675,8 @@ object Colors {
 		200 to Color(ORANGE_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFFFF9100),
 		700 to Color(0xFFFF6D00),
-	));
-	const val ORANGE_ACCENT_PRIMARY_VALUE = 0xFFFFAB40;
+	))
+	const val ORANGE_ACCENT_PRIMARY_VALUE = 0xFFFFAB40
 
 	/// The deep orange primary color and swatch.
 	///
@@ -1718,8 +1718,8 @@ object Colors {
 		700 to Color(0xFFE64A19),
 		800 to Color(0xFFD84315),
 		900 to Color(0xFFBF360C),
-	));
-	const val DEEP_ORANGE_PRIMARY_VALUE = 0xFFFF5722;
+	))
+	const val DEEP_ORANGE_PRIMARY_VALUE = 0xFFFF5722
 
 	/// The deep orange accent color and swatch.
 	///
@@ -1754,8 +1754,8 @@ object Colors {
 		200 to Color(DEEP_ORANGE_ACCENT_PRIMARY_VALUE),
 		400 to Color(0xFFFF3D00),
 		700 to Color(0xFFDD2C00),
-	));
-	const val DEEP_ORANGE_ACCENT_PRIMARY_VALUE = 0xFFFF6E40;
+	))
+	const val DEEP_ORANGE_ACCENT_PRIMARY_VALUE = 0xFFFF6E40
 
 	/// The brown primary color and swatch.
 	///
@@ -1793,8 +1793,8 @@ object Colors {
 		700 to Color(0xFF5D4037),
 		800 to Color(0xFF4E342E),
 		900 to Color(0xFF3E2723),
-	));
-	const val BROWN_PRIMARY_VALUE = 0xFF795548;
+	))
+	const val BROWN_PRIMARY_VALUE = 0xFF795548
 
 	/// The grey primary color and swatch.
 	///
@@ -1841,8 +1841,8 @@ object Colors {
 		800 to Color(0xFF424242),
 		850 to Color(0xFF303030), // only for background color in dark theme
 		900 to Color(0xFF212121),
-	));
-	const val GREY_PRIMARY_VALUE = 0xFF9E9E9E;
+	))
+	const val GREY_PRIMARY_VALUE = 0xFF9E9E9E
 
 	/// The blue-grey primary color and swatch.
 	///
@@ -1882,8 +1882,8 @@ object Colors {
 		700 to Color(0xFF455A64),
 		800 to Color(0xFF37474F),
 		900 to Color(0xFF263238),
-	));
-	const val BLUE_GREY_PRIMARY_VALUE = 0xFF607D8B;
+	))
+	const val BLUE_GREY_PRIMARY_VALUE = 0xFF607D8B
 
 	/// The Material Design primary color swatches, excluding grey.
 	val primaries = listOf(
