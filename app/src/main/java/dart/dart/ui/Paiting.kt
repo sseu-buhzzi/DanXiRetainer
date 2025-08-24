@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import kotlin.math.pow
 
 // See <https://www.w3.org/TR/WCAG20/#relativeluminancedef>
+@Suppress("UnusedReceiverParameter")
 private fun Color.linearizeColorComponent(component: Float): Float {
 	if (component <= 0.03928F) {
 		return component / 12.92F
