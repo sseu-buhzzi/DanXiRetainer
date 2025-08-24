@@ -125,12 +125,14 @@ private class FixedHeightAsyncDrawable(
 		innerBounds = null
 		constrainResultInFixedHeight(result, lastKnownCanvasWidth)
 		super.setResult(result)
+		constrainSelfInFixedHeight()
 	}
 
 	@Synchronized
 	override fun clearResult() {
 		innerBounds = null
 		super.clearResult()
+		constrainSelfInFixedHeight()
 	}
 
 	@Synchronized
@@ -173,5 +175,14 @@ private class FixedHeightAsyncDrawable(
 		innerBounds?.let { return }
 		innerBounds = Rect(result.bounds)
 		result.setBounds(0, 0, canvasWidth, canvasHeight)
+	}
+
+	private fun constrainSelfInFixedHeight() {
+		setBounds(
+			0,
+			0,
+			maxOf(bounds.width(), lastKnownCanvasWidth, 1),
+			canvasHeight,
+		)
 	}
 }
