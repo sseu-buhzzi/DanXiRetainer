@@ -41,6 +41,7 @@ android {
 
 dependencies {
 	implementation(libs.flexmark)
+	implementation(libs.markwon.core)
 	implementation(project(":markdowntext"))
 
 	implementation(libs.coil.compose)
