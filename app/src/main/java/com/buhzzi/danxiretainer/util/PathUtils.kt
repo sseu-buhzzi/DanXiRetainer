@@ -2,6 +2,7 @@ package com.buhzzi.danxiretainer.util
 
 import android.content.Context
 import android.net.Uri
+import io.ktor.util.sha1
 import java.nio.file.Path
 import kotlin.io.path.div
 
@@ -73,6 +74,7 @@ fun Context.httpResourcesDirPathOf(userId: Long) =
 fun Context.httpResourcePathOf(userId: Long, uri: Uri) = uri.scheme
 	.takeIf { it == "http" || it == "https" }
 	?.let { scheme ->
-		// Notice, it would lead to writing failure at caching `example.com/a/b`, `when example.com/a` exists
-		httpResourcesDirPathOf(userId) / scheme / uri.encodedSchemeSpecificPart.trim('/')
+		httpResourcesDirPathOf(userId) / scheme /
+			uri.encodedSchemeSpecificPart.trimStart('/') /
+			sha1(uri.schemeSpecificPart.toByteArray()).toHexString()
 	}
