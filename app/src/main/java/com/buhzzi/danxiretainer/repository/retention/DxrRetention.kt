@@ -2,11 +2,13 @@ package com.buhzzi.danxiretainer.repository.retention
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrRetentionRequest
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.forum.DxrFloorsFilterContext
 import com.buhzzi.danxiretainer.page.forum.DxrHolesFilterContext
+import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.retentionDeciderOrDefault
 import com.buhzzi.danxiretainer.util.dxrJson
@@ -38,6 +40,8 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.encodeToStream
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Request
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.nio.file.Path
@@ -325,6 +329,24 @@ object DxrRetention {
 	 */
 	fun loadFilterContextJson(path: Path): JsonObject {
 		return readRetainedJson(path) as? JsonObject ?: JsonObject(emptyMap())
+	}
+
+	fun cacheHttpResource(uri: Uri, cachedPath: Path) {
+		cachedPath.exists() && return
+		// TODO extract proxied requests as a single part.
+		val url = uri.toString().toHttpUrlOrNull() ?: return
+		val request = Request.Builder()
+			.url(url)
+			.get()
+			.build()
+		val response = DxrForumApi.client.newCall(request)
+			.execute()
+		response.isSuccessful || throw RuntimeException(response.body.string())
+		response.body.byteStream().buffered().use { `in` ->
+			cachedPath.createParentDirectories().outputStream().buffered().use { out ->
+				`in`.copyTo(out)
+			}
+		}
 	}
 
 	@OptIn(ExperimentalSerializationApi::class)

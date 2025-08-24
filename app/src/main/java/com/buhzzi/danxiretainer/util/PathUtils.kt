@@ -1,6 +1,7 @@
 package com.buhzzi.danxiretainer.util
 
 import android.content.Context
+import android.net.Uri
 import java.nio.file.Path
 import kotlin.io.path.div
 
@@ -65,3 +66,13 @@ fun Context.holeSessionStatePathOf(userId: Long, holeId: Long) =
 
 fun Context.holeSessionStateFilterPathOf(userId: Long, holeId: Long) =
 	holesSessionStatesDirPathOf(userId) / "$holeId-filter.txt"
+
+fun Context.httpResourcesDirPathOf(userId: Long) =
+	userDirPathOf(userId) / "http_resources"
+
+fun Context.httpResourcePathOf(userId: Long, uri: Uri) = uri.scheme
+	.takeIf { it == "http" || it == "https" }
+	?.let { scheme ->
+		// Notice, it would lead to writing failure at caching `example.com/a/b`, `when example.com/a` exists
+		httpResourcesDirPathOf(userId) / scheme / uri.encodedSchemeSpecificPart.trim('/')
+	}
