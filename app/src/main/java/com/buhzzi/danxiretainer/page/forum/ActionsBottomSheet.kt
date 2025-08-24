@@ -15,8 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -45,7 +44,7 @@ fun ClickCatchingActionBottomSheetItem(
 	click: suspend CoroutineScope.() -> Unit,
 	content: @Composable () -> Unit,
 ) {
-	val snackbarController = LocalSnackbarController.current
+	val snackbarProvider = LocalSnackbarProvider.current
 
 	val scope = rememberCoroutineScope()
 
@@ -54,7 +53,7 @@ fun ClickCatchingActionBottomSheetItem(
 		modifier = Modifier
 			.clickable {
 				scope.launch(Dispatchers.IO) {
-					runCatchingOnSnackbar(snackbarController) {
+					snackbarProvider.runShowing {
 						click()
 					}
 				}

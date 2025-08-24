@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.sp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.retension.RetentionPageContent
 import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.page.settings.SettingsPageContent
 import com.buhzzi.danxiretainer.page.settings.SettingsPageTopBar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
@@ -46,7 +45,7 @@ import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.LocalFilterContext
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
 import dart.package0.dan_xi.model.forum.OtTag
@@ -130,7 +129,7 @@ fun TagChip(
 	tag: OtTag,
 	highlighted: Boolean = false,
 ) {
-	val snackbarController = LocalSnackbarController.current
+	val snackbarProvider = LocalSnackbarProvider.current
 	val holesFilterContext = LocalFilterContext.current as? DxrHolesFilterContext
 
 	val systemInDarkTheme = isSystemInDarkTheme()
@@ -151,7 +150,7 @@ fun TagChip(
 		}
 		.clickable {
 			scope.launch(Dispatchers.IO) {
-				runCatchingOnSnackbar(snackbarController) {
+				snackbarProvider.runShowing {
 					val filterContext = holesFilterContext
 						?: DxrRetention.loadHolesFilterContext(DxrSettings.Models.userProfileNotNull.userIdNotNull)
 					filterContext.addTag(tag.nameNotNull)

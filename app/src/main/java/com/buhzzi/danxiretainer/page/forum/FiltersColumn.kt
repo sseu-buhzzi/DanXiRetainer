@@ -36,11 +36,10 @@ import androidx.compose.ui.unit.dp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.forum.DxrFilter
 import com.buhzzi.danxiretainer.model.forum.DxrFilterContext
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.util.LocalFilterContext
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import dart.package0.dan_xi.model.forum.OtDivision
 import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
@@ -169,7 +168,7 @@ private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division")
 
 	@Composable
 	override fun Content() {
-		val snackbarController = LocalSnackbarController.current
+		val snackbarProvider = LocalSnackbarProvider.current
 
 		Row(
 			modifier = Modifier
@@ -179,7 +178,7 @@ private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division")
 		) {
 			val divisions = remember { mutableStateListOf<OtDivision>() }
 			LaunchedEffect(Unit) {
-				runCatchingOnSnackbar(snackbarController) {
+				snackbarProvider.runShowing {
 					val loadedDivisions = DxrContent.loadDivisions()
 					divisions.clear()
 					divisions.addAll(loadedDivisions)

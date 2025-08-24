@@ -48,9 +48,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.buhzzi.danxiretainer.R
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.flutter.src.material.Colors
 import kotlinx.coroutines.Dispatchers
@@ -63,7 +62,7 @@ fun TagsSelector(
 	removeChip: (String) -> Unit,
 	addChip: (String) -> Unit,
 ) {
-	val snackbarController = LocalSnackbarController.current
+	val snackbarProvider = LocalSnackbarProvider.current
 
 	val scope = rememberCoroutineScope()
 	var newLabel by remember { mutableStateOf("") }
@@ -115,7 +114,7 @@ fun TagsSelector(
 			val suggestedTags = remember { mutableStateListOf<OtTag>() }
 			LaunchedEffect(newLabel) {
 				var newLabelExisted = false
-				val filteredTags = runCatchingOnSnackbar(snackbarController) {
+				val filteredTags = snackbarProvider.runShowing {
 					DxrContent.loadTags(true)
 						.filter {
 							newLabelExisted = newLabelExisted || it.name == newLabel
@@ -151,7 +150,7 @@ fun TagsSelector(
 						modifier = Modifier
 							.clickable {
 								scope.launch(Dispatchers.IO) {
-									runCatchingOnSnackbar(snackbarController) {
+									snackbarProvider.runShowing {
 										addChip(name)
 									}
 								}

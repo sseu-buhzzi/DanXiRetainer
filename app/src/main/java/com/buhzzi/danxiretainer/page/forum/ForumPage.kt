@@ -40,8 +40,6 @@ import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
-import com.buhzzi.danxiretainer.page.showExceptionOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
@@ -53,7 +51,7 @@ import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.LocalFilterContext
 import com.buhzzi.danxiretainer.util.LocalHoleSessionState
 import com.buhzzi.danxiretainer.util.LocalSessionState
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import com.buhzzi.danxiretainer.util.dxrJson
 import com.buhzzi.danxiretainer.util.holeSessionStatePathOf
 import com.buhzzi.danxiretainer.util.sessionStateCurrentPathOf
@@ -117,7 +115,7 @@ fun ForumPage() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForumPageTopBar() {
-	val snackbarController = LocalSnackbarController.current
+	val snackbarProvider = LocalSnackbarProvider.current
 	val sessionState = LocalSessionState.current
 
 	val scope = rememberCoroutineScope()
@@ -132,7 +130,7 @@ fun ForumPageTopBar() {
 			sessionState.holeId ?: return@TopAppBar
 			fun goBackToForumHolesPage() {
 				scope.launch(Dispatchers.IO) {
-					runCatchingOnSnackbar(snackbarController) {
+					snackbarProvider.runShowing {
 						val userId = DxrSettings.Models.userProfileNotNull.userIdNotNull
 						DxrRetention.updateSessionState(userId) {
 							copy(
@@ -258,7 +256,7 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 
 @Composable
 private fun HolesPager(userId: Long) {
-	val snackbarController = LocalSnackbarController.current
+	val snackbarProvider = LocalSnackbarProvider.current
 	val sessionState = LocalSessionState.current
 	val refreshTime = sessionState.refreshTime?.toDateTimeRfc3339() ?: OffsetDateTime.now()
 	val holesFilterContext = LocalFilterContext.current as DxrHolesFilterContext
@@ -269,7 +267,7 @@ private fun HolesPager(userId: Long) {
 
 	ChannelPager(
 		DxrContent.holesFlow(holesFilterContext)
-			.catch { exception -> showExceptionOnSnackbar(snackbarController, exception) },
+			.catch { exception -> snackbarProvider.showException(exception) },
 		dxrJson.encodeToString(buildJsonObject {
 			put("fun", "HolesPager")
 			put("contentSource", contentSource.name)
@@ -305,7 +303,7 @@ private fun HolesPager(userId: Long) {
 private fun FloorsPager(userId: Long) {
 	val context = LocalContext.current
 	val sessionState = LocalSessionState.current
-	val snackbarController = LocalSnackbarController.current
+	val snackbarProvider = LocalSnackbarProvider.current
 	val floorsFilterContext = LocalFilterContext.current as DxrFloorsFilterContext
 
 	val holeId = sessionState.holeId ?: return
@@ -324,7 +322,7 @@ private fun FloorsPager(userId: Long) {
 
 	ChannelPager(
 		DxrContent.floorsFlow(holeId, floorsFilterContext)
-			.catch { exception -> showExceptionOnSnackbar(snackbarController, exception) },
+			.catch { exception -> snackbarProvider.showException(exception) },
 		dxrJson.encodeToString(buildJsonObject {
 			put("fun", "FloorsPager")
 			put("contentSource", contentSource.name)

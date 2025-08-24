@@ -37,7 +37,7 @@ import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.util.JavaScriptExecutor
 import com.buhzzi.danxiretainer.util.LocalNavController
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 
 class MainActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,9 +103,9 @@ fun DxrScaffoldWrapper(
 	content: @Composable (PaddingValues) -> Unit,
 ) {
 	val snackbarHostState = remember { SnackbarHostState() }
-	val snackbarController = remember(snackbarHostState) { SnackbarController(snackbarHostState) }
+	val snackbarProvider = remember(snackbarHostState) { SnackbarProvider(snackbarHostState) }
 
-	CompositionLocalProvider(LocalSnackbarController provides snackbarController) {
+	CompositionLocalProvider(LocalSnackbarProvider provides snackbarProvider) {
 		Scaffold(
 			modifier = modifier
 				.safeDrawingPadding(),
