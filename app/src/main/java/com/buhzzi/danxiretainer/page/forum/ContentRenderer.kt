@@ -67,6 +67,8 @@ fun MarkdownContentRenderer(content: String) {
 			parsedContent,
 			modifier = Modifier
 				.fillMaxWidth(),
+			// optional TODO make height configurable in settings
+			imageHeight = 512,
 		)
 	}
 }
