@@ -75,6 +75,8 @@ fun MarkdownContentRenderer(content: String) {
 		value = formatter.render(document)
 	}
 	key(recomposingCounter) {
+		// optional TODO make height configurable in settings
+		val imageSpanFactory = remember { FixedHeightImageSpanFactory(512) }
 		MarkdownText(
 			parsedContent,
 			modifier = Modifier
@@ -83,8 +85,7 @@ fun MarkdownContentRenderer(content: String) {
 				placeholder(R.drawable.markdown_image_loading)
 				error(R.drawable.markdown_image_failed_to_load)
 			},
-			// optional TODO make height configurable in settings
-			imageSpanFactory = FixedHeightImageSpanFactory(512),
+			imageSpanFactory = imageSpanFactory,
 		)
 	}
 }
@@ -116,21 +117,34 @@ private class FixedHeightAsyncDrawable(
 	imageSizeResolver,
 	imageSize,
 ) {
+	// not a fix, it is only a more easily understandable implementation
+	private val canvasWidth
+		get() = lastKnownCanvasWidth.takeIf { it > 0 }
+			?.also { publicLastKnownCanvasWidth = it }
+			?: publicLastKnownCanvasWidth
+
 	private var innerBounds: Rect? = null
+
+	override fun setBounds(left: Int, top: Int, right: Int, bottom: Int) {
+		super.setBounds(
+			left,
+			top,
+			maxOf(right, left + canvasWidth),
+			bottom,
+		)
+	}
 
 	@Synchronized
 	override fun setResult(result: Drawable) {
 		innerBounds = null
-		constrainResultInFixedHeight(result, lastKnownCanvasWidth)
+		constrainResultInFixedHeight(result, canvasWidth)
 		super.setResult(result)
-		constrainSelfInFixedHeight()
 	}
 
 	@Synchronized
 	override fun clearResult() {
 		innerBounds = null
 		super.clearResult()
-		constrainSelfInFixedHeight()
 	}
 
 	@Synchronized
@@ -141,7 +155,7 @@ private class FixedHeightAsyncDrawable(
 
 	override fun draw(canvas: Canvas) {
 		result ?: return
-		val canvasWidth = lastKnownCanvasWidth
+		val canvasWidth = canvasWidth
 		val innerBounds = innerBounds?.takeIf {
 			canvasWidth > 0 && !it.isEmpty
 		} ?: run {
@@ -175,12 +189,7 @@ private class FixedHeightAsyncDrawable(
 		result.setBounds(0, 0, canvasWidth, canvasHeight)
 	}
 
-	private fun constrainSelfInFixedHeight() {
-		setBounds(
-			0,
-			0,
-			maxOf(bounds.width(), lastKnownCanvasWidth, 1),
-			canvasHeight,
-		)
+	companion object {
+		private var publicLastKnownCanvasWidth = 1
 	}
 }
