@@ -7,11 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
@@ -33,10 +28,6 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.buhzzi.danxiretainer.R
-import com.buhzzi.danxiretainer.page.retension.RetentionPageContent
-import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
-import com.buhzzi.danxiretainer.page.settings.SettingsPageContent
-import com.buhzzi.danxiretainer.page.settings.SettingsPageTopBar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
@@ -51,62 +42,6 @@ import dart.package0.dan_xi.util.withLightness
 import dart.package0.flutter.src.material.Colors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
-enum class ForumPages(
-	val icon: @Composable () -> Unit,
-	val label: @Composable () -> Unit,
-	val topBar: @Composable () -> Unit,
-	val content: @Composable (Modifier) -> Unit,
-) {
-	FORUM(
-		{
-			Icon(Icons.Default.Forum, null)
-		},
-		{
-			Text(stringResource(R.string.forum_label))
-		},
-		{
-			ForumPageTopBar()
-		},
-		{ modifier ->
-			ForumPageContent(
-				modifier = modifier,
-			)
-		},
-	),
-	RETENTION(
-		{
-			Icon(Icons.Default.Storage, null)
-		},
-		{
-			Text(stringResource(R.string.retention_label))
-		},
-		{
-			RetentionPageTopBar()
-		},
-		{ modifier ->
-			RetentionPageContent(
-				modifier = modifier,
-			)
-		},
-	),
-	SETTINGS(
-		{
-			Icon(Icons.Default.Settings, null)
-		},
-		{
-			Text(stringResource(R.string.settings_label))
-		},
-		{
-			SettingsPageTopBar()
-		},
-		{ modifier ->
-			SettingsPageContent(
-				modifier = modifier,
-			)
-		},
-	),
-}
 
 @Composable
 fun TagChipsRow(tags: List<OtTag>) {
