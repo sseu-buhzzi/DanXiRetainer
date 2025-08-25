@@ -37,6 +37,7 @@ import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefault
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefaultFlow
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.getOrElse
 import kotlinx.coroutines.channels.produce
@@ -336,7 +337,7 @@ private class ChannelPagerViewModel<T>(
 	// `produceIn` will not always act like that, it may preserve a buffer
 	private val itemsChannel =
 		@OptIn(ExperimentalCoroutinesApi::class)
-		viewModelScope.produce {
+		viewModelScope.produce(Dispatchers.IO) {
 			itemsFlow.collect {
 				send(it)
 			}

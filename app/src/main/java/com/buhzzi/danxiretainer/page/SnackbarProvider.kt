@@ -5,6 +5,8 @@ import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 class SnackbarProvider(
 	private val snackbarHostState: SnackbarHostState,
@@ -15,6 +17,18 @@ class SnackbarProvider(
 		mainScope.launch {
 			snackbarHostState.block()
 		}
+	}
+
+	/**
+	 * Time consuming operations are always with the need to show exceptions, so we provide this method in convenience of using
+	 * [withContext], [runCatching], [showException] at the same time.
+ 	 */
+	suspend fun <R> runShowingWithContext(
+		context: CoroutineContext,
+		lazyMessage: (Throwable) -> String = { it.toString() },
+		block: suspend () -> R,
+	) = withContext(context) {
+		runShowing(lazyMessage, block)
 	}
 
 	suspend fun <R> runShowing(

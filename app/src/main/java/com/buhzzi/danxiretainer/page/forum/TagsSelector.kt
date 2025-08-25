@@ -26,10 +26,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -111,10 +110,9 @@ fun TagsSelector(
 				}
 			}
 
-			val suggestedTags = remember { mutableStateListOf<OtTag>() }
-			LaunchedEffect(newLabel) {
+			val suggestedTags by produceState(emptyList(), newLabel) {
 				var newLabelExisted = false
-				val filteredTags = snackbarProvider.runShowing {
+				val filteredTags = snackbarProvider.runShowingWithContext(Dispatchers.IO) {
 					DxrContent.loadTags(true)
 						.filter {
 							newLabelExisted = newLabelExisted || it.name == newLabel
@@ -122,11 +120,12 @@ fun TagsSelector(
 						}
 						.toList()
 				}.getOrElse { emptyList() }
-				suggestedTags.clear()
-				if (!newLabelExisted) {
-					suggestedTags.add(OtTag(null, 0, newLabel))
+				value = buildList {
+					if (!newLabelExisted) {
+						add(OtTag(null, 0, newLabel))
+					}
+					addAll(filteredTags)
 				}
-				suggestedTags.addAll(filteredTags)
 			}
 			LazyColumn(
 				modifier = Modifier
