@@ -18,11 +18,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -186,9 +184,11 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 			val userId = userProfile.userId ?: return
 
 			val holeId = sessionState.holeId ?: run {
-				var holesFilterContextNullable by remember { mutableStateOf<DxrHolesFilterContext?>(null) }
-				LaunchedEffect(userId) {
-					holesFilterContextNullable = DxrRetention.loadHolesFilterContext(userId)
+				val holesFilterContextNullable by produceState<DxrHolesFilterContext?>(
+					null,
+					userId,
+				) {
+					value = DxrRetention.loadHolesFilterContext(userId)
 				}
 				DisposableEffect(userId, lifecycleOwner) {
 					val observer = LifecycleEventObserver { _, event ->
@@ -222,9 +222,11 @@ fun ForumPageContent(modifier: Modifier = Modifier) {
 			}
 			val holeSessionState = holeSessionStateNullable ?: return
 
-			var floorsFilterContextNullable by remember { mutableStateOf<DxrFloorsFilterContext?>(null) }
-			LaunchedEffect(userId, holeId) {
-				floorsFilterContextNullable = DxrRetention.loadFloorsFilterContext(userId, holeId)
+			val floorsFilterContextNullable by produceState<DxrFloorsFilterContext?>(
+				null,
+				userId, holeId,
+			) {
+				value = DxrRetention.loadFloorsFilterContext(userId, holeId)
 			}
 			DisposableEffect(userId, holeId, lifecycleOwner) {
 				val observer = LifecycleEventObserver { _, event ->
