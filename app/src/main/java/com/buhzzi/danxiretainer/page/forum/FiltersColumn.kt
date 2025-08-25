@@ -34,15 +34,16 @@ import androidx.compose.ui.unit.dp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.forum.DxrFilter
 import com.buhzzi.danxiretainer.model.forum.DxrFilterContext
+import com.buhzzi.danxiretainer.model.forum.DxrLocatedFloor
 import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
+import com.buhzzi.danxiretainer.util.JavaScriptExecutor
 import com.buhzzi.danxiretainer.util.LocalFilterContext
 import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
-import dart.package0.dan_xi.model.forum.OtFloor
+import com.buhzzi.danxiretainer.util.dxrJson
 import dart.package0.dan_xi.model.forum.OtHole
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
@@ -284,13 +285,17 @@ private class DxrContentFilter(initialJson: JsonObject) : DxrFilter("content") {
 
 	override fun <T> predicate(item: T) = when (item) {
 		is OtHole -> item.floors?.firstFloor?.content?.let { regex?.find(it) } != null
-		is OtFloor -> item.content?.let { regex?.find(it) } != null
+		is DxrLocatedFloor -> item.floor.content?.let { regex?.find(it) } != null
 		else -> false
 	}
 }
 
 private class DxrEvalFilter(initialJson: JsonObject) : DxrFilter("eval") {
-	override val json get() = JsonNull
+	override val json get() = JsonPrimitive(filterJavaScript)
+
+	private var filterJavaScript by (initialJson[key] as? JsonPrimitive)
+		?.contentOrNull
+		.let { mutableStateOf(it ?: "") }
 
 	@Composable
 	override fun ToggleChipContent() {
@@ -299,10 +304,33 @@ private class DxrEvalFilter(initialJson: JsonObject) : DxrFilter("eval") {
 
 	@Composable
 	override fun Content() {
-		// TODO("Not yet implemented")
+		TextField(
+			filterJavaScript,
+			{ filterJavaScript = it },
+			modifier = Modifier
+				.fillMaxWidth(),
+			label = {
+				Text(stringResource(R.string.filters_eval_java_script))
+			},
+		)
 	}
 
-	override fun <T> predicate(item: T) =
-		// TODO("Not yet implemented")
-		true
+	override fun <T> predicate(item: T) = filterJavaScript == "" || when (item) {
+		is OtHole -> {
+			val holeJsonString = dxrJson.encodeToString<OtHole>(item)
+			JavaScriptExecutor.execute("(hole => JSON.stringify(Boolean($filterJavaScript)))($holeJsonString);")
+		}
+
+		is DxrLocatedFloor -> {
+			val (floor, hole, floorIndex) = item
+			val floorJsonString = dxrJson.encodeToString(floor)
+			val holeJsonString = dxrJson.encodeToString(hole)
+			val floorIndexJsonString = dxrJson.encodeToString(floorIndex)
+			JavaScriptExecutor.execute(
+				"((floor, hole, index) => JSON.stringify(Boolean($filterJavaScript)))($floorJsonString, $holeJsonString, $floorIndexJsonString);",
+			)
+		}
+
+		else -> JavaScriptExecutor.execute(filterJavaScript)
+	} == "true"
 }

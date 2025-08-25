@@ -10,7 +10,7 @@ class DxrRetentionDecider(
 ) {
 	suspend fun tryRetain(request: DxrRetentionRequest) = withContext(Dispatchers.IO) {
 		val decideResult = JavaScriptExecutor.execute(
-			"(request => JSON.stringify($decideJavaScript))(${request.jsonString});",
+			"(request => JSON.stringify(Boolean($decideJavaScript)))(${request.jsonString});",
 		)
 		if (decideResult == "true") {
 			DxrRetention.writeRetainedJson(request.path, request.retention)
