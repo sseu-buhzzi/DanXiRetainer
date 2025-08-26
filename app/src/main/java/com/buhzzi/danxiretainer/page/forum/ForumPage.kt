@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +41,10 @@ import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.settings.DxrHoleSessionState
 import com.buhzzi.danxiretainer.model.settings.DxrSessionState
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
+import com.buhzzi.danxiretainer.page.retension.RetentionPageContent
+import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
+import com.buhzzi.danxiretainer.page.settings.SettingsPageContent
+import com.buhzzi.danxiretainer.page.settings.SettingsPageTopBar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
@@ -62,6 +69,62 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.OffsetDateTime
+
+enum class ForumPages(
+	val icon: @Composable () -> Unit,
+	val label: @Composable () -> Unit,
+	val topBar: @Composable () -> Unit,
+	val content: @Composable (Modifier) -> Unit,
+) {
+	FORUM(
+		{
+			Icon(Icons.Default.Forum, null)
+		},
+		{
+			Text(stringResource(R.string.forum_label))
+		},
+		{
+			ForumPageTopBar()
+		},
+		{ modifier ->
+			ForumPageContent(
+				modifier = modifier,
+			)
+		},
+	),
+	RETENTION(
+		{
+			Icon(Icons.Default.Storage, null)
+		},
+		{
+			Text(stringResource(R.string.retention_label))
+		},
+		{
+			RetentionPageTopBar()
+		},
+		{ modifier ->
+			RetentionPageContent(
+				modifier = modifier,
+			)
+		},
+	),
+	SETTINGS(
+		{
+			Icon(Icons.Default.Settings, null)
+		},
+		{
+			Text(stringResource(R.string.settings_label))
+		},
+		{
+			SettingsPageTopBar()
+		},
+		{ modifier ->
+			SettingsPageContent(
+				modifier = modifier,
+			)
+		},
+	),
+}
 
 @Composable
 fun ForumPage() {
