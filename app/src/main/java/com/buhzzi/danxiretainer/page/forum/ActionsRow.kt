@@ -29,9 +29,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import dart.package0.dan_xi.model.forum.OtFloor
 import kotlinx.coroutines.launch
 
@@ -108,7 +107,7 @@ private fun MultiChoiceSegmentedButtonRowScope.LikeActionSegmentedButton(
 	iconSize: Dp = ActionSegmentedButtonDefaults.iconSize,
 	labelSize: TextUnit = ActionSegmentedButtonDefaults.labelSize,
 ) {
-	val snackbarController = LocalSnackbarController.current
+	val snackbarProvider = LocalSnackbarProvider.current
 
 	val scope = rememberCoroutineScope()
 
@@ -116,7 +115,7 @@ private fun MultiChoiceSegmentedButtonRowScope.LikeActionSegmentedButton(
 		likeState.liked,
 		{
 			scope.launch {
-				runCatchingOnSnackbar(snackbarController) {
+				snackbarProvider.runShowing {
 					val updatedFloor = DxrForumApi.likeFloor(floorId, likeState.inverseValue)
 					likeDislikeState.updateWith(updatedFloor)
 				}

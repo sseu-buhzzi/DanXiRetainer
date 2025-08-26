@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.sp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.DxrDestination
 import com.buhzzi.danxiretainer.page.DxrScaffoldWrapper
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.accessJwt
@@ -61,7 +60,7 @@ import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwt
 import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwtOrDefault
 import com.buhzzi.danxiretainer.repository.settings.shouldLoadUserAfterJwtOrDefaultFlow
 import com.buhzzi.danxiretainer.repository.settings.userProfile
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import com.buhzzi.danxiretainer.util.androidKeyStoreDecrypt
 import com.buhzzi.danxiretainer.util.androidKeyStoreEncrypt
 import com.buhzzi.danxiretainer.util.getJwtExpiration
@@ -85,7 +84,7 @@ fun SettingsAccountPage() {
 			SettingsSubpageTopBar("${stringResource(R.string.settings_label)} - ${stringResource(R.string.account_label)}")
 		}
 	) { contentPadding ->
-		val snackbarController = LocalSnackbarController.current
+		val snackbarProvider = LocalSnackbarProvider.current
 
 		Column(
 			modifier = Modifier
@@ -185,7 +184,7 @@ fun SettingsAccountPage() {
 				Button(
 					{
 						scope.launch(Dispatchers.IO) {
-							runCatchingOnSnackbar(snackbarController) {
+							snackbarProvider.runShowing {
 								val jwToken = DxrForumApi.authLogIn(
 									checkNotNull(email) { "No email" },
 									androidKeyStoreDecrypt(checkNotNull(passwordCt) { "No password" }.toBytesBase64()).toStringUtf8(),
@@ -202,7 +201,7 @@ fun SettingsAccountPage() {
 				Button(
 					{
 						scope.launch(Dispatchers.IO) {
-							runCatchingOnSnackbar(snackbarController) {
+							snackbarProvider.runShowing {
 								val jwToken = DxrForumApi.authRefresh(checkNotNull(refreshJwt) { "No refresh JWT" })
 								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt == true)
 							}
@@ -225,7 +224,7 @@ fun SettingsAccountPage() {
 					Button(
 						{
 							scope.launch(Dispatchers.IO) {
-								runCatchingOnSnackbar(snackbarController) {
+								snackbarProvider.runShowing {
 									val user = DxrForumApi.getUserProfile()
 									DxrSettings.Models.userProfile = user
 								}

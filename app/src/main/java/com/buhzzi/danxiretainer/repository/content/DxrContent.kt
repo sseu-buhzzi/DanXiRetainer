@@ -5,9 +5,8 @@ import com.buhzzi.danxiretainer.page.forum.DxrFloorsFilterContext
 import com.buhzzi.danxiretainer.page.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.page.settings.handleJwtAndOptionallyFetchUserProfile
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
-import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi.authLogIn
-import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi.authRefresh
 import com.buhzzi.danxiretainer.repository.content.DxrContent.floorsFlow
+import com.buhzzi.danxiretainer.repository.content.DxrContent.holesFlow
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.accessJwt
@@ -23,18 +22,16 @@ import com.buhzzi.danxiretainer.util.toBytesBase64
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
 import com.buhzzi.danxiretainer.util.toStringUtf8
 import dart.package0.dan_xi.model.forum.OtDivision
+import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.dan_xi.provider.SortOrder
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -48,9 +45,9 @@ object DxrContent {
 
 		if (accessJwt?.let { judgeJwtValid(it) } != true) {
 			val jwToken = if (refreshJwt?.let { judgeJwtValid(it) } == true) {
-				authRefresh(refreshJwt)
+				DxrForumApi.authRefresh(refreshJwt)
 			} else {
-				authLogIn(
+				DxrForumApi.authLogIn(
 					checkNotNull(DxrSettings.Prefs.email),
 					androidKeyStoreDecrypt(checkNotNull(DxrSettings.Prefs.passwordCt).toBytesBase64()).toStringUtf8(),
 				)
@@ -59,9 +56,12 @@ object DxrContent {
 		}
 	}
 
-	suspend fun loadHole(holeId: Long) = withContext(Dispatchers.IO) {
-		when (DxrSettings.Models.contentSourceOrDefault) {
-			DxrContentSource.FORUM_API -> DxrForumApi.loadHoleById(holeId)
+	fun loadHole(holeId: Long): OtHole {
+		return when (DxrSettings.Models.contentSourceOrDefault) {
+			DxrContentSource.FORUM_API -> {
+				ensureAuth()
+				DxrForumApi.loadHoleById(holeId)
+			}
 			DxrContentSource.RETENTION -> {
 				val userProfile = DxrSettings.Models.userProfileNotNull
 				val userId = userProfile.userIdNotNull
@@ -72,9 +72,12 @@ object DxrContent {
 		}
 	}
 
-	suspend fun loadFloor(floorId: Long) = withContext(Dispatchers.IO) {
-		when (DxrSettings.Models.contentSourceOrDefault) {
-			DxrContentSource.FORUM_API -> DxrForumApi.loadFloorById(floorId)
+	fun loadFloor(floorId: Long): OtFloor {
+		return when (DxrSettings.Models.contentSourceOrDefault) {
+			DxrContentSource.FORUM_API -> {
+				ensureAuth()
+				DxrForumApi.loadFloorById(floorId)
+			}
 			DxrContentSource.RETENTION -> {
 				val userProfile = DxrSettings.Models.userProfileNotNull
 				val userId = userProfile.userIdNotNull
@@ -186,7 +189,7 @@ object DxrContent {
 			holes.size < loadLength && break
 			startTime = holes.last().getSortingDateTime(sortOrder)
 		}
-	}.flowOn(Dispatchers.IO)
+	}
 
 	fun retentionHolesFlow(
 		holesFilterContext: DxrHolesFilterContext,
@@ -200,9 +203,11 @@ object DxrContent {
 		}
 			.filter { hole -> holesFilterContext.predicate(hole) }
 			.asFlow()
-			.flowOn(Dispatchers.IO)
 	}
 
+	/**
+	 * For the reason why it needs [floorsFilterContext], see [holesFlow].
+	 */
 	fun floorsFlow(
 		holeId: Long,
 		floorsFilterContext: DxrFloorsFilterContext,
@@ -243,6 +248,8 @@ object DxrContent {
 		val loadLength = 50
 
 		do {
+			// We cannot ensure it is always in 30 minutes after last authentication. As it is in a flow, users may leave their
+			// phones away and come back some time.
 			ensureAuth()
 			val floors = DxrForumApi.loadFloors(
 				hole,
@@ -259,7 +266,7 @@ object DxrContent {
 				}
 			startFloorIndex += floors.size
 		} while (floors.size >= loadLength)
-	}.flowOn(Dispatchers.IO)
+	}
 
 	fun retentionFloorsFlow(
 		holeId: Long,
@@ -274,7 +281,7 @@ object DxrContent {
 			.forEachIndexed { index, floor ->
 				emit(Triple(floor, hole, index))
 			}
-	}.flowOn(Dispatchers.IO)
+	}
 
 	fun forumApiFloorsReversedFlow(
 		holeId: Long,
@@ -287,6 +294,8 @@ object DxrContent {
 		val loadLength = 50
 
 		do {
+			// We cannot ensure it is always in 30 minutes after last authentication. As it is in a flow, users may leave their
+			// phones away and come back some time.
 			ensureAuth()
 			val startFloorIndex = (endFloorIndex - loadLength).coerceAtLeast(0)
 			val floors = DxrForumApi.loadFloors(
@@ -301,7 +310,7 @@ object DxrContent {
 				}
 			endFloorIndex = startFloorIndex
 		} while (endFloorIndex > 0)
-	}.flowOn(Dispatchers.IO)
+	}
 
 	fun retentionFloorsReversedFlow(
 		holeId: Long,
@@ -316,14 +325,14 @@ object DxrContent {
 			.forEachIndexed { index, floor ->
 				emit(Triple(floor, hole, index))
 			}
-	}.flowOn(Dispatchers.IO)
+	}
 
 	/// Cached OTDivisions.
 	///
 	private var divisionsCache: List<OtDivision>? = null
 
-	suspend fun loadDivisions() = withContext(Dispatchers.IO) {
-		divisionsCache ?: run {
+	fun loadDivisions(): List<OtDivision> {
+		return divisionsCache ?: run {
 			ensureAuth()
 			DxrForumApi.loadDivisions().also { divisionsCache = it }
 		}
@@ -333,8 +342,8 @@ object DxrContent {
 	private var tagsCache: List<OtTag>? = null
 
 	// TODO load from retention
-	suspend fun loadTags(usingCache: Boolean) = withContext(Dispatchers.IO) {
-		tagsCache?.takeIf { usingCache } ?: run {
+	fun loadTags(usingCache: Boolean): List<OtTag> {
+		return tagsCache?.takeIf { usingCache } ?: run {
 			ensureAuth()
 			DxrForumApi.loadTags().also { tagsCache = it }
 		}

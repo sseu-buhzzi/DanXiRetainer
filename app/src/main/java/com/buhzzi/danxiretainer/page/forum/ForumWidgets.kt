@@ -18,12 +18,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -38,7 +35,6 @@ import androidx.compose.ui.unit.sp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.page.retension.RetentionPageContent
 import com.buhzzi.danxiretainer.page.retension.RetentionPageTopBar
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.page.settings.SettingsPageContent
 import com.buhzzi.danxiretainer.page.settings.SettingsPageTopBar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
@@ -46,7 +42,7 @@ import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.LocalFilterContext
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
 import dart.package0.dan_xi.model.forum.OtTag
@@ -130,7 +126,7 @@ fun TagChip(
 	tag: OtTag,
 	highlighted: Boolean = false,
 ) {
-	val snackbarController = LocalSnackbarController.current
+	val snackbarProvider = LocalSnackbarProvider.current
 	val holesFilterContext = LocalFilterContext.current as? DxrHolesFilterContext
 
 	val systemInDarkTheme = isSystemInDarkTheme()
@@ -151,7 +147,7 @@ fun TagChip(
 		}
 		.clickable {
 			scope.launch(Dispatchers.IO) {
-				runCatchingOnSnackbar(snackbarController) {
+				snackbarProvider.runShowing {
 					val filterContext = holesFilterContext
 						?: DxrRetention.loadHolesFilterContext(DxrSettings.Models.userProfileNotNull.userIdNotNull)
 					filterContext.addTag(tag.nameNotNull)
@@ -197,6 +193,7 @@ fun AnonynameRow(
 			.padding(4.dp),
 		content = {
 			val systemInDarkTheme = isSystemInDarkTheme()
+			val snackbarProvider = LocalSnackbarProvider.current
 			val anonyname = floor.anonyname ?: "?"
 			val anonynameColor = anonyname.hashColor(systemInDarkTheme) ?: Color.Red
 			VerticalDivider(
@@ -237,10 +234,11 @@ fun AnonynameRow(
 				if (floorIndex == 0 && hole.locked == true) {
 					AnonynameDecorationChip(stringResource(R.string.hole_locked), MaterialTheme.colorScheme.primary)
 				}
-				var isPinned by remember { mutableStateOf(false) }
-				LaunchedEffect(Unit) {
-					isPinned = DxrContent.loadDivisions().any { division ->
-						division.pinned?.any { it == hole } == true
+				val isPinned by produceState(false) {
+					snackbarProvider.runShowingWithContext(Dispatchers.IO) {
+						value = DxrContent.loadDivisions().any { division ->
+							division.pinned?.any { it == hole } == true
+						}
 					}
 				}
 				// Show pinned tag if this hole is in the pinned list and this is the first floor

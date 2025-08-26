@@ -22,12 +22,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateSetOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,14 +34,13 @@ import androidx.compose.ui.unit.dp
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.forum.DxrFilter
 import com.buhzzi.danxiretainer.model.forum.DxrFilterContext
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.util.LocalFilterContext
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
-import dart.package0.dan_xi.model.forum.OtDivision
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import dart.package0.dan_xi.model.forum.OtFloor
 import dart.package0.dan_xi.model.forum.OtHole
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -169,7 +166,7 @@ private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division")
 
 	@Composable
 	override fun Content() {
-		val snackbarController = LocalSnackbarController.current
+		val snackbarProvider = LocalSnackbarProvider.current
 
 		Row(
 			modifier = Modifier
@@ -177,12 +174,9 @@ private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division")
 				.horizontalScroll(rememberScrollState()),
 			horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
 		) {
-			val divisions = remember { mutableStateListOf<OtDivision>() }
-			LaunchedEffect(Unit) {
-				runCatchingOnSnackbar(snackbarController) {
-					val loadedDivisions = DxrContent.loadDivisions()
-					divisions.clear()
-					divisions.addAll(loadedDivisions)
+			val divisions by produceState(emptyList()) {
+				snackbarProvider.runShowingWithContext(Dispatchers.IO) {
+					value = DxrContent.loadDivisions()
 				}
 			}
 			divisions.forEach { division ->

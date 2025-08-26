@@ -26,10 +26,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -48,9 +47,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.buhzzi.danxiretainer.R
-import com.buhzzi.danxiretainer.page.runCatchingOnSnackbar
 import com.buhzzi.danxiretainer.repository.content.DxrContent
-import com.buhzzi.danxiretainer.util.LocalSnackbarController
+import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import dart.package0.dan_xi.model.forum.OtTag
 import dart.package0.flutter.src.material.Colors
 import kotlinx.coroutines.Dispatchers
@@ -63,7 +61,7 @@ fun TagsSelector(
 	removeChip: (String) -> Unit,
 	addChip: (String) -> Unit,
 ) {
-	val snackbarController = LocalSnackbarController.current
+	val snackbarProvider = LocalSnackbarProvider.current
 
 	val scope = rememberCoroutineScope()
 	var newLabel by remember { mutableStateOf("") }
@@ -112,10 +110,9 @@ fun TagsSelector(
 				}
 			}
 
-			val suggestedTags = remember { mutableStateListOf<OtTag>() }
-			LaunchedEffect(newLabel) {
+			val suggestedTags by produceState(emptyList(), newLabel) {
 				var newLabelExisted = false
-				val filteredTags = runCatchingOnSnackbar(snackbarController) {
+				val filteredTags = snackbarProvider.runShowingWithContext(Dispatchers.IO) {
 					DxrContent.loadTags(true)
 						.filter {
 							newLabelExisted = newLabelExisted || it.name == newLabel
@@ -123,11 +120,12 @@ fun TagsSelector(
 						}
 						.toList()
 				}.getOrElse { emptyList() }
-				suggestedTags.clear()
-				if (!newLabelExisted) {
-					suggestedTags.add(OtTag(null, 0, newLabel))
+				value = buildList {
+					if (!newLabelExisted) {
+						add(OtTag(null, 0, newLabel))
+					}
+					addAll(filteredTags)
 				}
-				suggestedTags.addAll(filteredTags)
 			}
 			LazyColumn(
 				modifier = Modifier
@@ -151,7 +149,7 @@ fun TagsSelector(
 						modifier = Modifier
 							.clickable {
 								scope.launch(Dispatchers.IO) {
-									runCatchingOnSnackbar(snackbarController) {
+									snackbarProvider.runShowing {
 										addChip(name)
 									}
 								}
