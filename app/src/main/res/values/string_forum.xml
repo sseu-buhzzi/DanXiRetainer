@@ -37,8 +37,9 @@
 
 	<string name="filters_division">分區</string>
 	<string name="filters_tag">標籤</string>
-	<string name="filters_content">內容</string>
-	<string name="filters_eval">計算</string>
-	<string name="filters_content_regex">用于篩選內容的表達式</string>
 	<string name="filters_select_tags">選擇標籤</string>
+	<string name="filters_content">內容</string>
+	<string name="filters_content_regex">用于正則篩選內容的表達式</string>
+	<string name="filters_eval">計算</string>
+	<string name="filters_eval_java_script">用于求値篩選的JavaScript</string>
 </resources>

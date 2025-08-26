@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.buhzzi.danxiretainer.R
+import com.buhzzi.danxiretainer.model.forum.DxrLocatedFloor
 import com.buhzzi.danxiretainer.repository.content.DxrContent
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
@@ -87,13 +88,14 @@ fun RowScope.FloorsTopBarActions(holeId: Long) {
 }
 
 @Composable
-fun FloorCard(floor: OtFloor, hole: OtHole, floorIndex: Int) {
+fun FloorCard(locatedFloor: DxrLocatedFloor) {
 	val context = LocalContext.current
 
 	var bottomSheetEvent by remember { mutableStateOf<FloorsBottomSheetEvent?>(null) }
 
 	bottomSheetEvent?.BottomSheet { bottomSheetEvent = it }
 
+	val (floor, hole, floorIndex) = locatedFloor
 	Surface(
 		modifier = Modifier
 			.padding(4.dp)

@@ -415,7 +415,7 @@ private fun FloorsPager(userId: Long) {
 		},
 		modifier = Modifier
 			.fillMaxSize(),
-	) { (floor, hole, index) ->
-		FloorCard(floor, hole, index)
+	) { locatedFloor ->
+		FloorCard(locatedFloor)
 	}
 }
