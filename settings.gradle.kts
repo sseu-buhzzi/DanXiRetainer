@@ -1,8 +1,5 @@
 import java.net.URI
 
-include(":markdowntext")
-
-
 pluginManagement {
 	repositories {
 		google {

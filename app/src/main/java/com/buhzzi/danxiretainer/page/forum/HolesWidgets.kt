@@ -49,6 +49,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 
+@Suppress("UnusedReceiverParameter")
 @Composable
 fun RowScope.HolesTopBarActions() {
 	// TODO view switching

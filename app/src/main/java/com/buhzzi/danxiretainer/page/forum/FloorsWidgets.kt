@@ -48,6 +48,7 @@ import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
+@Suppress("UnusedReceiverParameter")
 @Composable
 fun RowScope.FloorsTopBarActions(holeId: Long) {
 	val snackbarProvider = LocalSnackbarProvider.current

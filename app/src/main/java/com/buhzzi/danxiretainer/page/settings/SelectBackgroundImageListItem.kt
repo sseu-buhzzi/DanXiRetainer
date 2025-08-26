@@ -176,6 +176,7 @@ private fun Context.addBackgroundImage(bitmap: Bitmap) {
 	DxrSettings.Models.backgroundImagePath = targetPath
 }
 
+@Suppress("UnusedReceiverParameter")
 private fun Context.removeBackgroundImage() {
 	val backgroundImagePath = DxrSettings.Models.backgroundImagePath ?: return
 	backgroundImagePath.deleteIfExists()

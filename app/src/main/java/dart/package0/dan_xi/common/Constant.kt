@@ -59,7 +59,7 @@ object Constant {
 	const val FORUM_REGISTER_URL = "https://auth.fduhole.com/register"
 
 	/// The default start date of a semester.
-	val defaultSemesterStartDate = OffsetDateTime.of(2023, 2, 20, 0, 0, 0, 0, ZoneOffset.ofHours(8))
+	val defaultSemesterStartDate: OffsetDateTime = OffsetDateTime.of(2023, 2, 20, 0, 0, 0, 0, ZoneOffset.ofHours(8))
 
 	const val UIS_URL = "https://uis.fudan.edu.cn/authserver/login"
 	const val UIS_HOST = "uis.fudan.edu.cn"

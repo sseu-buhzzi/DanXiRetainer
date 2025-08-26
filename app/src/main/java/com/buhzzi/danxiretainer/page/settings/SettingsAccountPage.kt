@@ -189,7 +189,7 @@ fun SettingsAccountPage() {
 									checkNotNull(email) { "No email" },
 									androidKeyStoreDecrypt(checkNotNull(passwordCt) { "No password" }.toBytesBase64()).toStringUtf8(),
 								)
-								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt == true)
+								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt)
 							}
 						}
 					},
@@ -203,7 +203,7 @@ fun SettingsAccountPage() {
 						scope.launch(Dispatchers.IO) {
 							snackbarProvider.runShowing {
 								val jwToken = DxrForumApi.authRefresh(checkNotNull(refreshJwt) { "No refresh JWT" })
-								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt == true)
+								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt)
 							}
 						}
 					},
@@ -213,7 +213,7 @@ fun SettingsAccountPage() {
 					Text(stringResource(R.string.refresh_label))
 				}
 				AnimatedVisibility(
-					shouldLoadUserAfterJwt != true,
+					!shouldLoadUserAfterJwt,
 					enter = slideInHorizontally(
 						initialOffsetX = { it },
 					) + expandHorizontally(),
@@ -287,7 +287,7 @@ fun SettingsAccountPage() {
 			}
 
 			ToggleListItem(
-				shouldLoadUserAfterJwt == true,
+				shouldLoadUserAfterJwt,
 				stringResource(R.string.load_user_after_jwt_label),
 				stringResource(R.string.load_user_after_jwt_desc_label),
 				Icons.Default.PersonSearch,
