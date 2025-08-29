@@ -1,3 +1,10 @@
 <resources>
 	<string name="retention_label">畱檔</string>
+
+	<string name="user_not_logged_in">用戶未登入</string>
+	<string name="user_profile_invalid">用戶個人資料有誤</string>
+
+	<string name="go_to_target_position">前往目的位置</string>
+	<string name="cannot_go_to_target_position">無法前往目的位置，其在應用內部存儲之外</string>
+	<string name="cannot_read_target_position">無法讀取目的位置</string>
 </resources>
