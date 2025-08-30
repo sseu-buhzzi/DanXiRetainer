@@ -57,7 +57,7 @@ fun Context.sessionStateCurrentPathOf(userId: Long) =
 	sessionStateDirPathOf(userId) / "current.json"
 
 fun Context.sessionStateFilterPathOf(userId: Long) =
-	sessionStateDirPathOf(userId) / "current-filter.txt"
+	sessionStateDirPathOf(userId) / "current-filter.json"
 
 fun Context.holesSessionStatesDirPathOf(userId: Long) =
 	sessionStateDirPathOf(userId) / "holes"
@@ -66,7 +66,7 @@ fun Context.holeSessionStatePathOf(userId: Long, holeId: Long) =
 	holesSessionStatesDirPathOf(userId) / "$holeId.json"
 
 fun Context.holeSessionStateFilterPathOf(userId: Long, holeId: Long) =
-	holesSessionStatesDirPathOf(userId) / "$holeId-filter.txt"
+	holesSessionStatesDirPathOf(userId) / "$holeId-filter.json"
 
 fun Context.httpResourcesDirPathOf(userId: Long) =
 	userDirPathOf(userId) / "http_resources"
