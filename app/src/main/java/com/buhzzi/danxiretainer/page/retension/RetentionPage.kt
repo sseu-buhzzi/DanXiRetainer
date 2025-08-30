@@ -153,20 +153,26 @@ fun RetentionPageContent(modifier: Modifier = Modifier) {
 			}
 		}
 		val attributes = remember(userDirPath, path) {
-			(userDirPath / path).readAttributes<BasicFileAttributes>(LinkOption.NOFOLLOW_LINKS)
+			snackbarProvider.runShowing {
+				(userDirPath / path).readAttributes<BasicFileAttributes>(LinkOption.NOFOLLOW_LINKS)
+			}.getOrElse {
+				viewModel.path = path.parent
+				null
+			}
 		}
 		when {
-			attributes.isSymbolicLink ->
-				SymbolicLinkScreen(userDirPath / path) { viewModel.path = it }
+			attributes?.isSymbolicLink == true -> SymbolicLinkScreen(userDirPath / path) {
+				viewModel.path = it
+			}
 
-			attributes.isDirectory ->
-				DirectoryScreen(userDirPath / path) { viewModel.path = it }
+			attributes?.isDirectory == true -> DirectoryScreen(userDirPath / path) {
+				viewModel.path = it
+			}
 
-			attributes.isRegularFile ->
-				RegularFileScreen(userDirPath / path)
+			attributes?.isRegularFile == true -> RegularFileScreen(userDirPath / path)
 
-			else ->
-				Unit
+			// TODO implement it, like a question or something
+			else -> Unit
 		}
 	}
 }
