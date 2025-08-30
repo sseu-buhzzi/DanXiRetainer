@@ -184,7 +184,7 @@ fun SettingsAccountPage() {
 				Button(
 					{
 						scope.launch(Dispatchers.IO) {
-							snackbarProvider.runShowing {
+							snackbarProvider.runShowingSuspend {
 								val jwToken = DxrForumApi.authLogIn(
 									checkNotNull(email) { "No email" },
 									androidKeyStoreDecrypt(checkNotNull(passwordCt) { "No password" }.toBytesBase64()).toStringUtf8(),
@@ -201,7 +201,7 @@ fun SettingsAccountPage() {
 				Button(
 					{
 						scope.launch(Dispatchers.IO) {
-							snackbarProvider.runShowing {
+							snackbarProvider.runShowingSuspend {
 								val jwToken = DxrForumApi.authRefresh(checkNotNull(refreshJwt) { "No refresh JWT" })
 								handleJwtAndOptionallyFetchUserProfile(jwToken, shouldLoadUserAfterJwt)
 							}
@@ -224,7 +224,7 @@ fun SettingsAccountPage() {
 					Button(
 						{
 							scope.launch(Dispatchers.IO) {
-								snackbarProvider.runShowing {
+								snackbarProvider.runShowingSuspend {
 									val user = DxrForumApi.getUserProfile()
 									DxrSettings.Models.userProfile = user
 								}

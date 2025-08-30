@@ -28,12 +28,21 @@ class SnackbarProvider(
 		lazyMessage: (Throwable) -> String = { it.toString() },
 		block: suspend () -> R,
 	) = withContext(context) {
-		runShowing(lazyMessage, block)
+		runShowingSuspend(lazyMessage, block)
 	}
 
-	suspend fun <R> runShowing(
+	suspend fun <R> runShowingSuspend(
 		lazyMessage: (Throwable) -> String = { it.toString() },
 		block: suspend () -> R,
+	) = runCatching {
+		block()
+	}.onFailure { exception ->
+		showException(exception, lazyMessage)
+	}
+
+	fun <R> runShowing(
+		lazyMessage: (Throwable) -> String = { it.toString() },
+		block: () -> R,
 	) = runCatching {
 		block()
 	}.onFailure { exception ->

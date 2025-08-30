@@ -61,7 +61,7 @@ fun RowScope.FloorsTopBarActions(holeId: Long) {
 	IconButton(
 		{
 			scope.launch(Dispatchers.IO) {
-				snackbarProvider.runShowing {
+				snackbarProvider.runShowingSuspend {
 					pagerSharedEventViewModel.refreshTrigger.emit(Unit)
 				}
 			}
@@ -77,7 +77,7 @@ fun RowScope.FloorsTopBarActions(holeId: Long) {
 	IconButton(
 		{
 			scope.launch(Dispatchers.IO) {
-				snackbarProvider.runShowing {
+				snackbarProvider.runShowingSuspend {
 					bottomSheetEvent = FloorsBottomSheetEvent.HoleActions(DxrContent.loadHole(holeId))
 				}
 			}
@@ -351,7 +351,7 @@ private fun HoleShareAsTextItem(hole: OtHole) {
 	ClickCatchingActionBottomSheetItem(
 		{
 			scope.launch {
-				snackbarProvider.runShowing {
+				snackbarProvider.runShowingSuspend {
 					val sharedText = buildList {
 						DxrContent.floorsFlow(
 							hole.holeIdNotNull,

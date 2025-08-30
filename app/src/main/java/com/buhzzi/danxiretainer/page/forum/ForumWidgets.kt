@@ -82,7 +82,7 @@ fun TagChip(
 		}
 		.clickable {
 			scope.launch(Dispatchers.IO) {
-				snackbarProvider.runShowing {
+				snackbarProvider.runShowingSuspend {
 					val filterContext = holesFilterContext
 						?: DxrRetention.loadHolesFilterContext(DxrSettings.Models.userProfileNotNull.userIdNotNull)
 					filterContext.addTag(tag.nameNotNull)

@@ -62,7 +62,7 @@ fun RowScope.HolesTopBarActions() {
 	IconButton(
 		{
 			scope.launch(Dispatchers.IO) {
-				snackbarProvider.runShowing {
+				snackbarProvider.runShowingSuspend {
 					pagerSharedEventViewModel.refreshTrigger.emit(Unit)
 				}
 			}
@@ -99,7 +99,7 @@ fun HoleCard(hole: OtHole) {
 				},
 			) {
 				scope.launch(Dispatchers.IO) {
-					snackbarProvider.runShowing {
+					snackbarProvider.runShowingSuspend {
 						openFloors(hole)
 					}
 				}
@@ -135,7 +135,7 @@ fun HoleCard(hole: OtHole) {
 							onLongClick = { bottomSheetEvent = HolesBottomSheetEvent.LastFloorActions(hole) },
 						) {
 							scope.launch(Dispatchers.IO) {
-								snackbarProvider.runShowing {
+								snackbarProvider.runShowingSuspend {
 									val options = if (reversed) {
 										OpenFloorsOptions.REVERSED_ENDING
 									} else {

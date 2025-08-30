@@ -191,7 +191,7 @@ fun ForumPageTopBar() {
 			sessionState.holeId ?: return@TopAppBar
 			fun goBackToForumHolesPage() {
 				scope.launch(Dispatchers.IO) {
-					snackbarProvider.runShowing {
+					snackbarProvider.runShowingSuspend {
 						val userId = DxrSettings.Models.userProfileNotNull.userIdNotNull
 						DxrRetention.updateSessionState(userId) {
 							copy(

@@ -53,7 +53,7 @@ fun ClickCatchingActionBottomSheetItem(
 		modifier = Modifier
 			.clickable {
 				scope.launch(Dispatchers.IO) {
-					snackbarProvider.runShowing {
+					snackbarProvider.runShowingSuspend {
 						click()
 					}
 				}
