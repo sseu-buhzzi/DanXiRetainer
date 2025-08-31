@@ -1,6 +1,6 @@
 # DanXi Retainer
 
-A utility app to server as a browser and retainer for the [DanXi app](https://github.com/DanXi-Dev/DanXi).
+A utility app to serve as a browser and retainer for the [DanXi app](https://github.com/DanXi-Dev/DanXi).
 
 ## Acknowledgments
 
