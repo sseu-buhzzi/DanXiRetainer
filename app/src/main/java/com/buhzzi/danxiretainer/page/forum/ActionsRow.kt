@@ -115,7 +115,7 @@ private fun MultiChoiceSegmentedButtonRowScope.LikeActionSegmentedButton(
 		likeState.liked,
 		{
 			scope.launch {
-				snackbarProvider.runShowing {
+				snackbarProvider.runShowingSuspend {
 					val updatedFloor = DxrForumApi.likeFloor(floorId, likeState.inverseValue)
 					likeDislikeState.updateWith(updatedFloor)
 				}
@@ -148,7 +148,7 @@ private fun MultiChoiceSegmentedButtonRowScope.MoreActionSegmentedButton(
 	count: Int,
 	modifier: Modifier = Modifier,
 	iconSize: Dp = ActionSegmentedButtonDefaults.iconSize,
-	action: () -> Unit
+	action: () -> Unit,
 ) {
 	ActionSegmentedButton(
 		false,

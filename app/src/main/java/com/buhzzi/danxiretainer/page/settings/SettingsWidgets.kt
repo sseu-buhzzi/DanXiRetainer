@@ -128,7 +128,7 @@ fun InputListItem(
 						},
 					)
 				}
-			}
+			},
 		)
 	}
 
@@ -176,7 +176,7 @@ fun ToggleListItem(
 		},
 		trailingContent = {
 			Switch(checked, check)
-		}
+		},
 	)
 }
 
@@ -239,7 +239,7 @@ fun SingleSelectListItem(
 						}
 					}
 				}
-			}
+			},
 		)
 	}
 

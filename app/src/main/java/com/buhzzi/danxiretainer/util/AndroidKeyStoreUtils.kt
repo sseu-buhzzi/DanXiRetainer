@@ -22,7 +22,7 @@ private fun getOrCreateKey() = KeyStore.getInstance(ANDROID_KEYSTORE).apply { lo
 	?.let { (it as KeyStore.SecretKeyEntry).secretKey }
 	?: run {
 		val keyGenerator = KeyGenerator.getInstance(
-			KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE
+			KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE,
 		)
 		val keyGenParameterSpec = KeyGenParameterSpec.Builder(
 			KEY_ALIAS,

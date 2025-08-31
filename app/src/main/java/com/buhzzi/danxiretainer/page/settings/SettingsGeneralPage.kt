@@ -53,7 +53,7 @@ fun SettingsGeneralPage() {
 	DxrScaffoldWrapper(
 		topBar = {
 			SettingsSubpageTopBar("${stringResource(R.string.settings_label)} - ${stringResource(R.string.general_label)}")
-		}
+		},
 	) { contentPadding ->
 		Column(
 			modifier = Modifier
@@ -105,7 +105,7 @@ fun SettingsGeneralPage() {
 			}
 
 			val sortOrder by DxrSettings.Models.sortOrderOrDefaultFlow.collectAsState(
-				DxrSettings.Models.sortOrderOrDefault
+				DxrSettings.Models.sortOrderOrDefault,
 			)
 			val sortOrders = listOf(
 				"Last Replied",
@@ -165,7 +165,7 @@ fun SettingsGeneralPage() {
 						when (pagerScrollOrientation) {
 							DxrPagerScrollOrientation.HORIZONTAL -> Icons.Default.Swipe
 							DxrPagerScrollOrientation.VERTICAL -> Icons.Default.SwipeVertical
-						}, null
+						}, null,
 					)
 				},
 			)

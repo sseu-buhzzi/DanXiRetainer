@@ -142,7 +142,7 @@ class DxrFloorsFilterContext(path: Path) : DxrFilterContext(
 			DxrContentFilter(initialJson),
 			DxrEvalFilter(initialJson),
 		)
-	}
+	},
 )
 
 private class DxrDivisionFilter(initialJson: JsonObject) : DxrFilter("division") {
