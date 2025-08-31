@@ -191,14 +191,14 @@ fun AnonynameRow(
 			Constraints(
 				minWidth = rowWidth,
 				maxWidth = rowWidth,
-			)
+			),
 		)
 		val height = rowPlaceable.height
 		val dividerPlaceable = measurables[0].measure(
 			Constraints(
 				minHeight = height,
 				maxHeight = height,
-			)
+			),
 		)
 		layout(width, height) {
 			dividerPlaceable.placeRelative(0, 0)

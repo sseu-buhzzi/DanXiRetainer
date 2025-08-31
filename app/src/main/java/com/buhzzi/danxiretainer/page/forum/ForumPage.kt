@@ -217,7 +217,7 @@ fun ForumPageTopBar() {
 				return@TopAppBar
 			}
 			FloorsTopBarActions(holeId)
-		}
+		},
 	)
 }
 

@@ -42,7 +42,7 @@ fun SettingsAccountUserProfilePage() {
 	DxrScaffoldWrapper(
 		topBar = {
 			SettingsSubpageTopBar("${stringResource(R.string.settings_label)} - ${stringResource(R.string.account_label)} - ${stringResource(R.string.user_profile_label)}")
-		}
+		},
 	) { contentPadding ->
 		val navController = LocalNavController.current
 
@@ -113,7 +113,7 @@ fun SettingsAccountUserProfilePage() {
 					.clickable { DxrSettings.Models.userProfile = null },
 				leadingContent = {
 					Icon(Icons.Default.DeleteForever, null)
-				}
+				},
 			)
 		}
 	}

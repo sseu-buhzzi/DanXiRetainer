@@ -148,7 +148,7 @@ private fun MultiChoiceSegmentedButtonRowScope.MoreActionSegmentedButton(
 	count: Int,
 	modifier: Modifier = Modifier,
 	iconSize: Dp = ActionSegmentedButtonDefaults.iconSize,
-	action: () -> Unit
+	action: () -> Unit,
 ) {
 	ActionSegmentedButton(
 		false,

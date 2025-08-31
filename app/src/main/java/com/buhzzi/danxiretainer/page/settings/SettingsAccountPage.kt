@@ -82,7 +82,7 @@ fun SettingsAccountPage() {
 	DxrScaffoldWrapper(
 		topBar = {
 			SettingsSubpageTopBar("${stringResource(R.string.settings_label)} - ${stringResource(R.string.account_label)}")
-		}
+		},
 	) { contentPadding ->
 		val snackbarProvider = LocalSnackbarProvider.current
 
@@ -265,7 +265,7 @@ fun SettingsAccountPage() {
 					)
 				} else {
 					ListItemDefaults.colors()
-				}
+				},
 			)
 			AnimatedVisibility(expandedButtonsDescription) {
 				ListItem(

@@ -144,7 +144,7 @@ fun FloorCard(locatedFloor: DxrLocatedFloor) {
 					Text(
 						"${floorIndex + 1}F",
 						color = bottomLineColor,
-						fontSize = bottomLineHeight.sp
+						fontSize = bottomLineHeight.sp,
 					)
 					Text(
 						"(##${floor.floorIdNotNull})",
@@ -238,9 +238,7 @@ private fun FloorCopyTimeItem(labelId: Int, time: OffsetDateTime?) {
 			)
 		},
 	) {
-		Text(
-			stringResource(labelId, postTimeString)
-		)
+		Text(stringResource(labelId, postTimeString))
 	}
 }
 

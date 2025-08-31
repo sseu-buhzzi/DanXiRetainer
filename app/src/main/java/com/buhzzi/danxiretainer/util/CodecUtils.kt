@@ -21,13 +21,15 @@ fun String.toBytesBase64(flags: Int = Base64.NO_WRAP): ByteArray = Base64.decode
 
 fun String.escapeTsv() = buildString(length) {
 	this@escapeTsv.forEach { char ->
-		append(when (char) {
-			'\t' -> "\\t"
-			'\n' -> "\\n"
-			'\r' -> "\\r"
-			'\\' -> "\\\\"
-			else -> char
-		})
+		append(
+			when (char) {
+				'\t' -> "\\t"
+				'\n' -> "\\n"
+				'\r' -> "\\r"
+				'\\' -> "\\\\"
+				else -> char
+			},
+		)
 	}
 }
 

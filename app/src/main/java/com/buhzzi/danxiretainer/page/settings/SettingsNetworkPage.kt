@@ -40,7 +40,7 @@ fun SettingsNetworkPage() {
 	DxrScaffoldWrapper(
 		topBar = {
 			SettingsSubpageTopBar("${stringResource(R.string.settings_label)} - ${stringResource(R.string.network_label)}")
-		}
+		},
 	) { contentPadding ->
 		Column(
 			modifier = Modifier

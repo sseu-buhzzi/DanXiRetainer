@@ -68,7 +68,7 @@ fun MarkdownContentRenderer(content: String) {
 					++recomposingCounter
 					Log.d("MarkdownContentRenderer", "cache http resource $originalUrl $cachedPath")
 				}
-			}
+			},
 		)
 		visitor.visit(document)
 		val formatter = Formatter.builder().build()
