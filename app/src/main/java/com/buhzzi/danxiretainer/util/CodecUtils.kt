@@ -58,6 +58,41 @@ fun String.unescapeTsv() = buildString(length) {
 	}
 }
 
+fun String.escapeInvisible() = "\"${
+	map {
+		when (it) {
+			'\u0007' -> "\\a"
+			'\b' -> "\\b"
+			'\u001b' -> "\\e"
+			'\u000c' -> "\\f"
+			'\n' -> "\\n\n"
+			'\r' -> "\\r"
+			'\t' -> "\\t\t"
+			'\u000b' -> "\\v"
+			'\\' -> "\\\\"
+			'"' -> "\\\""
+			'\ufffd' -> "\\ufffd"
+			else -> when {
+				!it.isISOControl() -> it
+
+				it in '\u0000' .. '\u007f' -> "\\x${
+					it.code.toHexString(HexFormat {
+						number.removeLeadingZeros = true
+						number.minLength = 2
+					})
+				}"
+
+				else -> "\\u${
+					it.code.toHexString(HexFormat {
+						number.removeLeadingZeros = true
+						number.minLength = 4
+					})
+				}"
+			}
+		}
+	}.joinToString("")
+}\""
+
 @OptIn(ExperimentalSerializationApi::class)
 val dxrJson = Json {
 	encodeDefaults = true

@@ -40,6 +40,8 @@ android {
 }
 
 dependencies {
+	implementation("org.apache.commons:commons-compress:1.27.1")
+
 	implementation(libs.flexmark)
 	implementation(libs.markwon.core)
 	implementation(project(":markdowntext"))
