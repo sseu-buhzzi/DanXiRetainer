@@ -252,15 +252,14 @@ private class DxrTagFilter(initialJson: JsonObject) : DxrFilter("tag") {
 
 private class DxrContentFilter(initialJson: JsonObject) : DxrFilter("content") {
 	override val json
-		get() = JsonPrimitive(regex?.pattern)
+		get() = JsonPrimitive(regexString)
 
-	private var regex by (initialJson[key] as? JsonPrimitive)
+	private var regexString by (initialJson[key] as? JsonPrimitive)
 		?.contentOrNull
-		?.toRegex()
 		.let { mutableStateOf(it) }
 
 	init {
-		active = regex != null
+		active = regexString != null
 	}
 
 	@Composable
@@ -271,10 +270,8 @@ private class DxrContentFilter(initialJson: JsonObject) : DxrFilter("content") {
 	@Composable
 	override fun Content() {
 		TextField(
-			regex?.pattern ?: "",
-			{
-				regex = it.takeIf { it.isNotEmpty() }?.toRegex()
-			},
+			regexString ?: "",
+			{ regexString = it },
 			modifier = Modifier
 				.fillMaxWidth(),
 			label = {
@@ -283,10 +280,17 @@ private class DxrContentFilter(initialJson: JsonObject) : DxrFilter("content") {
 		)
 	}
 
-	override fun <T> predicate(item: T) = when (item) {
-		is OtHole -> item.floors?.firstFloor?.content?.let { regex?.find(it) } != null
-		is DxrLocatedFloor -> item.floor.content?.let { regex?.find(it) } != null
-		else -> false
+	override fun <T> predicate(item: T): Boolean {
+		val regex = regexString
+			?.ifEmpty { null }
+			?.runCatching { toRegex() }
+			?.getOrNull()
+			?: return true
+		return when (item) {
+			is OtHole -> item.floors?.firstFloor?.content?.let { regex.find(it) } != null
+			is DxrLocatedFloor -> item.floor.content?.let { regex.find(it) } != null
+			else -> false
+		}
 	}
 }
 
