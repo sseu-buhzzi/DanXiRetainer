@@ -125,6 +125,7 @@ class DxrHolesFilterContext(path: Path) : DxrFilterContext(
 			DxrDivisionFilter(initialJson),
 			DxrTagFilter(initialJson),
 			DxrContentFilter(initialJson),
+			DxrEvalFilter(initialJson),
 		)
 	},
 ) {
