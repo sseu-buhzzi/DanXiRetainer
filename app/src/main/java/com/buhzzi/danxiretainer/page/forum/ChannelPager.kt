@@ -66,6 +66,9 @@ fun <T> ChannelPager(
 	) {
 		ChannelPagerViewModel(itemsFlow, pageSize)
 	}
+	LaunchedEffect(pagerViewModel) {
+		pagerViewModel.resetLoading()
+	}
 	val pagerSharedEventViewModel = viewModel<ChannelPagerSharedEventViewModel>()
 
 	val pagerScrollOrientation by DxrSettings.Models.pagerScrollOrientationOrDefaultFlow.collectAsState(
@@ -128,6 +131,7 @@ private fun <T> HorizontalScrollPagerContent(
 	LaunchedEffect(pagerViewModel) {
 		pagerViewModel.viewModelScope.launch {
 			while (
+				!pagerViewModel.loading &&
 				!pagerViewModel.ended &&
 				initialItemIndex >= pagerViewModel.readonlyItems.size
 			) {
@@ -235,6 +239,7 @@ private fun <T> VerticalScrollPagerContent(
 	LaunchedEffect(pagerViewModel) {
 		pagerViewModel.viewModelScope.launch {
 			while (
+				!pagerViewModel.loading &&
 				!pagerViewModel.ended &&
 				initialItemIndex >= pagerViewModel.readonlyItems.size
 			) {
@@ -350,6 +355,10 @@ private class ChannelPagerViewModel<T>(
 
 		override fun get(index: Int) =
 			cachedPages[index / pageSize][index % pageSize]
+	}
+
+	fun resetLoading() {
+		loading = false
 	}
 
 	suspend fun loadPage() {
