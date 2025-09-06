@@ -37,7 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.buhzzi.danxiretainer.model.forum.DxrContentThrottler
+import com.buhzzi.danxiretainer.model.forum.DxrFilterContext
 import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefault
@@ -58,7 +58,7 @@ fun <T> ChannelPager(
 	itemsFlow: Flow<T>,
 	key: String?,
 	pageSize: Int,
-	throttler: DxrContentThrottler,
+	filterContext: DxrFilterContext,
 	initialItemIndex: Int,
 	initialItemScrollOffset: Int,
 	saveItemPosition: (Int, Int) -> Unit,
@@ -72,7 +72,7 @@ fun <T> ChannelPager(
 		ChannelPagerViewModel(itemsFlow, pageSize)
 	}
 	LaunchedEffect(pagerViewModel) {
-		pagerViewModel.resetLoading()
+		pagerViewModel.reset()
 	}
 	val pagerSharedEventViewModel = viewModel<ChannelPagerSharedEventViewModel>()
 
@@ -83,7 +83,7 @@ fun <T> ChannelPager(
 		DxrPagerScrollOrientation.HORIZONTAL -> HorizontalScrollPagerContent(
 			pagerViewModel = pagerViewModel,
 			pagerSharedEventViewModel = pagerSharedEventViewModel,
-			throttler = throttler,
+			filterContext = filterContext,
 			initialItemIndex = initialItemIndex,
 			initialItemScrollOffset = initialItemScrollOffset,
 			saveItemPosition = saveItemPosition,
@@ -95,7 +95,7 @@ fun <T> ChannelPager(
 		DxrPagerScrollOrientation.VERTICAL -> VerticalScrollPagerContent(
 			pagerViewModel = pagerViewModel,
 			pagerSharedEventViewModel = pagerSharedEventViewModel,
-			throttler = throttler,
+			filterContext = filterContext,
 			initialItemIndex = initialItemIndex,
 			initialItemScrollOffset = initialItemScrollOffset,
 			saveItemPosition = saveItemPosition,
@@ -111,7 +111,7 @@ fun <T> ChannelPager(
 private fun <T> HorizontalScrollPagerContent(
 	pagerViewModel: ChannelPagerViewModel<T>,
 	pagerSharedEventViewModel: ChannelPagerSharedEventViewModel,
-	throttler: DxrContentThrottler,
+	filterContext: DxrFilterContext,
 	initialItemIndex: Int,
 	initialItemScrollOffset: Int,
 	saveItemPosition: (Int, Int) -> Unit,
@@ -141,10 +141,10 @@ private fun <T> HorizontalScrollPagerContent(
 			while (
 				!pagerViewModel.loading &&
 				!pagerViewModel.ended &&
-				!throttler.throttled.value &&
+				!pagerViewModel.throttled &&
 				initialItemIndex >= pagerViewModel.readonlyItems.size
 			) {
-				pagerViewModel.loadPage()
+				pagerViewModel.loadPage(filterContext)
 			}
 			targetPageIndex = initialPageIndex
 			val lazyListState = lazyListStates[initialPageIndex]
@@ -176,7 +176,7 @@ private fun <T> HorizontalScrollPagerContent(
 			getAndSaveItemPosition()
 			value = true
 			try {
-				throttler.resetThrottled()
+				pagerViewModel.reset()
 				refresh()
 			} finally {
 				value = false
@@ -208,15 +208,13 @@ private fun <T> HorizontalScrollPagerContent(
 					}
 				}
 			} ?: run {
-				val throttled by throttler.throttled.collectAsState(false)
 				LaunchedEffect(
 					pagerViewModel,
-					throttler.throttled,
+					pagerViewModel.throttled,
 					refreshing,
 				) {
-					throttled && return@LaunchedEffect
 					refreshing && return@LaunchedEffect
-					pagerViewModel.loadPage()
+					pagerViewModel.loadPage(filterContext)
 				}
 				Column(
 					modifier = Modifier
@@ -228,9 +226,9 @@ private fun <T> HorizontalScrollPagerContent(
 					AnimatedVisibility(pagerViewModel.loading) {
 						LinearProgressIndicator()
 					}
-					AnimatedVisibility(throttled) {
+					AnimatedVisibility(pagerViewModel.throttled) {
 						Button(
-							{ throttler.resetThrottled() },
+							{ pagerViewModel.reset() },
 						) {
 							Text("Continue loading")
 						}
@@ -246,7 +244,7 @@ private fun <T> HorizontalScrollPagerContent(
 private fun <T> VerticalScrollPagerContent(
 	pagerViewModel: ChannelPagerViewModel<T>,
 	pagerSharedEventViewModel: ChannelPagerSharedEventViewModel,
-	throttler: DxrContentThrottler,
+	filterContext: DxrFilterContext,
 	initialItemIndex: Int,
 	initialItemScrollOffset: Int,
 	saveItemPosition: (Int, Int) -> Unit,
@@ -263,10 +261,10 @@ private fun <T> VerticalScrollPagerContent(
 			while (
 				!pagerViewModel.loading &&
 				!pagerViewModel.ended &&
-				!throttler.throttled.value &&
+				!pagerViewModel.throttled &&
 				initialItemIndex >= pagerViewModel.readonlyItems.size
 			) {
-				pagerViewModel.loadPage()
+				pagerViewModel.loadPage(filterContext)
 			}
 			// wait util there are valid items except the loading bar
 			snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo.size }
@@ -306,7 +304,6 @@ private fun <T> VerticalScrollPagerContent(
 			getAndSaveItemPosition()
 			value = true
 			try {
-				throttler.resetThrottled()
 				refresh()
 			} finally {
 				value = false
@@ -337,19 +334,17 @@ private fun <T> VerticalScrollPagerContent(
 						.fillMaxWidth(),
 					horizontalAlignment = Alignment.CenterHorizontally,
 				) {
-					val throttled by throttler.throttled.collectAsState(false)
 					LaunchedEffect(
 						pagerViewModel,
-						throttled,
+						pagerViewModel.throttled,
 						refreshing,
 					) {
-						throttled && return@LaunchedEffect
 						refreshing && return@LaunchedEffect
-						pagerViewModel.loadPage()
+						pagerViewModel.loadPage(filterContext)
 					}
-					AnimatedVisibility(throttled) {
+					AnimatedVisibility(pagerViewModel.throttled) {
 						Button(
-							{ throttler.resetThrottled() },
+							{ pagerViewModel.reset() },
 						) {
 							Text("Continue loading")
 						}
@@ -377,6 +372,8 @@ private class ChannelPagerViewModel<T>(
 		private set
 	var ended by mutableStateOf(false)
 		private set
+	var throttled by mutableStateOf(false)
+		private set
 
 	// `produce` has default capacity of `Channel.RENDEZVOUS`, which is `0`
 	// `produceIn` will not always act like that, it may preserve a buffer
@@ -399,21 +396,37 @@ private class ChannelPagerViewModel<T>(
 	}
 	val readonlyItems: List<T> = cachedItems
 
-	fun resetLoading() {
+	private var filteredOutNumber = 0
+
+	fun reset() {
 		loading = false
+		filteredOutNumber = 0
+		throttled = false
 	}
 
-	suspend fun loadPage() {
-		Log.d("ChannelPagerViewModel", "loadPage: ${readonlyPages.size} pages, ${readonlyItems.size} items, $ended ended, $loading loading")
+	suspend fun loadPage(filterContext: DxrFilterContext) {
+		Log.d(
+			"ChannelPagerViewModel",
+			"loadPage: ${readonlyPages.size} pages, ${readonlyItems.size} items, $ended ended, $loading loading, $throttled throttled",
+		)
 		ended && return
 		loading && return
+		throttled && return
 		try {
 			loading = true
-			repeat(pageSize) {
-				val item = itemsChannel.receiveCatching().getOrElse { exception ->
-					throw exception ?: return
+			run throttlingFilter@{
+				repeat(pageSize) {
+					val item = itemsChannel
+						.takeUnless { throttled }
+						?.receiveCatching()
+						?.getOrElse { exception -> exception?.let { throw it } }
+						?: return@throttlingFilter
+					if (filterContext.predicate(item)) {
+						cachedItems.add(item)
+					} else if (++filteredOutNumber >= pageSize) {
+						throttled = true
+					}
 				}
-				cachedItems.add(item)
 			}
 		} finally {
 			Log.d("ChannelPagerViewModel", "received: ${readonlyPages.size} pages, ${readonlyItems.size} items")

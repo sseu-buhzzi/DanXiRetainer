@@ -2,12 +2,10 @@ package com.buhzzi.danxiretainer.repository.content
 
 import com.buhzzi.danxiretainer.model.forum.DxrLocatedFloor
 import com.buhzzi.danxiretainer.model.settings.DxrContentSource
-import com.buhzzi.danxiretainer.page.forum.DxrFloorsFilterContext
 import com.buhzzi.danxiretainer.page.forum.DxrHolesFilterContext
 import com.buhzzi.danxiretainer.page.settings.handleJwtAndOptionallyFetchUserProfile
 import com.buhzzi.danxiretainer.repository.api.forum.DxrForumApi
 import com.buhzzi.danxiretainer.repository.content.DxrContent.floorsFlow
-import com.buhzzi.danxiretainer.repository.content.DxrContent.holesFlow
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.accessJwt
@@ -91,12 +89,13 @@ object DxrContent {
 	 * Need to pass in the [holesFilterContext] because this is a close-and-write-back model.
 	 * It fixes the problem that flows cannot read updated [DxrHolesFilterContext] on startup.
 	 * The same for [floorsFlow].
+	 * [holesFilterContext] is used for server side filtering.
 	 */
 	fun holesFlow(
 		holesFilterContext: DxrHolesFilterContext,
 	): Flow<OtHole> = when (DxrSettings.Models.contentSourceOrDefault) {
 		DxrContentSource.FORUM_API -> forumApiAdHocHolesFlow(holesFilterContext)
-		DxrContentSource.RETENTION -> retentionHolesFlow(holesFilterContext)
+		DxrContentSource.RETENTION -> retentionHolesFlow()
 	}
 
 	fun forumApiAdHocHolesFlow(
@@ -117,7 +116,7 @@ object DxrContent {
 				tagLabels.map { tagLabel ->
 					@OptIn(ExperimentalCoroutinesApi::class)
 					produce {
-						forumApiHolesFlow(divisionId, tagLabel, holesFilterContext).collect { hole ->
+						forumApiHolesFlow(divisionId, tagLabel).collect { hole ->
 							send(hole)
 						}
 					}
@@ -145,7 +144,6 @@ object DxrContent {
 	fun forumApiHolesFlow(
 		divisionId: Int?,
 		tagLabel: String?,
-		holesFilterContext: DxrHolesFilterContext,
 	): Flow<OtHole> = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
@@ -156,7 +154,7 @@ object DxrContent {
 		val loadLength = 10
 		val sortOrder = DxrSettings.Models.sortOrderOrDefault
 
-		while (true) {
+		do {
 			ensureAuth()
 			val holes = DxrForumApi.loadHoles(
 				startTime,
@@ -166,7 +164,6 @@ object DxrContent {
 				sortOrder = sortOrder,
 			)
 			holes.asSequence()
-				.filter { hole -> holesFilterContext.predicate(hole) }
 				.forEach { hole ->
 					emit(hole)
 					runCatching {
@@ -185,32 +182,19 @@ object DxrContent {
 					}
 					// optional TODO use `forumApiFloorsFlow()` to store full floors
 				}
-			holes.size < loadLength && break
-			startTime = holes.last().getSortingDateTime(sortOrder)
-		}
+			holes.lastOrNull()?.getSortingDateTime(sortOrder)?.let { startTime = it }
+		} while (holes.size >= loadLength)
 	}
 
-	fun retentionHolesFlow(
-		holesFilterContext: DxrHolesFilterContext,
-	): Flow<OtHole> = run {
-		val userProfile = DxrSettings.Models.userProfileNotNull
-		val userId = userProfile.userIdNotNull
-
+	fun retentionHolesFlow(): Flow<OtHole> = DxrSettings.Models.userProfileNotNull.userIdNotNull.let { userId ->
 		when (DxrSettings.Models.sortOrderOrDefault) {
 			SortOrder.LAST_REPLIED -> DxrRetention.loadHolesSequenceByUpdate(userId)
 			SortOrder.LAST_CREATED -> DxrRetention.loadHolesSequenceByCreation(userId)
 		}
-			.filter { hole -> holesFilterContext.predicate(hole) }
-			.asFlow()
 	}
+		.asFlow()
 
-	/**
-	 * For the reason why it needs [floorsFilterContext], see [holesFlow].
-	 */
-	fun floorsFlow(
-		holeId: Long,
-		floorsFilterContext: DxrFloorsFilterContext,
-	): Flow<DxrLocatedFloor> = flow {
+	fun floorsFlow(holeId: Long): Flow<DxrLocatedFloor> = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
@@ -219,24 +203,21 @@ object DxrContent {
 
 		when (DxrSettings.Models.contentSourceOrDefault) {
 			DxrContentSource.FORUM_API -> if (reversed) {
-				forumApiFloorsReversedFlow(holeId, floorsFilterContext)
+				forumApiFloorsReversedFlow(holeId)
 			} else {
-				forumApiFloorsFlow(holeId, floorsFilterContext)
+				forumApiFloorsFlow(holeId)
 			}
 
 			DxrContentSource.RETENTION -> if (reversed) {
-				retentionFloorsReversedFlow(holeId, floorsFilterContext)
+				retentionFloorsReversedFlow(holeId)
 			} else {
-				retentionFloorsFlow(holeId, floorsFilterContext)
+				retentionFloorsFlow(holeId)
 			}
 		}
 			.collect(this)
 	}
 
-	fun forumApiFloorsFlow(
-		holeId: Long,
-		floorsFilterContext: DxrFloorsFilterContext,
-	): Flow<DxrLocatedFloor> = flow {
+	fun forumApiFloorsFlow(holeId: Long): Flow<DxrLocatedFloor> = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
@@ -257,7 +238,6 @@ object DxrContent {
 			)
 			floors.asSequence()
 				.mapIndexed { index, floor -> DxrLocatedFloor(floor, hole, startFloorIndex + index) }
-				.filter { locatedFloor -> floorsFilterContext.predicate(locatedFloor) }
 				.forEach { locatedFloor ->
 					emit(locatedFloor)
 					runCatching {
@@ -268,25 +248,18 @@ object DxrContent {
 		} while (floors.size >= loadLength)
 	}
 
-	fun retentionFloorsFlow(
-		holeId: Long,
-		floorsFilterContext: DxrFloorsFilterContext,
-	): Flow<DxrLocatedFloor> = flow {
+	fun retentionFloorsFlow(holeId: Long): Flow<DxrLocatedFloor> = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
 		val hole = checkNotNull(DxrRetention.loadHole(userId, holeId))
 		DxrRetention.loadFloorsSequence(userId, holeId)
-			.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
 			.forEachIndexed { index, floor ->
 				emit(DxrLocatedFloor(floor, hole, index))
 			}
 	}
 
-	fun forumApiFloorsReversedFlow(
-		holeId: Long,
-		floorsFilterContext: DxrFloorsFilterContext,
-	): Flow<DxrLocatedFloor> = flow {
+	fun forumApiFloorsReversedFlow(holeId: Long): Flow<DxrLocatedFloor> = flow {
 		ensureAuth()
 		val hole = DxrForumApi.loadHoleById(holeId)
 
@@ -304,7 +277,6 @@ object DxrContent {
 				length = (endFloorIndex - startFloorIndex).toLong(),
 			).asReversed()
 			floors.asSequence()
-				.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
 				.forEachIndexed { index, floor ->
 					emit(DxrLocatedFloor(floor, hole, endFloorIndex - index - 1))
 				}
@@ -312,16 +284,12 @@ object DxrContent {
 		} while (endFloorIndex > 0)
 	}
 
-	fun retentionFloorsReversedFlow(
-		holeId: Long,
-		floorsFilterContext: DxrFloorsFilterContext,
-	): Flow<DxrLocatedFloor> = flow {
+	fun retentionFloorsReversedFlow(holeId: Long): Flow<DxrLocatedFloor> = flow {
 		val userProfile = DxrSettings.Models.userProfileNotNull
 		val userId = userProfile.userIdNotNull
 
 		val hole = checkNotNull(DxrRetention.loadHole(userId, holeId))
 		DxrRetention.loadFloorsReversedSequence(userId, holeId)
-			.filter { (floor, _, _) -> floorsFilterContext.predicate(floor) }
 			.forEachIndexed { index, floor ->
 				emit(DxrLocatedFloor(floor, hole, index))
 			}

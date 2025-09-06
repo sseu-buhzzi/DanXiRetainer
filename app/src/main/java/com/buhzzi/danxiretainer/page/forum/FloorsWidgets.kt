@@ -35,9 +35,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.buhzzi.danxiretainer.R
 import com.buhzzi.danxiretainer.model.forum.DxrLocatedFloor
 import com.buhzzi.danxiretainer.repository.content.DxrContent
-import com.buhzzi.danxiretainer.repository.retention.DxrRetention
-import com.buhzzi.danxiretainer.repository.settings.DxrSettings
-import com.buhzzi.danxiretainer.repository.settings.userProfileNotNull
 import com.buhzzi.danxiretainer.util.LocalSnackbarProvider
 import com.buhzzi.danxiretainer.util.dxrPrettyJson
 import com.buhzzi.danxiretainer.util.toDateTimeRfc3339
@@ -339,11 +336,6 @@ private fun FloorCopyIndexItem(floor: OtFloor) {
 private fun HoleShareAsTextItem(hole: OtHole) {
 	val clipboard = LocalClipboard.current
 	val snackbarProvider = LocalSnackbarProvider.current
-	val userProfile = DxrSettings.Models.userProfileNotNull
-	val userId = userProfile.userIdNotNull
-	val floorsFilterContext = DxrRetention.loadFloorsFilterContext(
-		userId, hole.holeIdNotNull,
-	)
 	val scope = rememberCoroutineScope()
 	val postTimeFormatter = remember { DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm") }
 	ClickCatchingActionBottomSheetItem(
@@ -351,10 +343,7 @@ private fun HoleShareAsTextItem(hole: OtHole) {
 			scope.launch {
 				snackbarProvider.runShowingSuspend {
 					val sharedText = buildList {
-						DxrContent.floorsFlow(
-							hole.holeIdNotNull,
-							floorsFilterContext,
-						).collect { (floor, _, floorIndex) ->
+						DxrContent.floorsFlow(hole.holeIdNotNull).collect { (floor, _, floorIndex) ->
 							add(renderFloorAsText(floor, floorIndex + 1, postTimeFormatter))
 						}
 					}.joinToString("\n\n")

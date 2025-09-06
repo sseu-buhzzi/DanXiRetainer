@@ -387,7 +387,7 @@ private fun FloorsPager(userId: Long) {
 	)
 
 	ChannelPager(
-		DxrContent.floorsFlow(holeId, floorsFilterContext)
+		DxrContent.floorsFlow(holeId)
 			.catch { exception -> snackbarProvider.showException(exception) },
 		dxrJson.encodeToString(buildJsonObject {
 			put("fun", "FloorsPager")
