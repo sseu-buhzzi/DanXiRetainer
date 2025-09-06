@@ -340,6 +340,7 @@ private fun HolesPager(userId: Long) {
 			put("refreshTime", refreshTime.toStringRfc3339())
 		}),
 		16,
+		holesFilterContext,
 		sessionState.pagerHoleIndex ?: 0,
 		sessionState.pagerHoleScrollOffset ?: 0,
 		{ holeIndex, holeScrollOffset ->
@@ -386,7 +387,7 @@ private fun FloorsPager(userId: Long) {
 	)
 
 	ChannelPager(
-		DxrContent.floorsFlow(holeId, floorsFilterContext)
+		DxrContent.floorsFlow(holeId)
 			.catch { exception -> snackbarProvider.showException(exception) },
 		dxrJson.encodeToString(buildJsonObject {
 			put("fun", "FloorsPager")
@@ -396,6 +397,7 @@ private fun FloorsPager(userId: Long) {
 			put("refreshTime", refreshTime.toStringRfc3339())
 		}),
 		16,
+		floorsFilterContext,
 		holeSessionState.pagerFloorIndex ?: 0,
 		holeSessionState.pagerFloorScrollOffset ?: 0,
 		{ floorIndex, floorScrollOffset ->

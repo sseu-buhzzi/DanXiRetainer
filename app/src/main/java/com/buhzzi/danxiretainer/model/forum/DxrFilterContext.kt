@@ -24,9 +24,7 @@ abstract class DxrFilterContext(
 		DxrRetention.storeFilterContextJson(path, json)
 	}
 
-	fun <T> predicate(item: T): Boolean {
-		return filters.all { !it.active || it.predicate(item) }
-	}
+	fun <T> predicate(item: T) = filters.all { !it.active || it.predicate(item) }
 }
 
 abstract class DxrFilter(
