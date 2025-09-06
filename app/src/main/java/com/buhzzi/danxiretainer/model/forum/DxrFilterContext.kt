@@ -5,14 +5,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.buhzzi.danxiretainer.repository.retention.DxrRetention
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import java.nio.file.Path
 
+interface DxrContentThrottler {
+	val throttled: StateFlow<Boolean>
+
+	fun resetThrottled()
+}
+
 abstract class DxrFilterContext(
 	val path: Path,
 	val filters: List<DxrFilter>,
-) {
+) : DxrContentThrottler {
 	val json
 		get() = buildJsonObject {
 			filters
@@ -24,8 +32,21 @@ abstract class DxrFilterContext(
 		DxrRetention.storeFilterContextJson(path, json)
 	}
 
+	private var filteredOutNumber = 0
+	private val throttledMutable = MutableStateFlow(false)
+	override val throttled: StateFlow<Boolean> = throttledMutable
+
 	fun <T> predicate(item: T): Boolean {
-		return filters.all { !it.active || it.predicate(item) }
+		filters.all { !it.active || it.predicate(item) } && return true
+		if (++filteredOutNumber >= 16) {
+			throttledMutable.value = true
+		}
+		return false
+	}
+
+	override fun resetThrottled() {
+		filteredOutNumber = 0
+		throttledMutable.value = false
 	}
 }
 

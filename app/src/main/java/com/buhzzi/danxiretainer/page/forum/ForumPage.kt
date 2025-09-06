@@ -340,6 +340,7 @@ private fun HolesPager(userId: Long) {
 			put("refreshTime", refreshTime.toStringRfc3339())
 		}),
 		16,
+		holesFilterContext,
 		sessionState.pagerHoleIndex ?: 0,
 		sessionState.pagerHoleScrollOffset ?: 0,
 		{ holeIndex, holeScrollOffset ->
@@ -396,6 +397,7 @@ private fun FloorsPager(userId: Long) {
 			put("refreshTime", refreshTime.toStringRfc3339())
 		}),
 		16,
+		floorsFilterContext,
 		holeSessionState.pagerFloorIndex ?: 0,
 		holeSessionState.pagerFloorScrollOffset ?: 0,
 		{ floorIndex, floorScrollOffset ->

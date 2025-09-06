@@ -248,7 +248,7 @@ object DxrContent {
 
 		do {
 			// We cannot ensure it is always in 30 minutes after last authentication. As it is in a flow, users may leave their
-			// phones away and come back some time.
+			// phones away for a long time and come back.
 			ensureAuth()
 			val floors = DxrForumApi.loadFloors(
 				hole,
@@ -295,7 +295,7 @@ object DxrContent {
 
 		do {
 			// We cannot ensure it is always in 30 minutes after last authentication. As it is in a flow, users may leave their
-			// phones away and come back some time.
+			// phones away for a long time and come back.
 			ensureAuth()
 			val startFloorIndex = (endFloorIndex - loadLength).coerceAtLeast(0)
 			val floors = DxrForumApi.loadFloors(

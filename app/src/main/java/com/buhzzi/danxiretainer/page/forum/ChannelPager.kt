@@ -1,7 +1,9 @@
 package com.buhzzi.danxiretainer.page.forum
 
 import android.util.Log
-import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,8 +14,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -33,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.buhzzi.danxiretainer.model.forum.DxrContentThrottler
 import com.buhzzi.danxiretainer.model.settings.DxrPagerScrollOrientation
 import com.buhzzi.danxiretainer.repository.settings.DxrSettings
 import com.buhzzi.danxiretainer.repository.settings.pagerScrollOrientationOrDefault
@@ -47,13 +52,13 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.Collections
 
 @Composable
 fun <T> ChannelPager(
 	itemsFlow: Flow<T>,
 	key: String?,
 	pageSize: Int,
+	throttler: DxrContentThrottler,
 	initialItemIndex: Int,
 	initialItemScrollOffset: Int,
 	saveItemPosition: (Int, Int) -> Unit,
@@ -78,6 +83,7 @@ fun <T> ChannelPager(
 		DxrPagerScrollOrientation.HORIZONTAL -> HorizontalScrollPagerContent(
 			pagerViewModel = pagerViewModel,
 			pagerSharedEventViewModel = pagerSharedEventViewModel,
+			throttler = throttler,
 			initialItemIndex = initialItemIndex,
 			initialItemScrollOffset = initialItemScrollOffset,
 			saveItemPosition = saveItemPosition,
@@ -89,6 +95,7 @@ fun <T> ChannelPager(
 		DxrPagerScrollOrientation.VERTICAL -> VerticalScrollPagerContent(
 			pagerViewModel = pagerViewModel,
 			pagerSharedEventViewModel = pagerSharedEventViewModel,
+			throttler = throttler,
 			initialItemIndex = initialItemIndex,
 			initialItemScrollOffset = initialItemScrollOffset,
 			saveItemPosition = saveItemPosition,
@@ -104,6 +111,7 @@ fun <T> ChannelPager(
 private fun <T> HorizontalScrollPagerContent(
 	pagerViewModel: ChannelPagerViewModel<T>,
 	pagerSharedEventViewModel: ChannelPagerSharedEventViewModel,
+	throttler: DxrContentThrottler,
 	initialItemIndex: Int,
 	initialItemScrollOffset: Int,
 	saveItemPosition: (Int, Int) -> Unit,
@@ -133,6 +141,7 @@ private fun <T> HorizontalScrollPagerContent(
 			while (
 				!pagerViewModel.loading &&
 				!pagerViewModel.ended &&
+				!throttler.throttled.value &&
 				initialItemIndex >= pagerViewModel.readonlyItems.size
 			) {
 				pagerViewModel.loadPage()
@@ -167,6 +176,7 @@ private fun <T> HorizontalScrollPagerContent(
 			getAndSaveItemPosition()
 			value = true
 			try {
+				throttler.resetThrottled()
 				refresh()
 			} finally {
 				value = false
@@ -198,21 +208,32 @@ private fun <T> HorizontalScrollPagerContent(
 					}
 				}
 			} ?: run {
+				val throttled by throttler.throttled.collectAsState(false)
 				LaunchedEffect(
 					pagerViewModel,
+					throttler.throttled,
 					refreshing,
 				) {
+					throttled && return@LaunchedEffect
 					refreshing && return@LaunchedEffect
 					pagerViewModel.loadPage()
 				}
-				Box(
+				Column(
 					modifier = Modifier
 						.fillMaxSize()
 						.verticalScroll(rememberScrollState()),
-					contentAlignment = Alignment.Center,
+					verticalArrangement = Arrangement.Center,
+					horizontalAlignment = Alignment.CenterHorizontally,
 				) {
-					if (pagerViewModel.loading) {
+					AnimatedVisibility(pagerViewModel.loading) {
 						LinearProgressIndicator()
+					}
+					AnimatedVisibility(throttled) {
+						Button(
+							{ throttler.resetThrottled() },
+						) {
+							Text("Continue loading")
+						}
 					}
 				}
 			}
@@ -225,6 +246,7 @@ private fun <T> HorizontalScrollPagerContent(
 private fun <T> VerticalScrollPagerContent(
 	pagerViewModel: ChannelPagerViewModel<T>,
 	pagerSharedEventViewModel: ChannelPagerSharedEventViewModel,
+	throttler: DxrContentThrottler,
 	initialItemIndex: Int,
 	initialItemScrollOffset: Int,
 	saveItemPosition: (Int, Int) -> Unit,
@@ -241,6 +263,7 @@ private fun <T> VerticalScrollPagerContent(
 			while (
 				!pagerViewModel.loading &&
 				!pagerViewModel.ended &&
+				!throttler.throttled.value &&
 				initialItemIndex >= pagerViewModel.readonlyItems.size
 			) {
 				pagerViewModel.loadPage()
@@ -283,6 +306,7 @@ private fun <T> VerticalScrollPagerContent(
 			getAndSaveItemPosition()
 			value = true
 			try {
+				throttler.resetThrottled()
 				refresh()
 			} finally {
 				value = false
@@ -308,18 +332,35 @@ private fun <T> VerticalScrollPagerContent(
 				itemContent(item)
 			}
 			item {
-				LaunchedEffect(
-					pagerViewModel,
-					refreshing,
+				Column(
+					modifier = Modifier
+						.fillMaxWidth(),
+					horizontalAlignment = Alignment.CenterHorizontally,
 				) {
-					refreshing && return@LaunchedEffect
-					pagerViewModel.loadPage()
-				}
-				if (pagerViewModel.loading) {
-					LinearProgressIndicator(
-						modifier = Modifier
-							.fillMaxWidth(),
-					)
+					val throttled by throttler.throttled.collectAsState(false)
+					LaunchedEffect(
+						pagerViewModel,
+						throttled,
+						refreshing,
+					) {
+						throttled && return@LaunchedEffect
+						refreshing && return@LaunchedEffect
+						pagerViewModel.loadPage()
+					}
+					AnimatedVisibility(throttled) {
+						Button(
+							{ throttler.resetThrottled() },
+						) {
+							Text("Continue loading")
+						}
+					}
+
+					AnimatedVisibility(pagerViewModel.loading) {
+						LinearProgressIndicator(
+							modifier = Modifier
+								.fillMaxWidth(),
+						)
+					}
 				}
 			}
 		}
@@ -330,7 +371,7 @@ private class ChannelPagerViewModel<T>(
 	itemsFlow: Flow<T>,
 	val pageSize: Int,
 ) : ViewModel() {
-	private val cachedPages = mutableStateListOf<List<T>>()
+	private val cachedItems = mutableStateListOf<T>()
 
 	var loading by mutableStateOf(false)
 		private set
@@ -345,47 +386,37 @@ private class ChannelPagerViewModel<T>(
 			itemsFlow.collect {
 				send(it)
 			}
+			ended = true
+			Log.d("ChannelPagerViewModel", "itemsChannel: ended")
 		}
 
-	val readonlyPages: List<List<T>> = Collections.unmodifiableList(cachedPages)
-	val readonlyItems = object : AbstractList<T>() {
-		override val size
-			// Equivalent to `pages.sumOf { it.size }`
-			get() = (cachedPages.size - 1) * pageSize + (cachedPages.lastOrNull()?.size ?: pageSize)
-
-		override fun get(index: Int) =
-			cachedPages[index / pageSize][index % pageSize]
+	val readonlyPages: List<List<T>> = object : AbstractList<List<T>>() {
+		override val size get() = cachedItems.lastIndex.floorDiv(pageSize) + 1
+		override fun get(index: Int) = cachedItems.subList(
+			index * pageSize,
+			minOf((index + 1) * pageSize, cachedItems.size),
+		)
 	}
+	val readonlyItems: List<T> = cachedItems
 
 	fun resetLoading() {
 		loading = false
 	}
 
 	suspend fun loadPage() {
-		Log.d("ChannelPagerViewModel", "loadPage: ${cachedPages.size} pages, ${readonlyItems.size} items")
-		// ended && return
-
+		Log.d("ChannelPagerViewModel", "loadPage: ${readonlyPages.size} pages, ${readonlyItems.size} items, $ended ended, $loading loading")
+		ended && return
 		loading && return
 		try {
 			loading = true
-
-			var buildingException: Throwable? = null
-			val items = buildList {
-				repeat(pageSize) {
-					val hole = itemsChannel.receiveCatching().getOrElse { exception ->
-						ended = true
-						buildingException = exception
-						return@buildList
-					}
-					add(hole)
+			repeat(pageSize) {
+				val item = itemsChannel.receiveCatching().getOrElse { exception ->
+					throw exception ?: return
 				}
+				cachedItems.add(item)
 			}
-			Log.d("ChannelPagerViewModel", "received ${items.size}: ${cachedPages.size} pages, ${readonlyItems.size} items")
-			if (items.isNotEmpty()) {
-				cachedPages.add(items)
-			}
-			buildingException?.let { throw it }
 		} finally {
+			Log.d("ChannelPagerViewModel", "received: ${readonlyPages.size} pages, ${readonlyItems.size} items")
 			loading = false
 		}
 	}
