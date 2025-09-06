@@ -71,7 +71,7 @@ object DxrForumApi {
 		client = OkHttpClient.Builder()
 			.proxy(DxrSettings.Models.httpProxy?.takeIf { it.enabled == true }?.runCatching {
 				Proxy(Proxy.Type.HTTP, InetSocketAddress(hostNotNull, portNotNull))
-			}?.getOrNull())
+			}?.getOrNull() ?: Proxy.NO_PROXY)
 			.addInterceptor(HttpLoggingInterceptor { message ->
 				Log.d("OkHttp", message)
 			}.setLevel(HttpLoggingInterceptor.Level.BODY))
