@@ -109,6 +109,11 @@ private fun GotoFloorsButton() {
 					Text(stringResource(R.string.confirm_label))
 				}
 			},
+			dismissButton = {
+				TextButton({ entering = false }) {
+					Text(stringResource(R.string.dismiss_label))
+				}
+			},
 			icon = {
 				Icon(Icons.Default.MyLocation, null)
 			},
