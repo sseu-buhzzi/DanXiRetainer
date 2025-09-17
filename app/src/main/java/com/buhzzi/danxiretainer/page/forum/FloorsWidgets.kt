@@ -110,7 +110,7 @@ fun FloorCard(locatedFloor: DxrLocatedFloor) {
 				.padding(8.dp),
 		) {
 			if (floorIndex == 0) {
-				TagChipsRow(hole.tagsNotNull)
+				TagChipsRow(hole.tags)
 			}
 			Row(
 				modifier = Modifier
@@ -340,7 +340,7 @@ private fun HoleShareAsTextItem(hole: OtHole) {
 	val postTimeFormatter = remember { DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm") }
 	ClickCatchingActionBottomSheetItem(
 		{
-			scope.launch {
+			scope.launch(Dispatchers.IO) {
 				snackbarProvider.runShowingSuspend {
 					val sharedText = buildList {
 						DxrContent.floorsFlow(hole.holeIdNotNull).collect { (floor, _, floorIndex) ->
@@ -385,8 +385,8 @@ private fun renderFloorAsText(
 	postTimeFormatter: DateTimeFormatter,
 ) = buildString {
 	val postTime = floor.timeCreated?.toDateTimeRfc3339()?.format(postTimeFormatter)
-	append("${floor.anonyname} 于 $postTime")
-	append("${index}F (##${floor.floorId})")
+	appendLine("${floor.anonyname} 于 $postTime")
+	appendLine("${index}F (##${floor.floorId})")
 	// TODO implement `renderText` in DanXi
 	append(floor.filteredContent ?: "")
 }

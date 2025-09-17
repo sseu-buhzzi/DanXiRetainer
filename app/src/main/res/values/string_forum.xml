@@ -34,6 +34,8 @@
 	<string name="floor_share_as_text">以文本形式分享樓層</string>
 	<string name="floor_display_someone_only">只看此人</string>
 	<string name="floor_report">舉報</string>
+	<string name="floors_goto_hole_id">輸入指定洞號</string>
+	<string name="cannot_load_tags">無法載入標籤</string>
 
 	<string name="filters_division">分區</string>
 	<string name="filters_tag">標籤</string>

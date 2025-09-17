@@ -10,14 +10,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -30,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -53,12 +58,15 @@ import java.time.OffsetDateTime
 @Composable
 fun RowScope.HolesTopBarActions() {
 	// TODO view switching
+	GotoFloorsButton()
+	RefreshButton()
+}
+
+@Composable
+private fun RefreshButton() {
 	val snackbarProvider = LocalSnackbarProvider.current
-
 	val scope = rememberCoroutineScope()
-
 	val pagerSharedEventViewModel = viewModel<ChannelPagerSharedEventViewModel>()
-
 	IconButton(
 		{
 			scope.launch(Dispatchers.IO) {
@@ -71,6 +79,69 @@ fun RowScope.HolesTopBarActions() {
 		Icon(Icons.Default.Refresh, null)
 	}
 }
+
+@Composable
+private fun GotoFloorsButton() {
+	var entering by remember { mutableStateOf(false) }
+
+	if (entering) {
+		val snackbarProvider = LocalSnackbarProvider.current
+		val scope = rememberCoroutineScope()
+		var holeIdString by remember { mutableStateOf("") }
+
+		AlertDialog(
+			{ entering = false },
+			{
+				TextButton(
+					gotoHole@{
+						val holeId = holeIdString
+							.substringAfterLast('#')
+							.toLongOrNull()
+							?: return@gotoHole
+						scope.launch(Dispatchers.IO) {
+							snackbarProvider.runShowingSuspend {
+								openFloors(holeId)
+							}
+						}
+						entering = false
+					},
+				) {
+					Text(stringResource(R.string.confirm_label))
+				}
+			},
+			dismissButton = {
+				TextButton({ entering = false }) {
+					Text(stringResource(R.string.dismiss_label))
+				}
+			},
+			icon = {
+				Icon(Icons.Default.MyLocation, null)
+			},
+			text = {
+				Column {
+					Text(
+						stringResource(R.string.floors_goto_hole_id),
+						modifier = Modifier
+							.fillMaxWidth(),
+						textAlign = TextAlign.Center,
+					)
+					OutlinedTextField(
+						holeIdString,
+						{ holeIdString = it },
+					)
+				}
+			},
+		)
+		return
+	}
+
+	IconButton(
+		{ entering = true },
+	) {
+		Icon(Icons.Default.MyLocation, null)
+	}
+}
+
 
 @Composable
 fun HoleCard(hole: OtHole) {
@@ -100,7 +171,7 @@ fun HoleCard(hole: OtHole) {
 			) {
 				scope.launch(Dispatchers.IO) {
 					snackbarProvider.runShowingSuspend {
-						openFloors(hole)
+						openFloors(hole.holeIdNotNull)
 					}
 				}
 			},
@@ -110,7 +181,7 @@ fun HoleCard(hole: OtHole) {
 			modifier = Modifier
 				.padding(8.dp),
 		) {
-			TagChipsRow(hole.tagsNotNull)
+			TagChipsRow(hole.tags)
 			Row(
 				modifier = Modifier
 					.fillMaxWidth(),
@@ -141,7 +212,11 @@ fun HoleCard(hole: OtHole) {
 									} else {
 										OpenFloorsOptions.NORMAL_ENDING
 									}
-									openFloorsAtEnding(hole, options)
+									openFloorsAtEnding(
+										hole.holeIdNotNull,
+										hole.floorsCount.toInt(),
+										options,
+									)
 								}
 							}
 						},
@@ -189,7 +264,7 @@ fun HoleCard(hole: OtHole) {
 					fontSize = bottomLineHeight.sp,
 				)
 				Text(
-					HumanDuration.tryFormat(context, hole.timeCreatedNotNull.toDateTimeRfc3339()),
+					hole.timeCreated?.toDateTimeRfc3339()?.let { HumanDuration.tryFormat(context, it) } ?: "?",
 					color = bottomLineColor,
 					fontSize = bottomLineHeight.sp,
 				)
@@ -211,6 +286,7 @@ fun HoleCard(hole: OtHole) {
 		}
 	}
 }
+
 
 private sealed class HolesBottomSheetEvent(
 	val hole: OtHole,
@@ -260,7 +336,13 @@ private fun OpenFloorsInOrderItem(hole: OtHole, options: OpenFloorsOptions) {
 	)
 
 	ClickCatchingActionBottomSheetItem(
-		{ openFloorsAtEnding(hole, options) },
+		{
+			openFloorsAtEnding(
+				hole.holeIdNotNull,
+				hole.floorsCount.toInt(),
+				options,
+			)
+		},
 	) {
 		Text(buildString {
 			append(
@@ -299,14 +381,10 @@ private fun ToggleFloorsOrderItem() {
 	}
 }
 
-private fun openFloorsAtEnding(hole: OtHole, options: OpenFloorsOptions) {
-	val pagerFloorIndex = if (options.reversed xor options.beginning) {
-		0
-	} else {
-		hole.floorsCount.toInt() - 1
-	}
+private fun openFloorsAtEnding(holeId: Long, floorsCount: Int, options: OpenFloorsOptions) {
+	val pagerFloorIndex = if (options.reversed xor options.beginning) 0 else floorsCount - 1
 	openFloors(
-		hole,
+		holeId,
 		reversed = options.reversed,
 		pagerFloorIndex = pagerFloorIndex,
 		pagerFloorScrollOffset = 0,
@@ -315,7 +393,7 @@ private fun openFloorsAtEnding(hole: OtHole, options: OpenFloorsOptions) {
 }
 
 private fun openFloors(
-	hole: OtHole,
+	holeId: Long,
 	reversed: Boolean? = null,
 	pagerFloorIndex: Int? = null,
 	pagerFloorScrollOffset: Int? = null,
@@ -324,10 +402,10 @@ private fun openFloors(
 	val userId = DxrSettings.Models.userProfileNotNull.userIdNotNull
 	DxrRetention.updateSessionState(userId) {
 		copy(
-			holeId = hole.holeId,
+			holeId = holeId,
 		)
 	}
-	DxrRetention.updateHoleSessionState(userId, hole.holeIdNotNull) {
+	DxrRetention.updateHoleSessionState(userId, holeId) {
 		copy(
 			reversed = reversed ?: this.reversed,
 			pagerFloorIndex = pagerFloorIndex ?: this.pagerFloorIndex,

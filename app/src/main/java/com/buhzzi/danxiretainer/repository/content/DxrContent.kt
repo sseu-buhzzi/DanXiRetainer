@@ -55,10 +55,14 @@ object DxrContent {
 		}
 	}
 
+	private fun loadHoleOrDefault(holeId: Long) =
+		runCatching { DxrForumApi.loadHoleById(holeId) }
+			.getOrElse { OtHole(holeId = holeId) }
+
 	fun loadHole(holeId: Long): OtHole = when (DxrSettings.Models.contentSourceOrDefault) {
 		DxrContentSource.FORUM_API -> {
 			ensureAuth()
-			DxrForumApi.loadHoleById(holeId)
+			loadHoleOrDefault(holeId)
 		}
 
 		DxrContentSource.RETENTION -> {
@@ -222,7 +226,7 @@ object DxrContent {
 		val userId = userProfile.userIdNotNull
 
 		ensureAuth()
-		val hole = DxrForumApi.loadHoleById(holeId)
+		val hole = loadHoleOrDefault(holeId)
 
 		var startFloorIndex = 0
 		val loadLength = 50
@@ -261,7 +265,7 @@ object DxrContent {
 
 	fun forumApiFloorsReversedFlow(holeId: Long): Flow<DxrLocatedFloor> = flow {
 		ensureAuth()
-		val hole = DxrForumApi.loadHoleById(holeId)
+		val hole = loadHoleOrDefault(holeId)
 
 		var endFloorIndex = hole.floorsCount.toInt()
 		val loadLength = 50
