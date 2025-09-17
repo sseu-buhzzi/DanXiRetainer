@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,7 +45,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
-fun TagChipsRow(tags: List<OtTag>) {
+fun TagChipsRow(tags: List<OtTag>?) {
+	tags ?: run {
+		Text(
+			stringResource(R.string.cannot_load_tags),
+			modifier = Modifier
+				.fillMaxWidth(),
+			textAlign = TextAlign.Center,
+		)
+		return
+	}
 	FlowRow(
 		modifier = Modifier
 			.fillMaxWidth(),

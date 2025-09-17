@@ -176,7 +176,7 @@ fun HoleCard(hole: OtHole) {
 			modifier = Modifier
 				.padding(8.dp),
 		) {
-			TagChipsRow(hole.tagsNotNull)
+			TagChipsRow(hole.tags)
 			Row(
 				modifier = Modifier
 					.fillMaxWidth(),
@@ -259,7 +259,7 @@ fun HoleCard(hole: OtHole) {
 					fontSize = bottomLineHeight.sp,
 				)
 				Text(
-					HumanDuration.tryFormat(context, hole.timeCreatedNotNull.toDateTimeRfc3339()),
+					hole.timeCreated?.toDateTimeRfc3339()?.let { HumanDuration.tryFormat(context, it) } ?: "?",
 					color = bottomLineColor,
 					fontSize = bottomLineHeight.sp,
 				)

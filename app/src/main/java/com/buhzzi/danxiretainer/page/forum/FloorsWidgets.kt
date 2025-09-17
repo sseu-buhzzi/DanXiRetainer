@@ -110,7 +110,7 @@ fun FloorCard(locatedFloor: DxrLocatedFloor) {
 				.padding(8.dp),
 		) {
 			if (floorIndex == 0) {
-				TagChipsRow(hole.tagsNotNull)
+				TagChipsRow(hole.tags)
 			}
 			Row(
 				modifier = Modifier
